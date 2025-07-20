@@ -1,0 +1,80 @@
+/* ===== Global Mobile & Tablet Adjustments ===== */
+
+/* Make all sections adapt to smaller screens */
+@media (max-width: 1024px) {
+  section, .container, .content-wrapper {
+    padding: 20px;
+    max-width: 100%;
+  }
+
+  /* Tables: scrollable */
+  table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    border-collapse: collapse;
+  }
+
+  /* Stack cards in 2 columns on tablets */
+  .grid-2, .features-grid, .projects-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Stack everything vertically on phones */
+  .grid-2, .features-grid, .projects-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Buttons & inputs */
+  button, input, select {
+    width: 100%;
+    max-width: 100%;
+    font-size: 1rem;
+    padding: 10px;
+  }
+
+  /* Sliders: show 1 slide centered */
+  .offer-card, .event-card, .partner-card, .customer-card, .review-card {
+    max-width: 90%;
+    margin: 0 auto;
+  }
+
+  /* Forms: stack vertically */
+  form, .form-group {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  /* Navbar adjustments */
+  .navbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .navbar ul {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  /* Sidebar for admin: collapsible */
+  .sidebar {
+    position: fixed;
+    width: 70%;
+    left: -100%;
+    transition: left 0.3s ease;
+  }
+  .sidebar.open {
+    left: 0;
+  }
+  .sidebar-toggle {
+    display: block;
+    background: #FF6F00;
+    color: #fff;
+    border: none;
+    padding: 10px;
+    margin: 10px;
+    cursor: pointer;
+  }
+}

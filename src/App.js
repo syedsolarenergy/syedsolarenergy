@@ -4,6 +4,7 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from "react-route
 import Navbar from "./components/Navbar";
 import Sidebar from "./components/Sidebar";
 import PrivateRoute from "./components/PrivateRoute";
+import "./styles/Responsive.css";
 
 // Public Pages
 import Home from "./pages/Home";
