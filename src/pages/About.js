@@ -998,7 +998,7 @@ export default function About() {
               🚀 Get Free Quote
             </button>
             <button
-              onClick={() => window.open('https://wa.me/923075506695?text=Hi! I would like to learn more about Syed Solar Energy and your services.', '_blank')}
+              onClick={() => window.open('https://wa.me/923075596695?text=Hi! I would like to learn more about Syed Solar Energy and your services.', '_blank')}
               style={{
                 background: 'transparent',
                 color: 'white',
