@@ -78,3 +78,49 @@
     cursor: pointer;
   }
 }
+
+
+
+/* ==== Fully Responsive Layout Enhancements ==== */
+
+/* Extra-small devices (phones, <480px) */
+@media (max-width: 479px) {
+  body {
+    font-size: 14px;
+  }
+  .grid-2, .features-grid, .projects-grid {
+    grid-template-columns: 1fr;
+  }
+  .navbar, .footer {
+    flex-direction: column;
+    align-items: center;
+  }
+}
+
+/* Small devices (phones, 480px - 767px) */
+@media (min-width: 480px) and (max-width: 767px) {
+  .grid-2, .features-grid, .projects-grid {
+    grid-template-columns: 1fr;
+  }
+  .container, section {
+    padding: 10px;
+  }
+}
+
+/* Medium devices (tablets, 768px - 1024px) */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .grid-2, .features-grid, .projects-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .container, section {
+    padding: 20px;
+  }
+}
+
+/* Large devices (desktops, >1024px) */
+@media (min-width: 1025px) {
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+}
