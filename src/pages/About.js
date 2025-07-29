@@ -3,6 +3,7 @@ import logo from "../assets/logo.png";
 import aqibImg from "../assets/aqib.png";
 import zubairImg from "../assets/zubair.png";
 import Footer from "../components/Footer";
+import "../styles/Responsive.css";
 
 // Enhanced Card Component with 3D hover effects
 const Card3D = ({ children, className = "", style = {} }) => (

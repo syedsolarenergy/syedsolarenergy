@@ -4,6 +4,7 @@ import Slider from "react-slick";
 import { supabase } from "../supabaseClient";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
+import "../styles/Responsive.css";
 
 // Animated Solar Energy Flow Component
 const SolarEnergyFlow = () => {
