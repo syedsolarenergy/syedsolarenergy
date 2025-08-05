@@ -439,40 +439,37 @@ const handlePanelBrandChange = (e) => {
           logging: false
         });
         
-// ——— One-page, auto-scale to fit both width & height ———
-const imgData = canvas.toDataURL("image/png", 1.0);
-const pdf = new jsPDF("p", "pt", "a4");
+    // ——— One-page, full-width PDF using px units ———
+    const imgData = canvas.toDataURL("image/png", 1.0);
 
-// get page size in points
-const pageWidth  = pdf.internal.pageSize.getWidth();
-const pageHeight = pdf.internal.pageSize.getHeight();
+    // Change unit from pt to px so pdf page and canvas match pixel-for-pixel
+    const pdf = new jsPDF("p", "px", "a4");
 
-// get the raw image dimensions
-const imgProps = pdf.getImageProperties(imgData);
-const imgOrigWidth  = imgProps.width;
-const imgOrigHeight = imgProps.height;
+    // PDF page size in px
+    const pdfWidth  = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
 
-// calculate scale to fit both directions
-const widthScale  = pageWidth  / imgOrigWidth;
-const heightScale = pageHeight / imgOrigHeight;
-const scale = Math.min(widthScale, heightScale);
+    // Get the actual image (canvas) dimensions
+    const imgProps = pdf.getImageProperties(imgData);
+    const imgWidth  = imgProps.width;
+    const imgHeight = imgProps.height;
 
-// final image size in the PDF
-const finalWidth  = imgOrigWidth  * scale;
-const finalHeight = imgOrigHeight * scale;
+    // Scale to fit both width & height
+    const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+    const finalWidth  = imgWidth  * ratio;
+    const finalHeight = imgHeight * ratio;
 
-// center the image on the page
-const x = (pageWidth  - finalWidth)  / 2;
-const y = (pageHeight - finalHeight) / 2;
+    // Center on page
+    const x = (pdfWidth  - finalWidth)  / 2;
+    const y = (pdfHeight - finalHeight) / 2;
 
-// draw the image
-pdf.addImage(imgData, "PNG", x, y, finalWidth, finalHeight);
+    // Draw and save
+    pdf.addImage(imgData, "PNG", x, y, finalWidth, finalHeight);
+    pdf.save(
+      `SyedSolarQuotation-${customer.name || "Customer"}-${new Date().toLocaleDateString()}.pdf`
+    );
+    // ——————————————————————————————————————
 
-// save it
-pdf.save(
-  `SyedSolarQuotation-${customer.name || "Customer"}-${new Date().toLocaleDateString()}.pdf`
-);
-// ————————————————————————————————————————
 
 
         
