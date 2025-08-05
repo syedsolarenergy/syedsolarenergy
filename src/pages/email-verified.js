@@ -5,35 +5,28 @@ const EmailVerified = () => {
   return (
     <div
       style={{
-        minHeight: "100vh",
+        background: "linear-gradient(to bottom, #ff9800, #e65100)",
+        height: "100vh",
+        width: "100vw",
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        background: "linear-gradient(to right, #ff9800, #ff6f00)",
         flexDirection: "column",
-        textAlign: "center",
-        padding: "30px",
+        margin: 0,
+        padding: 0,
+        overflow: "hidden",
+        position: "fixed",
+        top: 0,
+        left: 0,
+        zIndex: 9999,
       }}
     >
-      <img
-        src={logo}
-        alt="Solar Olagawa Logo"
-        style={{ width: "120px", marginBottom: "30px" }}
-      />
-      <h1 style={{ color: "#fff", fontSize: "32px", fontWeight: "bold" }}>
-        🎉 Congratulations!
-      </h1>
-      <p style={{ color: "#fff", fontSize: "20px", marginTop: "10px" }}>
-        Your email has been verified for the <b>Solar Olagawa App</b>.
-      </p>
-      <p style={{ color: "#fff", fontSize: "18px", marginTop: "10px" }}>
-        آپ کا ای میل سولر اولگاوا ایپ کے لیے کامیابی سے تصدیق ہو چکا ہے۔
-      </p>
-      <p style={{ color: "#fff", fontSize: "18px", marginTop: "10px" }}>
-        ستاسو برېښنالیک د سولر اولگاوا ایپ لپاره بریالۍ تایید شو.
-      </p>
-      <p style={{ color: "#fff", fontSize: "18px", marginTop: "20px" }}>
-        Now you can log in to the Solar Olagawa App.
+      <img src={logo} alt="Solar Olagawa Logo" style={{ width: 100, height: 100, marginBottom: 20 }} />
+
+      <h1 style={{ color: "#fff", fontSize: 28, marginBottom: 10 }}>🎉 Email Verified</h1>
+      <p style={{ color: "#fff", fontSize: 18, textAlign: "center", maxWidth: 400 }}>
+        Congratulations! Your Email has been successfully verified for <strong>Solar Olagawa App</strong>.
+        <br />اب آپ سولا اولگاوا ایپ میں لاگ ان کر سکتے ہیں۔<br /> اوسے تاسو کولای شۍ چی اوس سولا اولگاوا ایپ ته لوگ ان شی
       </p>
     </div>
   );
