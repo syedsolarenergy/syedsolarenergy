@@ -439,39 +439,41 @@ const handlePanelBrandChange = (e) => {
           logging: false
         });
         
-        // ——— One-page PDF code ———
+// ——— One-page, auto-scale to fit both width & height ———
 const imgData = canvas.toDataURL("image/png", 1.0);
 const pdf = new jsPDF("p", "pt", "a4");
 
-// get the PDF page dimensions
+// get page size in points
 const pageWidth  = pdf.internal.pageSize.getWidth();
 const pageHeight = pdf.internal.pageSize.getHeight();
 
-// compute image size to maintain aspect ratio
-const imgWidth  = pageWidth;
-const imgHeight = (canvas.height * pageWidth) / canvas.width;
+// get the raw image dimensions
+const imgProps = pdf.getImageProperties(imgData);
+const imgOrigWidth  = imgProps.width;
+const imgOrigHeight = imgProps.height;
 
-if (imgHeight > pageHeight) {
-  // scale down to fit height
-  const scale = pageHeight / imgHeight;
-  pdf.addImage(
-    imgData,
-    "PNG",
-    0,
-    0,
-    imgWidth  * scale,
-    imgHeight * scale
-  );
-} else {
-  // fits without scaling
-  pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
-}
+// calculate scale to fit both directions
+const widthScale  = pageWidth  / imgOrigWidth;
+const heightScale = pageHeight / imgOrigHeight;
+const scale = Math.min(widthScale, heightScale);
 
-// save the PDF
+// final image size in the PDF
+const finalWidth  = imgOrigWidth  * scale;
+const finalHeight = imgOrigHeight * scale;
+
+// center the image on the page
+const x = (pageWidth  - finalWidth)  / 2;
+const y = (pageHeight - finalHeight) / 2;
+
+// draw the image
+pdf.addImage(imgData, "PNG", x, y, finalWidth, finalHeight);
+
+// save it
 pdf.save(
   `SyedSolarQuotation-${customer.name || "Customer"}-${new Date().toLocaleDateString()}.pdf`
 );
-// ————————————————
+// ————————————————————————————————————————
+
 
         
         // Enhanced WhatsApp message
