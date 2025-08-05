@@ -181,7 +181,7 @@ export default function Quotation() {
       
       // For system 4.2kW or less, show 25.6V batteries
       // For system greater than 4.2kW, show 51.2V batteries
-      const voltage = systemCapacity <= 4.2 ? "25.6V" : "51.2V";
+      const voltage = systemCapacity <= 4.2 ? "51.2V" : "25.6V";
       const filtered = batteries.filter(batt => batt.type === "lithium" && batt.voltage === voltage);
       setBatteryModels(filtered);
       setBatteryQty(1); // Default quantity for lithium
