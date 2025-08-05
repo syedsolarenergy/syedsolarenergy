@@ -439,36 +439,27 @@ const handlePanelBrandChange = (e) => {
           logging: false
         });
         
-    // ——— One-page, full-width PDF using px units ———
-    const imgData = canvas.toDataURL("image/png", 1.0);
+// ——— Single-page PDF matching canvas size ———
+const imgData = canvas.toDataURL("image/png", 1.0);
 
-    // Change unit from pt to px so pdf page and canvas match pixel-for-pixel
-    const pdf = new jsPDF("p", "px", "a4");
+// grab the raw canvas dimensions
+const width  = canvas.width;
+const height = canvas.height;
 
-    // PDF page size in px
-    const pdfWidth  = pdf.internal.pageSize.getWidth();
-    const pdfHeight = pdf.internal.pageSize.getHeight();
+// create a PDF whose page size equals the canvas size (in px)
+const pdf = new jsPDF({
+  unit: "px",
+  format: [width, height],
+});
 
-    // Get the actual image (canvas) dimensions
-    const imgProps = pdf.getImageProperties(imgData);
-    const imgWidth  = imgProps.width;
-    const imgHeight = imgProps.height;
+// draw the image at full size
+pdf.addImage(imgData, "PNG", 0, 0, width, height);
 
-    // Scale to fit both width & height
-    const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-    const finalWidth  = imgWidth  * ratio;
-    const finalHeight = imgHeight * ratio;
-
-    // Center on page
-    const x = (pdfWidth  - finalWidth)  / 2;
-    const y = (pdfHeight - finalHeight) / 2;
-
-    // Draw and save
-    pdf.addImage(imgData, "PNG", x, y, finalWidth, finalHeight);
-    pdf.save(
-      `SyedSolarQuotation-${customer.name || "Customer"}-${new Date().toLocaleDateString()}.pdf`
-    );
-    // ——————————————————————————————————————
+// save it
+pdf.save(
+  `SyedSolarQuotation-${customer.name || "Customer"}-${new Date().toLocaleDateString()}.pdf`
+);
+// ————————————————————————————————————————
 
 
 
