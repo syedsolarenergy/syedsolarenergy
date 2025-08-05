@@ -497,8 +497,6 @@ pdf.save(
 );
 // ————————————————————————————————————————
 
-
-
         
         // Enhanced WhatsApp message
         const whatsappNumber = "923044678929";
@@ -594,12 +592,12 @@ JazakAllah! 🤝`
           <b style={{ fontSize: 16 }}>Warranty & Quality Assurance</b>
         </div>
         <ul style={{ marginTop: 10, paddingLeft: 20, marginBottom: 10, lineHeight: 1.6 }}>
-          <li>All solar panels are <b>A-Grade, Tier-1</b> with <b>12 years product warranty</b> and <b>25 years performance warranty</b></li>
+          <li>All solar panels are <b>A-Grade, Tier-1</b></li>
           <li>Inverters include comprehensive warranty: <b>Daytime (5 years)</b>, <b>Hybrid (as per brand policy)</b></li>
-          <li>Lithium batteries: <b>5-10 years warranty</b> | Tubular batteries: <b>2-3 years warranty</b></li>
+          <li>Lithium batteries: <b>5-10 years as per company</b> | Tubular batteries: <b>as per comapny policy</b></li>
           <li>Professional installation with <b>6 months after-sales service warranty</b></li>
           <li>Site visit charges: <b>Rs. 2,000/-</b> (Peshawar city) - <b>Adjustable in final bill</b></li>
-          <li><b>Free system monitoring</b> and maintenance guidance for first year</li>
+          <li><b>Free system monitoring</b> and maintenance guidance for first months</li>
         </ul>
       </div>
     );
@@ -819,10 +817,10 @@ JazakAllah! 🤝`
             <div>
               <b>Important Notes:</b>
               <ul style={{ marginTop: 8, paddingLeft: 20, lineHeight: 1.6 }}>
-                <li>Quotation valid for <b>7 days</b></li>
+                <li>Quotation valid for <b>3 days</b></li>
                 <li>Prices subject to market changes</li>
-                <li>Installation within 15-20 days</li>
-                <li>1-year maintenance support</li>
+                <li>Installation within 1-2 days</li>
+                <li>after sales services</li>
               </ul>
             </div>
           </div>
@@ -840,7 +838,7 @@ JazakAllah! 🤝`
           marginTop: 15
         }}>
           <div style={{ marginBottom: 8 }}>
-            📧 sales@syedsolarenergy.com | 📱 WhatsApp: 0304-467-8929 | ☎️ Office: 091-5844567
+            📧 sales@syedsolarenergy.com | 📱 WhatsApp: 0304-467-8929 | ☎️ Office: 0307-5596695
           </div>
           <div style={{ fontSize: 12, opacity: 0.9 }}>
             🏢 Office #23, Mustafa Plaza, Ring Road, Peshawar | 🌐 www.syedsolarenergy.com
