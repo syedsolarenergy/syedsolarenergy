@@ -512,177 +512,123 @@ export default function About() {
           </div>
 
           {/* Enhanced Mission, Vision, Values */}
-          <div style={{ marginBottom: 'var(--section-padding)' }}>
-            <SectionHeader title="Our Foundation" />
-            
-            <div className="grid-auto">
-              <Card3D style={{
-                padding: "var(--card-padding)",
-                textAlign: 'center',
-                position: 'relative',
-                overflow: 'visible',
-                animation: 'fadeInUp 0.8s ease-out 0.2s both',
-                minHeight: 'clamp(280px, 35vw, 350px)',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center'
-              }}>
-                <div style={{
-                  position: 'absolute',
-                  top: 'clamp(-15px, -2.5vw, -20px)',
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  width: 'clamp(32px, 5vw, 40px)',
-                  height: 'clamp(32px, 5vw, 40px)',
-                  background: 'linear-gradient(45deg, #FF6B35, #F7931E)',
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 'clamp(12px, 2.5vw, 16px)',
-                  boxShadow: '0 6px 20px rgba(255, 107, 53, 0.3)'
-                }}>
-                  🎯
-                </div>
-                <h3 style={{
-                  color: "#FF6B35",
-                  fontWeight: 800,
-                  fontSize: 'var(--heading-3)',
-                  marginTop: 'clamp(28px, 4vw, 35px)',
-                  marginBottom: 'clamp(16px, 2.5vw, 20px)',
-                  letterSpacing: ".01em"
-                }}>
-                  Our Mission
-                </h3>
-                <p className="responsive-text" style={{
-                  color: "#333",
-                  fontWeight: 500,
-                  margin: 0
-                }}>
-                  To empower every household and business with reliable, clean, and sustainable solar energy solutions tailored for the future.
-                </p>
-              </Card3D>
+<div style={{ marginBottom: 'var(--section-padding)' }}>
+  <SectionHeader title="Our Foundation" />
 
-              <Card3D style={{
-                padding: "var(--card-padding)",
-                textAlign: 'center',
-                position: 'relative',
-                overflow: 'visible',
-                animation: 'fadeInUp 0.8s ease-out 0.4s both',
-                minHeight: 'clamp(280px, 35vw, 350px)',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center'
-              }}>
-                <div style={{
-                  position: 'absolute',
-                  top: 'clamp(-15px, -2.5vw, -20px)',
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  width: 'clamp(32px, 5vw, 40px)',
-                  height: 'clamp(32px, 5vw, 40px)',
-                  background: 'linear-gradient(45deg, #FF6B35, #F7931E)',
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 'clamp(12px, 2.5vw, 16px)',
-                  boxShadow: '0 6px 20px rgba(255, 107, 53, 0.3)'
-                }}>
-                  🔮
-                </div>
-                <h3 style={{
-                  color: "#FF6B35",
-                  fontWeight: 800,
-                  fontSize: 'var(--heading-3)',
-                  marginTop: 'clamp(28px, 4vw, 35px)',
-                  marginBottom: 'clamp(16px, 2.5vw, 20px)',
-                  letterSpacing: ".01em"
-                }}>
-                  Our Vision
-                </h3>
-                <p className="responsive-text" style={{
-                  color: "#333",
-                  fontWeight: 500,
-                  margin: 0
-                }}>
-                  To be the leading solar energy provider in Pakistan, driving innovation, energy independence, and environmental sustainability through excellence in service and technology.
-                </p>
-              </Card3D>
+  <div className="grid-auto" style={{ gap: 'clamp(20px, 4vw, 30px)' }}>
+    {[{
+      key: 'mission',
+      icon: '🎯',
+      title: 'Our Mission',
+      text: 'To empower every household and business with reliable, clean, and sustainable solar energy solutions tailored for the future.',
+      delay: '0.2s'
+    },{
+      key: 'vision',
+      icon: '🔮',
+      title: 'Our Vision',
+      text: 'To be the leading solar energy provider in Pakistan, driving innovation, energy independence, and environmental sustainability through excellence in service and technology.',
+      delay: '0.4s'
+    },{
+      key: 'values',
+      icon: '💎',
+      title: 'Our Values',
+      isValues: true,
+      valuesList: [
+        { title: 'Quality',       desc: 'Premium products and services' },
+        { title: 'Trust',         desc: 'Transparent and honest dealings' },
+        { title: 'Innovation',    desc: 'Cutting-edge solar technology' },
+        { title: 'Sustainability',desc: 'Protecting our environment' }
+      ],
+      delay: '0.6s'
+    }].map(({ key, icon, title, text, isValues, valuesList, delay }) => (
+      <Card3D key={key} style={{
+        position: 'relative',
+        overflow: 'visible',                       // allow icon overflow
+        padding: 'var(--card-padding)',
+        paddingTop: 'clamp(48px, 6vw, 64px)',      // space for icon
+        textAlign: 'center',
+        animation: `fadeInUp 0.8s ease-out ${delay} both`,
+        minHeight: 'clamp(280px, 35vw, 350px)',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center'
+      }}>
+        <div style={{
+          position: 'absolute',
+          top: 'clamp(-20px, -3vw, -25px)',        // lift icon a bit more
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: 'clamp(32px, 5vw, 40px)',
+          height: 'clamp(32px, 5vw, 40px)',
+          background: 'linear-gradient(45deg, #FF6B35, #F7931E)',
+          borderRadius: '50%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: 'clamp(12px, 2.5vw, 16px)',
+          boxShadow: '0 6px 20px rgba(255, 107, 53, 0.3)',
+          zIndex: 1
+        }}>
+          {icon}
+        </div>
 
-              <Card3D style={{
-                padding: "var(--card-padding)",
-                textAlign: 'center',
-                position: 'relative',
-                overflow: 'visible',
-                animation: 'fadeInUp 0.8s ease-out 0.6s both',
-                minHeight: 'clamp(280px, 35vw, 350px)',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center'
-              }}>
-                <div style={{
-                  position: 'absolute',
-                  top: 'clamp(-15px, -2.5vw, -20px)',
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  width: 'clamp(32px, 5vw, 40px)',
-                  height: 'clamp(32px, 5vw, 40px)',
-                  background: 'linear-gradient(45deg, #FF6B35, #F7931E)',
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 'clamp(12px, 2.5vw, 16px)',
-                  boxShadow: '0 6px 20px rgba(255, 107, 53, 0.3)'
+        <h3 style={{
+          color: "#FF6B35",
+          fontWeight: 800,
+          fontSize: 'var(--heading-3)',
+          margin: 0,
+          marginBottom: 'clamp(16px, 2.5vw, 20px)',
+          letterSpacing: ".01em"
+        }}>
+          {title}
+        </h3>
+
+        {isValues
+          ? <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+              gap: 'clamp(12px, 2vw, 16px)',
+              width: '100%'
+            }}>
+              {valuesList.map((v, i) => (
+                <div key={i} style={{
+                  background: 'rgba(255, 107, 53, 0.05)',
+                  padding: 'clamp(10px, 2vw, 14px)',
+                  borderRadius: 'clamp(8px, 1.5vw, 12px)',
+                  border: '1px solid rgba(255, 107, 53, 0.1)',
+                  textAlign: 'left'
                 }}>
-                  💎
+                  <div style={{
+                    color: '#FF6B35',
+                    fontWeight: 'bold',
+                    fontSize: 'clamp(0.875rem, 2vw, 1rem)',
+                    marginBottom: '4px'
+                  }}>
+                    {v.title}
+                  </div>
+                  <p style={{
+                    color: "#333",
+                    margin: 0,
+                    lineHeight: 1.4
+                  }}>
+                    {v.desc}
+                  </p>
                 </div>
-                <h3 style={{
-                  color: "#FF6B35",
-                  fontWeight: 800,
-                  fontSize: 'var(--heading-3)',
-                  marginTop: 'clamp(28px, 4vw, 35px)',
-                  marginBottom: 'clamp(16px, 2.5vw, 20px)',
-                  letterSpacing: ".01em"
-                }}>
-                  Our Values
-                </h3>
-                <div className="grid-values">
-                  {[
-                    { title: 'Quality', desc: 'Premium products and services' },
-                    { title: 'Trust', desc: 'Transparent and honest dealings' },
-                    { title: 'Innovation', desc: 'Cutting-edge solar technology' },
-                    { title: 'Sustainability', desc: 'Protecting our environment' }
-                  ].map((value, index) => (
-                    <div key={index} style={{
-                      background: 'rgba(255, 107, 53, 0.05)',
-                      padding: 'clamp(10px, 2vw, 14px)',
-                      borderRadius: 'clamp(8px, 1.5vw, 12px)',
-                      border: '1px solid rgba(255, 107, 53, 0.1)',
-                      textAlign: 'left'
-                    }}>
-                      <div style={{
-                        color: '#FF6B35',
-                        fontWeight: 'bold',
-                        fontSize: 'clamp(0.875rem, 2vw, 1rem)',
-                        marginBottom: '4px'
-                      }}>
-                        {value.title}
-                      </div>
-                      <p className="responsive-text-small" style={{
-                        color: "#333",
-                        margin: 0,
-                        lineHeight: 1.4
-                      }}>
-                        {value.desc}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </Card3D>
+              ))}
             </div>
-          </div>
+          : <p className="responsive-text" style={{
+              color: "#333",
+              fontWeight: 500,
+              margin: 0,
+              lineHeight: 1.6
+            }}>
+              {text}
+            </p>
+        }
+      </Card3D>
+    ))}
+  </div>
+</div>
 
           {/* Enhanced Stats Section */}
           <div style={{ marginBottom: 'var(--section-padding)' }}>
