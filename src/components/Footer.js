@@ -31,6 +31,41 @@ export default function Footer() {
           </div>
         </div>
 
+        {/* App Download Section */}
+        <div style={footerStyles.appDownloadSection}>
+          <h3 style={footerStyles.appDownloadTitle}>Download Our App</h3>
+          <div style={footerStyles.appDownloadButtons}>
+            <a 
+              href="https://play.google.com/store/apps/details?id=com.syedsolarenergy" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              style={footerStyles.appButton}
+            >
+              <div style={footerStyles.appButtonInner}>
+                <img 
+                  src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" 
+                  alt="Get on Google Play" 
+                  style={footerStyles.appButtonImage} 
+                />
+              </div>
+            </a>
+            <a 
+              href="https://apps.apple.com/pk/app/syed-solar-energy/id1234567890" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              style={footerStyles.appButton}
+            >
+              <div style={footerStyles.appButtonInner}>
+                <img 
+                  src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Download_on_the_App_Store_Badge.svg" 
+                  alt="Download on the App Store" 
+                  style={footerStyles.appButtonImage} 
+                />
+              </div>
+            </a>
+          </div>
+        </div>
+
         {/* Social Icons */}
         <div style={footerStyles.socialBlock}>
           <a href="https://www.facebook.com/profile.php?id=61572382944649" target="_blank" rel="noopener noreferrer" style={footerStyles.socialLink}>
@@ -90,8 +125,8 @@ const footerStyles = {
     marginBottom: 12,
   },
   logo: {
-    width: 65,
-    height: 65,
+    width: "clamp(50px, 8vw, 65px)",
+    height: "clamp(50px, 8vw, 65px)",
     borderRadius: 10,
     boxShadow: "0 2px 10px #fff9",
     background: "#fff",
@@ -99,12 +134,12 @@ const footerStyles = {
   },
   companyName: {
     fontWeight: 900,
-    fontSize: 20,
+    fontSize: "clamp(16px, 3vw, 20px)",
     letterSpacing: 0.5,
     color: "#fff"
   },
   tagline: {
-    fontSize: 14,
+    fontSize: "clamp(12px, 2vw, 14px)",
     color: "#ffe082",
     fontWeight: 600
   },
@@ -114,64 +149,129 @@ const footerStyles = {
   },
   contactRow: {
     margin: "2px 0",
-    fontSize: 15,
+    fontSize: "clamp(13px, 2vw, 15px)",
     display: "flex",
     alignItems: "center",
     gap: 7,
-    justifyContent: "center"
+    justifyContent: "center",
+    flexWrap: "wrap"
   },
   icon: {
     fontSize: 17,
-    color: "#ffd54f"
+    color: "#ffd54f",
+    flexShrink: 0
   },
   link: {
     color: "#fffde7",
     textDecoration: "underline",
     fontWeight: 600
   },
+  // App Download Styles
+  appDownloadSection: {
+    margin: "15px 0 0 0",
+    textAlign: "center",
+    width: "100%"
+  },
+  appDownloadTitle: {
+    color: "#fff",
+    fontSize: "clamp(16px, 2.5vw, 18px)",
+    fontWeight: 700,
+    marginBottom: "12px"
+  },
+  appDownloadButtons: {
+    display: "flex",
+    justifyContent: "center",
+    gap: "15px",
+    flexWrap: "wrap"
+  },
+  appButton: {
+    display: "inline-block",
+    transition: "transform 0.3s ease"
+  },
+  appButtonInner: {
+    background: "rgba(255,255,255,0.1)",
+    borderRadius: "12px",
+    padding: "5px",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+    transition: "all 0.3s ease"
+  },
+  appButtonImage: {
+    height: "clamp(35px, 7vw, 50px)",
+    borderRadius: "8px",
+    display: "block"
+  },
+  // Social Icons
   socialBlock: {
     display: "flex",
     gap: 12,
     margin: "15px 0 0 0",
-    justifyContent: "center"
+    justifyContent: "center",
+    flexWrap: "wrap"
   },
   socialLink: {
     display: "inline-block",
     padding: 2,
     borderRadius: 10,
     background: "rgba(255,255,255,0.11)",
-    transition: "background 0.2s",
+    transition: "all 0.2s",
   },
   socialIcon: {
-    width: 31,
-    height: 31,
+    width: "clamp(25px, 5vw, 31px)",
+    height: "clamp(25px, 5vw, 31px)",
     filter: "drop-shadow(0 0 2px #fff4)",
     verticalAlign: "middle"
   },
   reviewRow: {
-    marginTop: 16,
+    marginTop: "clamp(10px, 2vw, 16px)",
     textAlign: "center"
   },
   reviewLink: {
     color: "#fff",
     background: "#fffde722",
     borderRadius: 7,
-    padding: "7px 19px",
+    padding: "clamp(5px, 1.5vw, 7px) clamp(15px, 3vw, 19px)",
     fontWeight: 800,
-    fontSize: 17.5,
+    fontSize: "clamp(15px, 2.5vw, 17.5px)",
     textDecoration: "none",
     display: "inline-block",
     transition: "background .2s"
   },
   bottomBar: {
-    marginTop: 22,
+    marginTop: "clamp(15px, 3vw, 22px)",
     textAlign: "center",
     background: "#e65100ee",
-    fontSize: 14,
-    padding: "11px 0 6px 0",
+    fontSize: "clamp(12px, 2vw, 14px)",
+    padding: "clamp(8px, 1.5vw, 11px) 0",
     color: "#fffde7",
     borderTop: "1.5px solid #fff2",
     letterSpacing: 0.3,
     fontWeight: 500
   }
 };
+
+// Add hover effects
+const hoverStyles = `
+  .app-button:hover {
+    transform: translateY(-3px) scale(1.05);
+    filter: drop-shadow(0 5px 10px rgba(0,0,0,0.2));
+  }
+  
+  .app-button:hover .app-button-inner {
+    background: rgba(255,255,255,0.2);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.25);
+  }
+  
+  .social-link:hover {
+    transform: translateY(-2px) scale(1.1);
+    background: rgba(255,255,255,0.25);
+  }
+  
+  .review-link:hover {
+    background: #fffde733;
+    transform: translateY(-2px);
+  }
+`;
+
+// Inject hover styles
+const styleSheet = document.styleSheets[0];
+styleSheet.insertRule(`@media (hover:hover) { ${hoverStyles} }`, styleSheet.cssRules.length);
