@@ -93,25 +93,26 @@ export default function Careers() {
       background: "linear-gradient(135deg,#fff6ec 70%,#fff0d7 100%)",
       minHeight: "100vh",
       padding: 0,
-      position: 'relative'
+      position: 'relative',
+      overflowX: 'hidden'
     }}>
       {/* Affiliate Program Pop-up */}
       {showOffer && (
         <div style={{
           position: 'fixed',
-          right: isOfferOpen ? '50%' : '-100%',
+          left: '50%',
           top: '50%',
-          transform: isOfferOpen ? 'translate(50%, -50%)' : 'translateY(-50%)',
+          transform: isOfferOpen ? 'translate(-50%, -50%)' : 'translate(-50%, -200vh)',
           zIndex: 1000,
           transition: 'all 0.5s ease-out',
+          width: '90%',
+          maxWidth: '500px'
         }}>
           <Card3D style={{
             background: 'linear-gradient(135deg, #FF6B35, #F7931E)',
-            padding: isOfferOpen ? '40px' : '30px',
+            padding: isOfferOpen ? '30px 20px' : '30px',
             borderRadius: '20px',
             boxShadow: '0 10px 30px rgba(255, 107, 53, 0.3)',
-            width: isOfferOpen ? '500px' : '100px',
-            height: isOfferOpen ? 'auto' : '100px',
             cursor: 'pointer',
             position: 'relative',
             transition: 'all 0.4s ease-out'
@@ -148,13 +149,13 @@ export default function Careers() {
                   ×
                 </button>
                 
-                <div style={{ fontSize: '40px', marginBottom: '20px' }}>
+                <div style={{ fontSize: '40px', marginBottom: '15px' }}>
                   💰
                 </div>
                 
                 <h3 style={{
                   margin: '0 0 15px 0',
-                  fontSize: '28px',
+                  fontSize: 'clamp(20px, 5vw, 28px)',
                   fontWeight: 'bold',
                   textShadow: '2px 2px 4px rgba(0,0,0,0.1)'
                 }}>
@@ -162,17 +163,16 @@ export default function Careers() {
                 </h3>
                 
                 <p style={{
-                  fontSize: '20px',
+                  fontSize: 'clamp(16px, 4vw, 20px)',
                   lineHeight: 1.6,
-                  margin: '0 0 25px 0',
-                  padding: '0 20px'
+                  margin: '0 0 20px 0',
                 }}>
                   Earn up to 
                   <div style={{
-                    fontSize: '24px',
+                    fontSize: 'clamp(18px, 4.5vw, 24px)',
                     fontWeight: 'bold',
                     margin: '10px 0',
-                    padding: '10px',
+                    padding: '8px',
                     background: 'rgba(255,255,255,0.1)',
                     borderRadius: '10px',
                     animation: 'pulse 2s infinite'
@@ -188,13 +188,14 @@ export default function Careers() {
                     background: 'white',
                     color: '#FF6B35',
                     border: 'none',
-                    padding: '15px 30px',
+                    padding: '12px 25px',
                     borderRadius: '30px',
                     fontWeight: 'bold',
                     cursor: 'pointer',
-                    fontSize: '18px',
+                    fontSize: 'clamp(16px, 4vw, 18px)',
                     transition: 'all 0.3s ease',
-                    boxShadow: '0 5px 15px rgba(0,0,0,0.1)'
+                    boxShadow: '0 5px 15px rgba(0,0,0,0.1)',
+                    marginTop: '10px'
                   }}
                   onMouseEnter={(e) => {
                     e.target.style.transform = 'translateY(-3px) scale(1.05)';
@@ -214,185 +215,208 @@ export default function Careers() {
       )}
 
       {/* Header */}
-      <Card3D style={{
-        maxWidth: 630,
-        margin: "35px auto 20px auto",
-        padding: "35px 30px 25px 30px",
-        textAlign: "center"
+      <div style={{
+        maxWidth: '630px',
+        width: '90%',
+        margin: "25px auto 20px auto",
       }}>
-        <img
-          src={logo}
-          alt="Syed Solar Energy Logo"
-          style={{
-            width: 95,
-            height: "auto",
-            margin: "0 auto 8px auto",
-            borderRadius: 16,
-            boxShadow: "0 2px 14px #ffe0b240"
-          }}
-        />
-        <h2 style={{
-          color: "#FF9800",
-          fontWeight: 900,
-          fontSize: "2.1rem",
-          marginBottom: 7
+        <Card3D style={{
+          padding: "25px 20px",
+          textAlign: "center"
         }}>
-          Careers at Syed Solar Energy
-        </h2>
-        
-        <div style={{
-          background: "#ffe8c7",
-          borderRadius: 12,
-          padding: "12px 15px",
-          margin: "15px 0",
-          fontWeight: 700,
-          color: "#e65100",
-          fontSize: "1.1rem"
-        }}>
-          ⚠️ Currently we are not hiring, but accepting applications for future opportunities
-        </div>
-        
-        <div style={{
-          fontSize: 18,
-          color: "#444",
-          fontWeight: 500,
-          margin: "12px 0 0 0"
-        }}>
-          At <b>Syed Solar Energy</b>, we champion diversity and inclusion. <br />
-          <span style={{ color: "#E65100", fontWeight: 700 }}>We're Race-Free, Religion-Free, Gender-Free, Geography-Free.</span>
-        </div>
-        
-        <p style={{
-          color: "#222",
-          fontSize: 16.5,
-          margin: "17px 0 0 0",
-          lineHeight: 1.7,
-          fontWeight: 500,
-        }}>
-          We're building a team where every voice matters. Join our mission to transform Pakistan's energy future. 
-          Submit your application to be part of our talent community - we'll contact you when positions matching 
-          your skills become available.
-        </p>
-      </Card3D>
+          <img
+            src={logo}
+            alt="Syed Solar Energy Logo"
+            style={{
+              width: '75px',
+              height: "auto",
+              margin: "0 auto 8px auto",
+              borderRadius: '16px',
+              boxShadow: "0 2px 14px #ffe0b240"
+            }}
+          />
+          <h2 style={{
+            color: "#FF9800",
+            fontWeight: 900,
+            fontSize: "clamp(1.6rem, 5vw, 2.1rem)",
+            marginBottom: '7px'
+          }}>
+            Careers at Syed Solar Energy
+          </h2>
+          
+          <div style={{
+            background: "#ffe8c7",
+            borderRadius: '12px',
+            padding: "10px 12px",
+            margin: "12px 0",
+            fontWeight: 700,
+            color: "#e65100",
+            fontSize: "clamp(0.9rem, 3.5vw, 1.1rem)"
+          }}>
+            ⚠️ Currently we are not hiring, but accepting applications for future opportunities
+          </div>
+          
+          <div style={{
+            fontSize: 'clamp(0.95rem, 3.5vw, 1.125rem)',
+            color: "#444",
+            fontWeight: 500,
+            margin: "10px 0 0 0"
+          }}>
+            At <b>Syed Solar Energy</b>, we champion diversity and inclusion. <br />
+            <span style={{ color: "#E65100", fontWeight: 700 }}>We're Race-Free, Religion-Free, Gender-Free, Geography-Free.</span>
+          </div>
+          
+          <p style={{
+            color: "#222",
+            fontSize: 'clamp(0.9rem, 3.5vw, 1.03rem)',
+            margin: "15px 0 0 0",
+            lineHeight: 1.7,
+            fontWeight: 500,
+          }}>
+            We're building a team where every voice matters. Join our mission to transform Pakistan's energy future. 
+            Submit your application to be part of our talent community - we'll contact you when positions matching 
+            your skills become available.
+          </p>
+        </Card3D>
+      </div>
 
       {/* Job Cards */}
       <div style={{
-        maxWidth: 880,
+        maxWidth: '880px',
+        width: '90%',
         margin: "0 auto",
         display: "grid",
         gridTemplateColumns: "repeat(auto-fit, minmax(270px, 1fr))",
-        gap: 26,
-        padding: "0 18px 28px 18px"
+        gap: "20px",
+        padding: "0 0 25px 0"
       }}>
         <Card3D style={jobCardStyle}>
           <h4 style={jobTitleStyle}>Intern Electrical Engineer</h4>
-          <p>Gain practical experience with our engineering and installation teams. Ideal for recent graduates seeking hands-on learning.</p>
+          <p style={jobDescriptionStyle}>Gain practical experience with our engineering and installation teams. Ideal for recent graduates seeking hands-on learning.</p>
           <div style={jobContactStyle}>Email: sales@syedsolarenergy.com</div>
         </Card3D>
         
         <Card3D style={jobCardStyle}>
           <h4 style={jobTitleStyle}>Solar Sales Executive</h4>
-          <p>Drive renewable energy adoption through building and managing client relationships. We seek confident communicators passionate about sustainability.</p>
+          <p style={jobDescriptionStyle}>Drive renewable energy adoption through building and managing client relationships. We seek confident communicators passionate about sustainability.</p>
           <div style={jobContactStyle}>Email: sales@syedsolarenergy.com</div>
         </Card3D>
         
         <Card3D style={jobCardStyle}>
           <h4 style={jobTitleStyle}>Solar Technician</h4>
-          <p>Field-based role for skilled technicians. Responsibilities include installation, maintenance, and troubleshooting of solar systems.</p>
+          <p style={jobDescriptionStyle}>Field-based role for skilled technicians. Responsibilities include installation, maintenance, and troubleshooting of solar systems.</p>
           <div style={jobContactStyle}>Email: sales@syedsolarenergy.com</div>
         </Card3D>
         
         <Card3D style={jobCardStyle}>
           <h4 style={jobTitleStyle}>Customer Support Officer</h4>
-          <p>Provide exceptional customer service, addressing inquiries and offering after-sales support. We seek friendly, solution-oriented individuals.</p>
+          <p style={jobDescriptionStyle}>Provide exceptional customer service, addressing inquiries and offering after-sales support. We seek friendly, solution-oriented individuals.</p>
           <div style={jobContactStyle}>Email: sales@syedsolarenergy.com</div>
         </Card3D>
       </div>
 
       {/* Talent Community Form */}
-      <Card3D style={{
-        maxWidth: 630,
-        margin: "0 auto 35px auto",
-        padding: "25px 28px 20px 28px",
-        textAlign: "center"
+      <div style={{
+        maxWidth: '630px',
+        width: '90%',
+        margin: "0 auto 30px auto",
       }}>
-        <h3 style={{
-          color: "#FF9800",
-          fontWeight: 800,
-          fontSize: 21,
-          margin: "0 0 13px 0"
+        <Card3D style={{
+          padding: "20px 18px",
+          textAlign: "center"
         }}>
-          Join Our Talent Community
-        </h3>
-        
-        <p style={{ color: "#444", fontSize: 15.5, marginBottom: 9 }}>
-          Submit your details for future opportunities. We'll reach out when matching roles open!
-        </p>
-        
-        <form onSubmit={handleSubmit} style={{ maxWidth: 400, margin: "0 auto", textAlign: "left" }}>
-          <label>Full Name</label>
-          <input name="name" required value={form.name} onChange={handleChange} style={inputStyle} placeholder="Your Name" />
-          
-          <label>Email</label>
-          <input name="email" required type="email" value={form.email} onChange={handleChange} style={inputStyle} placeholder="Your Email" />
-          
-          <label>Phone Number</label>
-          <input name="phone" required value={form.phone} onChange={handleChange} style={inputStyle} placeholder="03XXXXXXXXX" />
-          
-          <label>Field of Interest</label>
-          <select name="field" required value={form.field} onChange={handleChange} style={inputStyle}>
-            <option value="">Select...</option>
-            <option>Engineering</option>
-            <option>Technician</option>
-            <option>Sales & Marketing</option>
-            <option>Customer Support</option>
-            <option>Administration</option>
-            <option>Other</option>
-          </select>
-          
-          <label>Briefly Tell Us About Yourself</label>
-          <textarea name="message" required value={form.message} onChange={handleChange} style={inputStyle} placeholder="Your message..." rows={3} />
-          
-          <button type="submit" style={{
-            marginTop: 16,
-            background: "linear-gradient(90deg, #ff9800, #ff6b35)",
-            color: "#fff",
+          <h3 style={{
+            color: "#FF9800",
             fontWeight: 800,
-            border: "none",
-            borderRadius: 10,
-            fontSize: "1.17rem",
-            padding: "10px 30px",
-            cursor: "pointer",
-            boxShadow: "0 2px 10px #ffb10021",
-            transition: "all 0.3s ease"
-          }} 
-          onMouseEnter={(e) => {
-            e.target.style.transform = "translateY(-2px)";
-            e.target.style.boxShadow = "0 4px 15px #ffb10055";
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.transform = "translateY(0)";
-            e.target.style.boxShadow = "0 2px 10px #ffb10021";
-          }}
-          disabled={submitting}>
-            {submitting ? "Submitting..." : "Submit"}
-          </button>
+            fontSize: 'clamp(1.1rem, 4vw, 1.3rem)',
+            margin: "0 0 12px 0"
+          }}>
+            Join Our Talent Community
+          </h3>
           
-          {submitted && (
-            <div style={{
-              marginTop: 18, 
-              color: "#2e7d32", 
-              fontWeight: 700, 
-              background: "#eafbe9",
-              borderRadius: 8, 
-              padding: "10px 0",
-              animation: "fadeIn 0.5s ease-out"
-            }}>
-              ✅ We have received your application. Thank you!
+          <p style={{ 
+            color: "#444", 
+            fontSize: 'clamp(0.85rem, 3.5vw, 0.97rem)', 
+            marginBottom: '10px' 
+          }}>
+            Submit your details for future opportunities. We'll reach out when matching roles open!
+          </p>
+          
+          <form onSubmit={handleSubmit} style={{ 
+            maxWidth: '400px', 
+            margin: "0 auto", 
+            textAlign: "left",
+            width: '100%' 
+          }}>
+            <label style={labelStyle}>Full Name</label>
+            <input name="name" required value={form.name} onChange={handleChange} style={inputStyle} placeholder="Your Name" />
+            
+            <label style={labelStyle}>Email</label>
+            <input name="email" required type="email" value={form.email} onChange={handleChange} style={inputStyle} placeholder="Your Email" />
+            
+            <label style={labelStyle}>Phone Number</label>
+            <input name="phone" required value={form.phone} onChange={handleChange} style={inputStyle} placeholder="03XXXXXXXXX" />
+            
+            <label style={labelStyle}>Field of Interest</label>
+            <select name="field" required value={form.field} onChange={handleChange} style={inputStyle}>
+              <option value="">Select...</option>
+              <option>Engineering</option>
+              <option>Technician</option>
+              <option>Sales & Marketing</option>
+              <option>Customer Support</option>
+              <option>Administration</option>
+              <option>Other</option>
+            </select>
+            
+            <label style={labelStyle}>Briefly Tell Us About Yourself</label>
+            <textarea name="message" required value={form.message} onChange={handleChange} style={{...inputStyle, minHeight: '90px'}} placeholder="Your message..." />
+            
+            <div style={{ textAlign: 'center' }}>
+              <button type="submit" style={{
+                marginTop: '15px',
+                background: "linear-gradient(90deg, #ff9800, #ff6b35)",
+                color: "#fff",
+                fontWeight: 800,
+                border: "none",
+                borderRadius: '10px',
+                fontSize: 'clamp(1rem, 4vw, 1.17rem)',
+                padding: "10px 25px",
+                cursor: "pointer",
+                boxShadow: "0 2px 10px #ffb10021",
+                transition: "all 0.3s ease",
+                width: '100%',
+                maxWidth: '250px'
+              }} 
+              onMouseEnter={(e) => {
+                e.target.style.transform = "translateY(-2px)";
+                e.target.style.boxShadow = "0 4px 15px #ffb10055";
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.transform = "translateY(0)";
+                e.target.style.boxShadow = "0 2px 10px #ffb10021";
+              }}
+              disabled={submitting}>
+                {submitting ? "Submitting..." : "Submit"}
+              </button>
             </div>
-          )}
-        </form>
-      </Card3D>
+            
+            {submitted && (
+              <div style={{
+                marginTop: '15px', 
+                color: "#2e7d32", 
+                fontWeight: 700, 
+                background: "#eafbe9",
+                borderRadius: '8px', 
+                padding: "10px 0",
+                animation: "fadeIn 0.5s ease-out",
+                fontSize: 'clamp(0.9rem, 3.5vw, 1rem)'
+              }}>
+                ✅ We have received your application. Thank you!
+              </div>
+            )}
+          </form>
+        </Card3D>
+      </div>
 
       {/* Footer */}
       <Footer />
@@ -409,6 +433,23 @@ export default function Careers() {
             50% { transform: scale(1.05); }
             100% { transform: scale(1); }
           }
+          
+          @media (max-width: 768px) {
+            .job-cards-container {
+              grid-template-columns: 1fr;
+            }
+          }
+          
+          @media (max-width: 480px) {
+            input, select, textarea {
+              font-size: 14px !important;
+              padding: 10px 12px !important;
+            }
+            
+            button[type="submit"] {
+              padding: 8px 20px !important;
+            }
+          }
         `}
       </style>
     </section>
@@ -418,38 +459,50 @@ export default function Careers() {
 // --- Styles ---
 const jobCardStyle = {
   background: "#fff",
-  borderRadius: 13,
-  padding: "25px 21px 21px 21px",
+  borderRadius: '13px',
+  padding: "20px 18px",
   textAlign: "left",
   display: "flex",
   flexDirection: "column",
-  gap: 9,
+  gap: '8px',
   height: "100%"
 };
 
 const jobTitleStyle = {
   color: "#FF9800",
   fontWeight: 800,
-  fontSize: 18,
-  margin: "0 0 6px 0"
+  fontSize: 'clamp(16px, 4vw, 18px)',
+  margin: "0 0 5px 0"
+};
+
+const jobDescriptionStyle = {
+  fontSize: 'clamp(0.85rem, 3.5vw, 0.95rem)',
+  lineHeight: 1.6,
+  flexGrow: 1
 };
 
 const jobContactStyle = {
   color: "#ba2d0b",
   fontWeight: 600,
-  fontSize: 14,
+  fontSize: 'clamp(0.8rem, 3.5vw, 0.9rem)',
   marginTop: "auto",
-  paddingTop: 10
+  paddingTop: '8px'
 };
 
 const inputStyle = {
   width: "100%",
-  margin: "7px 0 13px 0",
-  padding: "12px 15px",
-  fontSize: 15,
-  borderRadius: 7,
+  margin: "5px 0 12px 0",
+  padding: "12px 14px",
+  fontSize: 'clamp(0.9rem, 3.5vw, 1rem)',
+  borderRadius: '7px',
   border: "1.5px solid #ffe8c7",
   background: "#fff",
   transition: "all 0.3s ease",
   boxSizing: "border-box"
+};
+
+const labelStyle = {
+  fontSize: 'clamp(0.9rem, 3.5vw, 1rem)',
+  fontWeight: 600,
+  color: '#555'
 };
