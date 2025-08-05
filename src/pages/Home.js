@@ -1355,10 +1355,28 @@ export default function Home() {
 
           {/* Content Container */}
           <div className="universal-container" style={{ position: 'relative', zIndex: 2 }}>
-            <div className="hero-content">
+            <div
+  className="hero-content"
+  style={{
+    display: 'flex',
+    alignItems: 'center',
+    // center on mobile, space out on desktop:
+    justifyContent: isMobile ? 'center' : 'space-between',
+    // stack vertically on mobile, horizontally on desktop:
+    flexDirection: isMobile ? 'column' : 'row',
+    // restore your gap:
+    gap: 'clamp(30px, 8vw, 80px)',
+  }}
+>
               
               {/* Solar Animation */}
-              <div className="hero-animation">
+              <div
+  className="hero-animation"
+  style={{
+    // center the animation on narrow screens:
+    margin: isMobile ? '0 auto' : undefined,
+  }}
+>
                 <SolarEnergyFlow />
               </div>
               
