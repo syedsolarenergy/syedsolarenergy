@@ -403,161 +403,239 @@ export default function About() {
           </div>
 
           {/* Enhanced Mission, Vision, Values */}
-          <div style={{
-            margin: "0 auto clamp(40px, 6vw, 60px) auto",
-            maxWidth: 1100,
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(min(300px, 100%), 1fr))',
-            gap: 'clamp(20px, 3vw, 40px)',
-            padding: '0 clamp(10px, 2vw, 20px)'
-          }}>
-            <Card3D style={{
-              padding: "var(--card-padding)",
-              textAlign: 'center',
-              position: 'relative',
-              animation: 'fadeInUp 0.8s ease-out 0.2s both'
-            }}>
-              <div style={{
-                position: 'absolute',
-                top: 'clamp(-20px, -2.5vw, -25px)',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                width: 'clamp(40px, 5vw, 50px)',
-                height: 'clamp(40px, 5vw, 50px)',
-                background: 'linear-gradient(45deg, #FF6B35, #F7931E)',
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 'clamp(16px, 2.5vw, 20px)',
-                boxShadow: '0 8px 25px rgba(255, 107, 53, 0.3)'
-              }}>
-                🎯
-              </div>
-              <h3 style={{
-                color: "#FF6B35",
-                fontWeight: 800,
-                fontSize: 'var(--heading-3)',
-                marginTop: 'clamp(25px, 3.5vw, 35px)',
-                marginBottom: 'clamp(15px, 2vw, 20px)',
-                letterSpacing: ".01em"
-              }}>
-                Our Mission
-              </h3>
-              <p style={{
-                color: "#333",
-                fontSize: 'var(--text-base)',
-                fontWeight: 500,
-                lineHeight: 1.7,
-                margin: 0
-              }}>
-                To empower every household and business with reliable, clean, and sustainable solar energy solutions tailored for the future.
-              </p>
-            </Card3D>
+<div style={{
+  margin: "0 auto clamp(40px, 6vw, 60px) auto",
+  maxWidth: 1100,
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(min(300px, 100%), 1fr))',
+  gap: 'clamp(15px, 2.5vw, 25px)',
+  padding: '0 clamp(10px, 2vw, 20px)'
+}}>
+  <Card3D style={{
+    padding: "clamp(20px, 2.5vw, 30px)",
+    textAlign: 'center',
+    position: 'relative',
+    animation: 'fadeInUp 0.8s ease-out 0.2s both'
+  }}>
+    <div style={{
+      position: 'absolute',
+      top: 'clamp(-15px, -2vw, -20px)',
+      left: '50%',
+      transform: 'translateX(-50%)',
+      width: 'clamp(35px, 4.5vw, 45px)',
+      height: 'clamp(35px, 4.5vw, 45px)',
+      background: 'linear-gradient(45deg, #FF6B35, #F7931E)',
+      borderRadius: '50%',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontSize: 'clamp(14px, 2.2vw, 18px)',
+      boxShadow: '0 8px 25px rgba(255, 107, 53, 0.3)'
+    }}>
+      🎯
+    </div>
+    <h3 style={{
+      color: "#FF6B35",
+      fontWeight: 800,
+      fontSize: 'clamp(1.1rem, 2.2vw, 1.4rem)',
+      marginTop: 'clamp(25px, 3.5vw, 35px)',
+      marginBottom: 'clamp(12px, 1.8vw, 18px)',
+      letterSpacing: ".01em"
+    }}>
+      Our Mission
+    </h3>
+    <p style={{
+      color: "#333",
+      fontSize: 'clamp(0.85rem, 1.6vw, 1rem)',
+      fontWeight: 500,
+      lineHeight: 1.6,
+      margin: 0
+    }}>
+      To empower every household and business with reliable, clean, and sustainable solar energy solutions tailored for the future.
+    </p>
+  </Card3D>
 
-            <Card3D style={{
-              padding: "var(--card-padding)",
-              textAlign: 'center',
-              position: 'relative',
-              animation: 'fadeInUp 0.8s ease-out 0.4s both'
-            }}>
-              <div style={{
-                position: 'absolute',
-                top: 'clamp(-20px, -2.5vw, -25px)',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                width: 'clamp(40px, 5vw, 50px)',
-                height: 'clamp(40px, 5vw, 50px)',
-                background: 'linear-gradient(45deg, #FF6B35, #F7931E)',
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 'clamp(16px, 2.5vw, 20px)',
-                boxShadow: '0 8px 25px rgba(255, 107, 53, 0.3)'
-              }}>
-                🔮
-              </div>
-              <h3 style={{
-                color: "#FF6B35",
-                fontWeight: 800,
-                fontSize: 'var(--heading-3)',
-                marginTop: 'clamp(25px, 3.5vw, 35px)',
-                marginBottom: 'clamp(15px, 2vw, 20px)',
-                letterSpacing: ".01em"
-              }}>
-                Our Vision
-              </h3>
-              <p style={{
-                color: "#333",
-                fontSize: 'var(--text-base)',
-                fontWeight: 500,
-                lineHeight: 1.7,
-                margin: 0
-              }}>
-                To be the leading solar energy provider in Pakistan, driving innovation, energy independence, and environmental sustainability through excellence in service and technology.
-              </p>
-            </Card3D>
+  <Card3D style={{
+    padding: "clamp(20px, 2.5vw, 30px)",
+    textAlign: 'center',
+    position: 'relative',
+    animation: 'fadeInUp 0.8s ease-out 0.4s both'
+  }}>
+    <div style={{
+      position: 'absolute',
+      top: 'clamp(-15px, -2vw, -20px)',
+      left: '50%',
+      transform: 'translateX(-50%)',
+      width: 'clamp(35px, 4.5vw, 45px)',
+      height: 'clamp(35px, 4.5vw, 45px)',
+      background: 'linear-gradient(45deg, #FF6B35, #F7931E)',
+      borderRadius: '50%',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontSize: 'clamp(14px, 2.2vw, 18px)',
+      boxShadow: '0 8px 25px rgba(255, 107, 53, 0.3)'
+    }}>
+      🔮
+    </div>
+    <h3 style={{
+      color: "#FF6B35",
+      fontWeight: 800,
+      fontSize: 'clamp(1.1rem, 2.2vw, 1.4rem)',
+      marginTop: 'clamp(25px, 3.5vw, 35px)',
+      marginBottom: 'clamp(12px, 1.8vw, 18px)',
+      letterSpacing: ".01em"
+    }}>
+      Our Vision
+    </h3>
+    <p style={{
+      color: "#333",
+      fontSize: 'clamp(0.85rem, 1.6vw, 1rem)',
+      fontWeight: 500,
+      lineHeight: 1.6,
+      margin: 0
+    }}>
+      To be the leading solar energy provider in Pakistan, driving innovation, energy independence, and environmental sustainability through excellence in service and technology.
+    </p>
+  </Card3D>
 
-            <Card3D style={{
-              padding: "var(--card-padding)",
-              textAlign: 'center',
-              position: 'relative',
-              animation: 'fadeInUp 0.8s ease-out 0.6s both'
-            }}>
-              <div style={{
-                position: 'absolute',
-                top: 'clamp(-20px, -2.5vw, -25px)',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                width: 'clamp(40px, 5vw, 50px)',
-                height: 'clamp(40px, 5vw, 50px)',
-                background: 'linear-gradient(45deg, #FF6B35, #F7931E)',
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 'clamp(16px, 2.5vw, 20px)',
-                boxShadow: '0 8px 25px rgba(255, 107, 53, 0.3)'
-              }}>
-                💎
-              </div>
-              <h3 style={{
-                color: "#FF6B35",
-                fontWeight: 800,
-                fontSize: 'var(--heading-3)',
-                marginTop: 'clamp(25px, 3.5vw, 35px)',
-                marginBottom: 'clamp(15px, 2vw, 20px)',
-                letterSpacing: ".01em"
-              }}>
-                Our Values
-              </h3>
-              <div style={{
-                color: "#333",
-                fontSize: 'var(--text-base)',
-                fontWeight: 500,
-                lineHeight: 1.6,
-                textAlign: 'left'
-              }}>
-                <div style={{ marginBottom: 'clamp(8px, 1.5vw, 10px)', display: 'flex', alignItems: 'center' }}>
-                  <span style={{ marginRight: '10px', fontSize: 'clamp(16px, 2vw, 18px)' }}>✨</span>
-                  <strong>Quality:</strong> Premium products and services
-                </div>
-                <div style={{ marginBottom: 'clamp(8px, 1.5vw, 10px)', display: 'flex', alignItems: 'center' }}>
-                  <span style={{ marginRight: '10px', fontSize: 'clamp(16px, 2vw, 18px)' }}>🤝</span>
-                  <strong>Trust:</strong> Transparent and honest dealings
-                </div>
-                <div style={{ marginBottom: 'clamp(8px, 1.5vw, 10px)', display: 'flex', alignItems: 'center' }}>
-                  <span style={{ marginRight: '10px', fontSize: 'clamp(16px, 2vw, 18px)' }}>🚀</span>
-                  <strong>Innovation:</strong> Cutting-edge solar technology
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                  <span style={{ marginRight: '10px', fontSize: 'clamp(16px, 2vw, 18px)' }}>🌱</span>
-                  <strong>Sustainability:</strong> Protecting our environment
-                </div>
-              </div>
-            </Card3D>
-          </div>
+  <Card3D style={{
+    padding: "clamp(20px, 2.5vw, 30px)",
+    textAlign: 'center',
+    position: 'relative',
+    animation: 'fadeInUp 0.8s ease-out 0.6s both'
+  }}>
+    <div style={{
+      position: 'absolute',
+      top: 'clamp(-15px, -2vw, -20px)',
+      left: '50%',
+      transform: 'translateX(-50%)',
+      width: 'clamp(35px, 4.5vw, 45px)',
+      height: 'clamp(35px, 4.5vw, 45px)',
+      background: 'linear-gradient(45deg, #FF6B35, #F7931E)',
+      borderRadius: '50%',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontSize: 'clamp(14px, 2.2vw, 18px)',
+      boxShadow: '0 8px 25px rgba(255, 107, 53, 0.3)'
+    }}>
+      💎
+    </div>
+    <h3 style={{
+      color: "#FF6B35",
+      fontWeight: 800,
+      fontSize: 'clamp(1.1rem, 2.2vw, 1.4rem)',
+      marginTop: 'clamp(25px, 3.5vw, 35px)',
+      marginBottom: 'clamp(12px, 1.8vw, 18px)',
+      letterSpacing: ".01em"
+    }}>
+      Our Values
+    </h3>
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+      gap: 'clamp(10px, 1.8vw, 15px)',
+      textAlign: 'left'
+    }}>
+      <div style={{
+        background: 'rgba(255, 107, 53, 0.05)',
+        padding: 'clamp(10px, 1.5vw, 15px)',
+        borderRadius: '10px',
+        border: '1px solid rgba(255, 107, 53, 0.1)'
+      }}>
+        <div style={{
+          color: '#FF6B35',
+          fontWeight: 'bold',
+          fontSize: 'clamp(0.9rem, 1.8vw, 1.1rem)',
+          marginBottom: '5px'
+        }}>
+          Quality
+        </div>
+        <p style={{
+          color: "#333",
+          fontSize: 'clamp(0.8rem, 1.5vw, 0.9rem)',
+          margin: 0,
+          lineHeight: 1.4
+        }}>
+          Premium products and services
+        </p>
+      </div>
+      
+      <div style={{
+        background: 'rgba(255, 107, 53, 0.05)',
+        padding: 'clamp(10px, 1.5vw, 15px)',
+        borderRadius: '10px',
+        border: '1px solid rgba(255, 107, 53, 0.1)'
+      }}>
+        <div style={{
+          color: '#FF6B35',
+          fontWeight: 'bold',
+          fontSize: 'clamp(0.9rem, 1.8vw, 1.1rem)',
+          marginBottom: '5px'
+        }}>
+          Trust
+        </div>
+        <p style={{
+          color: "#333",
+          fontSize: 'clamp(0.8rem, 1.5vw, 0.9rem)',
+          margin: 0,
+          lineHeight: 1.4
+        }}>
+          Transparent and honest dealings
+        </p>
+      </div>
+      
+      <div style={{
+        background: 'rgba(255, 107, 53, 0.05)',
+        padding: 'clamp(10px, 1.5vw, 15px)',
+        borderRadius: '10px',
+        border: '1px solid rgba(255, 107, 53, 0.1)'
+      }}>
+        <div style={{
+          color: '#FF6B35',
+          fontWeight: 'bold',
+          fontSize: 'clamp(0.9rem, 1.8vw, 1.1rem)',
+          marginBottom: '5px'
+        }}>
+          Innovation
+        </div>
+        <p style={{
+          color: "#333",
+          fontSize: 'clamp(0.8rem, 1.5vw, 0.9rem)',
+          margin: 0,
+          lineHeight: 1.4
+        }}>
+          Cutting-edge solar technology
+        </p>
+      </div>
+      
+      <div style={{
+        background: 'rgba(255, 107, 53, 0.05)',
+        padding: 'clamp(10px, 1.5vw, 15px)',
+        borderRadius: '10px',
+        border: '1px solid rgba(255, 107, 53, 0.1)'
+      }}>
+        <div style={{
+          color: '#FF6B35',
+          fontWeight: 'bold',
+          fontSize: 'clamp(0.9rem, 1.8vw, 1.1rem)',
+          marginBottom: '5px'
+        }}>
+          Sustainability
+        </div>
+        <p style={{
+          color: "#333",
+          fontSize: 'clamp(0.8rem, 1.5vw, 0.9rem)',
+          margin: 0,
+          lineHeight: 1.4
+        }}>
+          Protecting our environment
+        </p>
+      </div>
+    </div>
+  </Card3D>
+</div>
 
           {/* Enhanced Stats Section */}
           <div style={{
