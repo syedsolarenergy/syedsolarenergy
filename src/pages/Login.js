@@ -86,6 +86,17 @@ function Login() {
       day: 'numeric'
     });
   };
+
+  // Handle password visibility toggle without losing focus
+  const togglePasswordVisibility = (e) => {
+    e.preventDefault(); // Prevent default button behavior
+    setShowPassword(!showPassword);
+    // Keep focus on the password input
+    const passwordInput = document.querySelector('input[type="password"], input[type="text"]');
+    if (passwordInput) {
+      passwordInput.focus();
+    }
+  };
   
   return (
     <div style={{
@@ -482,7 +493,8 @@ function Login() {
             />
             <button
               type="button"
-              onClick={() => setShowPassword(!showPassword)}
+              onClick={togglePasswordVisibility}
+              onMouseDown={(e) => e.preventDefault()} // Prevent the input from losing focus
               style={{
                 position: "absolute",
                 right: "12px",
