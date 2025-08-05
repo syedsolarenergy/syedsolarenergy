@@ -162,7 +162,7 @@ const SolarEnergyFlow = () => {
     <div style={{
       position: 'relative',
       width: '100%',
-      height: isMobile ? '200px' : 'clamp(250px, 40vh, 400px)',
+      height: isMobile ? '150px' : 'clamp(200px, 30vh, 350px)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
