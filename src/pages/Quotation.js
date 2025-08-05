@@ -439,27 +439,56 @@ const handlePanelBrandChange = (e) => {
           logging: false
         });
         
-// ——— Single-page PDF matching canvas size ———
+// ——— Professional multi-page PDF with margins & page numbers ———
 const imgData = canvas.toDataURL("image/png", 1.0);
+const pdf = new jsPDF("p", "pt", "a4");
 
-// grab the raw canvas dimensions
-const width  = canvas.width;
-const height = canvas.height;
+// set 20 pt margins
+const M = 20;
+const pageW = pdf.internal.pageSize.getWidth();
+const pageH = pdf.internal.pageSize.getHeight();
+const usableW = pageW - M * 2;
+const usableH = pageH - M * 2;
 
-// create a PDF whose page size equals the canvas size (in px)
-const pdf = new jsPDF({
-  unit: "px",
-  format: [width, height],
-});
+// get actual image dimensions
+const props = pdf.getImageProperties(imgData);
+const imgW = usableW;
+const imgH = (props.height * imgW) / props.width;
 
-// draw the image at full size
-pdf.addImage(imgData, "PNG", 0, 0, width, height);
+let yOffset = M;
+let pageNum = 1;
+let remainingH = imgH;
 
-// save it
+// draw pages until done
+while (remainingH > 0) {
+  // add the slice of image at current offset
+  pdf.addImage(imgData, "PNG", M, yOffset, imgW, imgH);
+
+  // footer: page number
+  pdf.setFontSize(10);
+  pdf.text(
+    `Page ${pageNum}`,
+    pageW / 2,
+    pageH - M / 2,
+    { align: "center" }
+  );
+
+  remainingH -= usableH;
+  if (remainingH > 0) {
+    pdf.addPage();
+    pageNum++;
+    // on new page, start the image higher so it aligns seamlessly
+    yOffset = M - (imgH - remainingH);
+  }
+}
+
+// finally save
 pdf.save(
-  `SyedSolarQuotation-${customer.name || "Customer"}-${new Date().toLocaleDateString()}.pdf`
+  `SyedSolarQuotation-${customer.name || "Customer"}-${new Date()
+    .toLocaleDateString()
+    .replace(/\//g, "-")}.pdf`
 );
-// ————————————————————————————————————————
+// ———————————————————————————————————————————————
 
 
 
