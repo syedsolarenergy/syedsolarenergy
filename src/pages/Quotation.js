@@ -5,6 +5,20 @@ import logo from "../assets/logo.png";
 import Footer from "../components/Footer";
 import { supabase } from "../supabaseClient";
 
+// CSS Variables for responsive design
+const cssVariables = `
+  :root {
+    --font-size-base: clamp(12px, 1.8vw, 16px);
+    --padding-base: clamp(10px, 3vw, 20px);
+    --section-padding: clamp(15px, 2.5vw, 25px);
+    --card-padding: clamp(15px, 2vw, 20px);
+    --heading-1: clamp(1.5rem, 3.5vw, 2rem);
+    --heading-2: clamp(1.2rem, 3vw, 1.6rem);
+    --heading-3: clamp(1rem, 2.5vw, 1.3rem);
+    --text-base: clamp(0.9rem, 1.6vw, 1rem);
+  }
+`;
+
 export default function Quotation() {
   const [systemType, setSystemType] = useState("");
   const [autoType, setAutoType] = useState("daytime");
@@ -344,6 +358,12 @@ export default function Quotation() {
   async function handleGenerateQuotation(e) {
     e.preventDefault();
     
+    // Validate required fields
+    if (!customer.name || !customer.contact || !customer.address) {
+      alert("Please fill all required customer information fields (*)");
+      return;
+    }
+    
     // Prepare quotation data for Supabase
     let quotationData, sysType, previewConfig, systemLabel;
     
@@ -415,42 +435,31 @@ export default function Quotation() {
     };
 
     // Save to Supabase
-    await saveQuotationToSupabase(supabaseData);
+    const savedData = await saveQuotationToSupabase(supabaseData);
+    if (!savedData) return;
 
-    // Generate PDF and WhatsApp redirect
+    // Generate enhanced PDF
     setTimeout(async () => {
       try {
-        // Generate enhanced PDF
         const input = pdfRef.current;
         const canvas = await html2canvas(input, {
           scale: 2,
           useCORS: true,
           allowTaint: true,
           backgroundColor: '#ffffff',
-          logging: false
+          logging: false,
+          width: 595, // A4 width in pixels (595pt)
+          height: input.scrollHeight
         });
         
         const imgData = canvas.toDataURL("image/png", 1.0);
         const pdf = new jsPDF("p", "pt", "a4");
         
-        // Calculate dimensions for better fit
         const imgWidth = 595;
-        const pageHeight = 842;
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        let heightLeft = imgHeight;
-        let position = 0;
-
-        // Add first page
-        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-
-        // Add additional pages if needed
-        while (heightLeft >= 0) {
-          position = heightLeft - imgHeight;
-          pdf.addPage();
-          pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-          heightLeft -= pageHeight;
-        }
+        
+        // Add page
+        pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
         
         pdf.save(`SyedSolarQuotation-${customer.name || "Customer"}-${new Date().toLocaleDateString()}.pdf`);
         
@@ -530,95 +539,62 @@ JazakAllah! 🤝`
     const totalKW = systemType === "auto" ? kwAuto : 
                    (parseInt(panelWatt) * panelQty / 1000).toFixed(1);
 
-    // Enhanced warranty section
-    const warrantyBox = (
-      <div style={{
-        background: "linear-gradient(135deg, #fffde6 0%, #fff9c4 100%)",
-        borderLeft: "8px solid #ff9800",
-        borderRadius: 10,
-        margin: "20px 0",
-        padding: "20px",
-        fontWeight: 600,
-        fontSize: 15,
-        color: "#3b2400",
-        boxShadow: "0 4px 15px rgba(255, 152, 0, 0.15)"
-      }}>
-        <div style={{ display: "flex", alignItems: "center", marginBottom: 12 }}>
-          <span style={{ fontSize: 20, marginRight: 8 }}>🛡️</span>
-          <b style={{ fontSize: 16 }}>Warranty & Quality Assurance</b>
-        </div>
-        <ul style={{ marginTop: 10, paddingLeft: 20, marginBottom: 10, lineHeight: 1.6 }}>
-          <li>All solar panels are <b>A-Grade, Tier-1</b> with <b>12 years product warranty</b> and <b>25 years performance warranty</b></li>
-          <li>Inverters include comprehensive warranty: <b>Daytime (5 years)</b>, <b>Hybrid (as per brand policy)</b></li>
-          <li>Lithium batteries: <b>5-10 years warranty</b> | Tubular batteries: <b>2-3 years warranty</b></li>
-          <li>Professional installation with <b>6 months after-sales service warranty</b></li>
-          <li>Site visit charges: <b>Rs. 2,000/-</b> (Peshawar city) - <b>Adjustable in final bill</b></li>
-          <li><b>Free system monitoring</b> and maintenance guidance for first year</li>
-        </ul>
-      </div>
-    );
-
     return (
       <div ref={pdfRef} style={{
         background: "#fff", 
         width: 595, 
         minHeight: 842, 
-        padding: "30px", 
-        margin: "20px auto",
-        borderRadius: 12, 
-        boxShadow: "0 10px 40px rgba(255, 152, 0, 0.15)", 
+        padding: "20px", 
+        margin: "0 auto",
         fontFamily: "'Segoe UI', 'Roboto', sans-serif", 
         position: "relative",
-        fontSize: 14
+        fontSize: 12
       }}>
-        {/* Enhanced Header */}
+        {/* Header */}
         <div style={{ 
-          background: "linear-gradient(135deg, #ff9800 0%, #ff6600 100%)",
-          margin: "-30px -30px 25px -30px",
-          padding: "25px 30px",
-          borderRadius: "12px 12px 0 0",
-          color: "white"
+          marginBottom: 15,
+          textAlign: "center",
+          borderBottom: "2px solid #ff9800",
+          paddingBottom: 15
         }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+            <img 
+              src={logo} 
+              alt="Syed Solar Logo" 
+              style={{ width: 60, height: "auto", marginRight: 15 }} 
+            />
             <div>
-              <img 
-                src={logo} 
-                alt="Syed Solar Logo" 
-                style={{ width: 80, height: "auto", marginBottom: 10 }} 
-              />
-              <div style={{ fontSize: 24, fontWeight: 900 }}>
+              <div style={{ fontSize: 18, fontWeight: 900, color: "#ff6600" }}>
                 Syed Solar Energy Pvt Ltd
               </div>
-              <div style={{ fontSize: 13, opacity: 0.9, marginTop: 5 }}>
+              <div style={{ fontSize: 11, color: "#666", marginTop: 3 }}>
                 📍 Office #23, Mustafa Plaza, Ring Road, Peshawar
               </div>
             </div>
-            <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>
-                {sysLabel} Quotation
-              </div>
-              <div style={{ fontSize: 13, opacity: 0.9 }}>
-                📅 Date: {new Date().toLocaleDateString()}
-              </div>
-              <div style={{ fontSize: 16, fontWeight: 700, marginTop: 8 }}>
-                ⚡ {totalKW}kW Solar System
-              </div>
+          </div>
+          <div style={{ marginTop: 10 }}>
+            <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 5 }}>
+              {sysLabel} Quotation
+            </div>
+            <div style={{ fontSize: 12, color: "#666" }}>
+              📅 Date: {new Date().toLocaleDateString()} | ⚡ System Size: {totalKW}kW
             </div>
           </div>
         </div>
 
         {/* Customer Details */}
         <div style={{
-          background: "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)",
-          borderRadius: 8,
-          padding: "15px 20px",
-          marginBottom: 20,
-          border: "1px solid #dee2e6"
+          background: "#f8f9fa",
+          borderRadius: 5,
+          padding: "10px 15px",
+          marginBottom: 15,
+          border: "1px solid #dee2e6",
+          fontSize: 11
         }}>
-          <div style={{ fontSize: 16, fontWeight: 700, color: "#495057", marginBottom: 10 }}>
+          <div style={{ fontWeight: 700, marginBottom: 5, color: "#495057" }}>
             👤 Customer Information
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", fontSize: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "5px" }}>
             <div><b>Name:</b> {customer.name || "-"}</div>
             <div><b>Contact:</b> {customer.contact || "-"}</div>
             <div><b>Email:</b> {customer.email || "-"}</div>
@@ -626,145 +602,134 @@ JazakAllah! 🤝`
           </div>
         </div>
 
-        {/* Enhanced System Configuration */}
-        <div style={{
-          background: "linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%)",
-          borderRadius: 10,
-          padding: "20px",
-          marginBottom: 20,
-          border: "2px solid #ffcc02"
+        {/* System Configuration */}
+        <table style={{
+          width: "100%",
+          borderCollapse: "collapse",
+          fontSize: 11,
+          backgroundColor: "white",
+          marginBottom: 15
         }}>
-          <div style={{ fontSize: 16, fontWeight: 700, color: "#ef6c00", marginBottom: 15 }}>
-            ⚙️ System Configuration & Pricing
-          </div>
-          
-          <table style={{
-            width: "100%",
-            borderCollapse: "collapse",
-            fontSize: 14,
-            backgroundColor: "white",
-            borderRadius: 8,
-            overflow: "hidden",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
-          }}>
-            <tbody>
-              {/* Solar Panels */}
-              <tr style={{ backgroundColor: "#f8f9fa" }}>
-                <td style={{ padding: "12px 15px", fontWeight: 600, borderBottom: "1px solid #dee2e6" }}>
-                  🔆 Solar Panels:
+          <thead>
+            <tr style={{ backgroundColor: "#ff9800", color: "white" }}>
+              <th style={{ padding: "8px 10px", textAlign: "left" }}>Component</th>
+              <th style={{ padding: "8px 10px", textAlign: "left" }}>Details</th>
+              <th style={{ padding: "8px 10px", textAlign: "right" }}>Amount (Rs)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {/* Solar Panels */}
+            <tr>
+              <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>
+                <b>Solar Panels</b>
+              </td>
+              <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>
+                {systemType === "auto" ? previewConfig.panelQty : panelQty} × {systemType === "auto" ? previewConfig.panelBrand : panelBrand} ({systemType === "auto" ? previewConfig.panelWatt : panelWatt}W)
+                <div style={{ fontSize: 10, color: "#666", marginTop: 3 }}>
+                  Unit: Rs. {(data.panelUnitPrice || 0).toLocaleString()} | Watt: Rs. {(panelPrices[systemType === "auto" ? previewConfig.panelBrand : panelBrand]?.[systemType === "auto" ? previewConfig.panelWatt : panelWatt]?.pricePerWatt || 0)}
+                </div>
+              </td>
+              <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee", textAlign: "right" }}>
+                {data.panelTotal.toLocaleString()}
+              </td>
+            </tr>
+            
+            {/* Inverter */}
+            <tr>
+              <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>
+                <b>{sysType === "daytime" ? "Daytime" : "Hybrid"} Inverter</b>
+              </td>
+              <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>
+                {systemType === "auto" ? previewConfig.inverterQty : inverterQty} × {data.selectedInverter?.brand || ""} {data.selectedInverter?.capacity || ""}
+                <div style={{ fontSize: 10, color: "#666", marginTop: 3 }}>
+                  Model: {data.selectedInverter?.model || ""}
+                </div>
+              </td>
+              <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee", textAlign: "right" }}>
+                {data.invTotal.toLocaleString()}
+              </td>
+            </tr>
+            
+            {/* Battery (for hybrid only) */}
+            {sysType === "hybrid" && (
+              <tr>
+                <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>
+                  <b>Batteries</b>
                 </td>
-                <td style={{ padding: "12px 15px", borderBottom: "1px solid #dee2e6" }}>
-                  <div><b>{(systemType === "auto" ? previewConfig.panelQty : panelQty)} panels</b> × {systemType === "auto" ? previewConfig.panelBrand : panelBrand} ({systemType === "auto" ? previewConfig.panelWatt : panelWatt}W)</div>
-                  <div style={{ fontSize: 13, color: "#666", marginTop: 4 }}>
-                    Unit Price: Rs. {(data.panelUnitPrice || 0).toLocaleString()} | 
-                    Price/Watt: Rs. {(panelPrices[systemType === "auto" ? previewConfig.panelBrand : panelBrand]?.[systemType === "auto" ? previewConfig.panelWatt : panelWatt]?.pricePerWatt || 0)}
+                <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>
+                  {systemType === "auto" ? previewConfig.batteryQty : batteryQty} × {data.selectedBattery?.model || ""}
+                  <div style={{ fontSize: 10, color: "#666", marginTop: 3 }}>
+                    Type: {data.selectedBattery?.type || ""} | Voltage: {data.selectedBattery?.voltage || ""}
                   </div>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: "#ff6600", marginTop: 5 }}>
-                    Total: Rs. {data.panelTotal.toLocaleString()}
-                  </div>
+                </td>
+                <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee", textAlign: "right" }}>
+                  {(data.battTotal || 0).toLocaleString()}
                 </td>
               </tr>
-              
-              {/* Inverter */}
-              <tr style={{ backgroundColor: "white" }}>
-                <td style={{ padding: "12px 15px", fontWeight: 600, borderBottom: "1px solid #dee2e6" }}>
-                  🔄 {sysType === "daytime" ? "Daytime" : "Hybrid"} Inverter:
-                </td>
-                <td style={{ padding: "12px 15px", borderBottom: "1px solid #dee2e6" }}>
-                  <div><b>{systemType === "auto" ? previewConfig.inverterQty : inverterQty} unit(s)</b> × {data.selectedInverter?.brand || ""} {data.selectedInverter?.capacity || ""}</div>
-                  <div style={{ fontSize: 13, color: "#666", marginTop: 4 }}>
-                    Model: {data.selectedInverter?.model || ""} | Unit Price: Rs. {(data.selectedInverter?.price || 0).toLocaleString()}
-                  </div>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: "#ff6600", marginTop: 5 }}>
-                    Total: Rs. {data.invTotal.toLocaleString()}
-                  </div>
-                </td>
-              </tr>
-              
-              {/* Battery (for hybrid only) */}
-              {sysType === "hybrid" && (
-                <tr style={{ backgroundColor: "#f8f9fa" }}>
-                  <td style={{ padding: "12px 15px", fontWeight: 600, borderBottom: "1px solid #dee2e6" }}>
-                    🔋 Batteries:
-                  </td>
-                  <td style={{ padding: "12px 15px", borderBottom: "1px solid #dee2e6" }}>
-                    <div><b>{(systemType === "auto" ? previewConfig.batteryQty : batteryQty)} units</b> × {data.selectedBattery?.model || ""}</div>
-                    <div style={{ fontSize: 13, color: "#666", marginTop: 4 }}>
-                      Type: {data.selectedBattery?.type || ""} | Voltage: {data.selectedBattery?.voltage || ""} | 
-                      Capacity: {data.selectedBattery?.capacity || ""}
-                    </div>
-                    <div style={{ fontSize: 13, color: "#666" }}>
-                      Unit Price: Rs. {(data.battUnit || 0).toLocaleString()}
-                    </div>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: "#ff6600", marginTop: 5 }}>
-                      Total: Rs. {(data.battTotal || 0).toLocaleString()}
-                    </div>
-                  </td>
-                </tr>
-              )}
-              
-              {/* Mounting Structure */}
-              <tr style={{ backgroundColor: "white" }}>
-                <td style={{ padding: "12px 15px", fontWeight: 600, borderBottom: "1px solid #dee2e6" }}>
-                  🔧 Mounting Structure:
-                </td>
-                <td style={{ padding: "12px 15px", borderBottom: "1px solid #dee2e6" }}>
-                  <div><b>{data.standQty} sets</b> × {systemType === "auto" ? previewConfig.standType : standType}</div>
-                  <div style={{ fontSize: 13, color: "#666", marginTop: 4 }}>
-                    Unit Price: Rs. {(data.standUnit || 0).toLocaleString()}
-                  </div>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: "#ff6600", marginTop: 5 }}>
-                    Total: Rs. {data.standTotal.toLocaleString()}
-                  </div>
-                </td>
-              </tr>
-              
-              {/* Service Charges */}
-              <tr style={{ backgroundColor: "#f8f9fa" }}>
-                <td style={{ padding: "12px 15px", fontWeight: 600, borderBottom: "1px solid #dee2e6" }}>
-                  🛠️ Installation & Services:
-                </td>
-                <td style={{ padding: "12px 15px", borderBottom: "1px solid #dee2e6" }}>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", fontSize: 13 }}>
-                    <div>Safety Materials: Rs. {data.safety.toLocaleString()}</div>
-                    <div>Transportation: Rs. {data.transport.toLocaleString()}</div>
-                    <div>Installation: Rs. {data.install.toLocaleString()}</div>
-                    {greenMeter && <div style={{ color: "#28a745", fontWeight: 600 }}>Net Metering: Rs. {greenMeterCharges.toLocaleString()}</div>}
-                  </div>
-                </td>
-              </tr>
-              
-              {/* Grand Total */}
-              <tr style={{ backgroundColor: "#ff6600", color: "white" }}>
-                <td style={{ padding: "15px", fontWeight: 700, fontSize: 16 }}>
-                  💰 TOTAL AMOUNT:
-                </td>
-                <td style={{ padding: "15px", fontSize: 20, fontWeight: 900 }}>
-                  Rs. {data.grandTotal.toLocaleString()}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+            )}
+            
+            {/* Mounting Structure */}
+            <tr>
+              <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>
+                <b>Mounting Structure</b>
+              </td>
+              <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>
+                {data.standQty} × {systemType === "auto" ? previewConfig.standType : standType}
+              </td>
+              <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee", textAlign: "right" }}>
+                {data.standTotal.toLocaleString()}
+              </td>
+            </tr>
+            
+            {/* Service Charges */}
+            <tr>
+              <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>
+                <b>Installation & Services</b>
+              </td>
+              <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>
+                <div style={{ fontSize: 10, color: "#666" }}>
+                  <div>Safety Materials</div>
+                  <div>Transportation</div>
+                  <div>Installation</div>
+                  {greenMeter && <div style={{ color: "#28a745" }}>Net Metering</div>}
+                </div>
+              </td>
+              <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee", textAlign: "right" }}>
+                <div>{data.safety.toLocaleString()}</div>
+                <div>{data.transport.toLocaleString()}</div>
+                <div>{data.install.toLocaleString()}</div>
+                {greenMeter && <div>{greenMeterCharges.toLocaleString()}</div>}
+              </td>
+            </tr>
+            
+            {/* Grand Total */}
+            <tr style={{ backgroundColor: "#ff6600", color: "white" }}>
+              <td style={{ padding: "10px", fontWeight: 700, fontSize: 12 }}>
+                TOTAL AMOUNT
+              </td>
+              <td></td>
+              <td style={{ padding: "10px", fontSize: 16, fontWeight: 900, textAlign: "right" }}>
+                Rs. {data.grandTotal.toLocaleString()}
+              </td>
+            </tr>
+          </tbody>
+        </table>
 
-        {/* Warranty Box */}
-        {warrantyBox}
-
-        {/* Enhanced Terms & Payment */}
+        {/* Terms & Payment */}
         <div style={{
-          background: "linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%)",
-          padding: "18px",
-          borderRadius: 10,
-          marginBottom: 20,
-          border: "2px solid #4caf50"
+          padding: "15px",
+          borderRadius: 5,
+          marginBottom: 15,
+          border: "1px solid #dee2e6",
+          fontSize: 11
         }}>
-          <div style={{ fontSize: 16, fontWeight: 700, color: "#2e7d32", marginBottom: 12 }}>
+          <div style={{ fontWeight: 700, marginBottom: 8, color: "#2e7d32" }}>
             💳 Payment Terms & Conditions
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "15px", fontSize: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", fontSize: 10 }}>
             <div>
               <b>Payment Schedule:</b>
-              <ul style={{ marginTop: 8, paddingLeft: 20, lineHeight: 1.6 }}>
+              <ul style={{ marginTop: 5, paddingLeft: 15, lineHeight: 1.5 }}>
                 <li><b>5%</b> advance for booking</li>
                 <li><b>70%</b> on material delivery</li>
                 <li><b>25%</b> after installation</li>
@@ -772,31 +737,50 @@ JazakAllah! 🤝`
             </div>
             <div>
               <b>Important Notes:</b>
-              <ul style={{ marginTop: 8, paddingLeft: 20, lineHeight: 1.6 }}>
+              <ul style={{ marginTop: 5, paddingLeft: 15, lineHeight: 1.5 }}>
                 <li>Quotation valid for <b>7 days</b></li>
                 <li>Prices subject to market changes</li>
                 <li>Installation within 15-20 days</li>
-                <li>1-year maintenance support</li>
               </ul>
             </div>
           </div>
         </div>
 
-        {/* Enhanced Footer */}
+        {/* Warranty */}
         <div style={{
-          background: "linear-gradient(135deg, #1976d2 0%, #1565c0 100%)",
+          background: "#fffde7",
+          padding: "15px",
+          borderRadius: 5,
+          marginBottom: 15,
+          border: "1px solid #ffecb3",
+          fontSize: 11
+        }}>
+          <div style={{ fontWeight: 700, marginBottom: 5, color: "#3b2400" }}>
+            🛡️ Warranty & Quality Assurance
+          </div>
+          <ul style={{ marginTop: 5, paddingLeft: 15, lineHeight: 1.5, fontSize: 10 }}>
+            <li>Solar panels: <b>12 years product, 25 years performance</b></li>
+            <li>Inverters: <b>5 years warranty</b></li>
+            <li>Lithium batteries: <b>5-10 years warranty</b></li>
+            <li>Professional installation with <b>6 months service warranty</b></li>
+          </ul>
+        </div>
+
+        {/* Footer */}
+        <div style={{
+          background: "#1976d2",
           color: "#fff",
           fontWeight: 600,
           textAlign: "center",
-          padding: "15px 20px",
-          borderRadius: 8,
-          fontSize: 13,
-          marginTop: 15
+          padding: "10px 15px",
+          borderRadius: 5,
+          fontSize: 10,
+          marginTop: 10
         }}>
-          <div style={{ marginBottom: 8 }}>
+          <div style={{ marginBottom: 5 }}>
             📧 sales@syedsolarenergy.com | 📱 WhatsApp: 0304-467-8929 | ☎️ Office: 091-5844567
           </div>
-          <div style={{ fontSize: 12, opacity: 0.9 }}>
+          <div>
             🏢 Office #23, Mustafa Plaza, Ring Road, Peshawar | 🌐 www.syedsolarenergy.com
           </div>
         </div>
@@ -806,523 +790,548 @@ JazakAllah! 🤝`
 
   // Enhanced form UI
   return (
-    <main style={{ 
-      background: "linear-gradient(135deg, #fff8e1 0%, #fff3e0 50%, #ffe0b2 100%)", 
-      minHeight: "100vh", 
-      paddingBottom: 30 
-    }}>
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "30px 20px" }}>
-        {/* Enhanced Header */}
-        <div style={{
-          background: "linear-gradient(135deg, #ff9800 0%, #ff6600 100%)",
-          color: "white",
-          padding: "30px",
-          borderRadius: 16,
-          textAlign: "center",
-          marginBottom: 30,
-          boxShadow: "0 8px 32px rgba(255, 152, 0, 0.3)"
-        }}>
-          <h1 style={{ margin: "0 0 10px 0", fontSize: 32, fontWeight: 900 }}>
-            ⚡ Solar Quotation Generator
-          </h1>
-          <p style={{ margin: 0, fontSize: 16, opacity: 0.9 }}>
-            Get instant pricing for your solar energy system
-          </p>
-        </div>
-
-        <div style={{ display: "grid", gridTemplateColumns: showPreview ? "1fr 1fr" : "1fr", gap: 30 }}>
-          {/* Form Section */}
-          <form onSubmit={handleGenerateQuotation} style={{ 
-            background: "#fff", 
-            borderRadius: 16, 
-            boxShadow: "0 8px 32px rgba(255, 152, 0, 0.1)", 
-            padding: "30px" 
+    <>
+      <style>{cssVariables}</style>
+      
+      <main style={{ 
+        background: "linear-gradient(135deg, #fff8e1 0%, #fff3e0 50%, #ffe0b2 100%)", 
+        minHeight: "100vh", 
+        paddingBottom: 30 
+      }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "var(--padding-base)" }}>
+          {/* Enhanced Header */}
+          <div style={{
+            background: "linear-gradient(135deg, #ff9800 0%, #ff6600 100%)",
+            color: "white",
+            padding: "var(--section-padding)",
+            borderRadius: "16px",
+            textAlign: "center",
+            marginBottom: "30px",
+            boxShadow: "0 8px 32px rgba(255, 152, 0, 0.3)"
           }}>
-            <h2 style={{ color: "#ff9800", textAlign: "center", fontWeight: 900, marginBottom: 25, fontSize: 24 }}>
-              📋 System Configuration
-            </h2>
-            
-            {/* System Type Selection */}
-            <div style={{ marginBottom: 25 }}>
-              <label style={{ display: "block", fontWeight: 600, marginBottom: 10, color: "#333" }}>
-                Choose System Type
-              </label>
-              <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
-                <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-                  <input 
-                    type="radio" 
-                    name="systemType" 
-                    value="daytime" 
-                    checked={systemType === "daytime"} 
-                    onChange={e => setSystemType(e.target.value)} 
-                  /> 
-                  <span style={{ fontWeight: 500 }}>🌞 Daytime (Grid-Tied)</span>
-                </label>
-                <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-                  <input 
-                    type="radio" 
-                    name="systemType" 
-                    value="hybrid" 
-                    checked={systemType === "hybrid"} 
-                    onChange={e => setSystemType(e.target.value)} 
-                  /> 
-                  <span style={{ fontWeight: 500 }}>🔋 Hybrid (Battery Backup)</span>
-                </label>
-                <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-                  <input 
-                    type="radio" 
-                    name="systemType" 
-                    value="auto" 
-                    checked={systemType === "auto"} 
-                    onChange={e => setSystemType(e.target.value)} 
-                  /> 
-                  <span style={{ fontWeight: 500 }}>🤖 Auto Suggest</span>
-                </label>
-              </div>
-            </div>
+            <h1 style={{ margin: "0 0 10px 0", fontSize: "var(--heading-1)", fontWeight: 900 }}>
+              ⚡ Solar Quotation Generator
+            </h1>
+            <p style={{ margin: 0, fontSize: "var(--text-base)", opacity: 0.9 }}>
+              Get instant pricing for your solar energy system
+            </p>
+          </div>
 
-            {/* Auto Suggest Section */}
-            {systemType === "auto" && (
-              <div style={sectionBox}>
-                <h3 style={sectionTitle}>🤖 Auto Configuration</h3>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 15 }}>
-                  <div>
-                    <label style={labelStyle}>System Type</label>
-                    <select value={autoType} onChange={e => setAutoType(e.target.value)} style={inputStyle}>
-                      <option value="daytime">Daytime (Grid-Tied)</option>
-                      <option value="hybrid">Hybrid (Battery Backup)</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label style={labelStyle}>Required System Size (kW)</label>
+          <div style={{ 
+            display: "grid", 
+            gridTemplateColumns: showPreview ? "1fr" : "1fr", 
+            gap: "30px",
+            '@media (min-width: 992px)': {
+              gridTemplateColumns: showPreview ? "1fr 1fr" : "1fr"
+            }
+          }}>
+            {/* Form Section */}
+            <form onSubmit={handleGenerateQuotation} style={{ 
+              background: "#fff", 
+              borderRadius: "16px", 
+              boxShadow: "0 8px 32px rgba(255, 152, 0, 0.1)", 
+              padding: "var(--section-padding)" 
+            }}>
+              <h2 style={{ 
+                color: "#ff9800", 
+                textAlign: "center", 
+                fontWeight: 900, 
+                marginBottom: "25px", 
+                fontSize: "var(--heading-2)"
+              }}>
+                📋 System Configuration
+              </h2>
+              
+              {/* System Type Selection */}
+              <div style={{ marginBottom: 25 }}>
+                <label style={{ display: "block", fontWeight: 600, marginBottom: 10, color: "#333", fontSize: "var(--text-base)" }}>
+                  Choose System Type
+                </label>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: "var(--text-base)" }}>
                     <input 
-                      type="number" 
-                      min={3} 
-                      max={25} 
-                      step={0.5}
-                      value={kwAuto} 
-                      onChange={e => setKwAuto(Number(e.target.value))} 
-                      style={inputStyle} 
-                    />
-                  </div>
-                </div>
-                <div style={{ fontSize: 14, color: "#666", marginTop: 10 }}>
-                  ✨ All components will be automatically selected based on your requirements
-                </div>
-                <div style={{ marginTop: 15 }}>
-                  <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-                    <input type="checkbox" checked={greenMeter} onChange={handleGreenMeter} />
-                    <span>🌿 Add Net Metering (Rs. {greenMeterCharges.toLocaleString()})</span>
+                      type="radio" 
+                      name="systemType" 
+                      value="daytime" 
+                      checked={systemType === "daytime"} 
+                      onChange={e => setSystemType(e.target.value)} 
+                    /> 
+                    <span>🌞 Daytime</span>
+                  </label>
+                  <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: "var(--text-base)" }}>
+                    <input 
+                      type="radio" 
+                      name="systemType" 
+                      value="hybrid" 
+                      checked={systemType === "hybrid"} 
+                      onChange={e => setSystemType(e.target.value)} 
+                    /> 
+                    <span>🔋 Hybrid</span>
+                  </label>
+                  <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: "var(--text-base)" }}>
+                    <input 
+                      type="radio" 
+                      name="systemType" 
+                      value="auto" 
+                      checked={systemType === "auto"} 
+                      onChange={e => setSystemType(e.target.value)} 
+                    /> 
+                    <span>🤖 Auto Suggest</span>
                   </label>
                 </div>
               </div>
-            )}
 
-            {/* Customer Information */}
-            <div style={sectionBox}>
-              <h3 style={sectionTitle}>👤 Customer Information</h3>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 15 }}>
-                <div>
-                  <label style={labelStyle}>Full Name *</label>
-                  <input 
-                    name="name" 
-                    type="text" 
-                    value={customer.name} 
-                    onChange={handleCustomerChange} 
-                    placeholder="Enter your full name" 
-                    required 
-                    style={inputStyle} 
-                  />
+              {/* Auto Suggest Section */}
+              {systemType === "auto" && (
+                <div style={sectionBox}>
+                  <h3 style={sectionTitle}>🤖 Auto Configuration</h3>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "15px", '@media (min-width: 768px)': { gridTemplateColumns: "1fr 1fr" } }}>
+                    <div>
+                      <label style={labelStyle}>System Type</label>
+                      <select value={autoType} onChange={e => setAutoType(e.target.value)} style={inputStyle}>
+                        <option value="daytime">Daytime (Grid-Tied)</option>
+                        <option value="hybrid">Hybrid (Battery Backup)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Required System Size (kW)</label>
+                      <input 
+                        type="number" 
+                        min={3} 
+                        max={25} 
+                        step={0.5}
+                        value={kwAuto} 
+                        onChange={e => setKwAuto(Number(e.target.value))} 
+                        style={inputStyle} 
+                      />
+                    </div>
+                  </div>
+                  <div style={{ fontSize: "var(--text-base)", color: "#666", marginTop: "10px" }}>
+                    ✨ Components will be auto-selected based on your requirements
+                  </div>
+                  <div style={{ marginTop: 15 }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: "var(--text-base)" }}>
+                      <input type="checkbox" checked={greenMeter} onChange={handleGreenMeter} />
+                      <span>🌿 Add Net Metering (Rs. {greenMeterCharges.toLocaleString()})</span>
+                    </label>
+                  </div>
                 </div>
-                <div>
-                  <label style={labelStyle}>Contact Number *</label>
-                  <input 
-                    name="contact" 
-                    type="text" 
-                    value={customer.contact} 
-                    onChange={handleCustomerChange} 
-                    placeholder="03XX-XXXXXXX" 
-                    required 
-                    style={inputStyle} 
-                  />
-                </div>
-                <div>
-                  <label style={labelStyle}>Email Address</label>
-                  <input 
-                    name="email" 
-                    type="email" 
-                    value={customer.email} 
-                    onChange={handleCustomerChange} 
-                    placeholder="you@example.com" 
-                    style={inputStyle} 
-                  />
-                </div>
-                <div>
-                  <label style={labelStyle}>Installation Address *</label>
-                  <textarea 
-                    name="address" 
-                    value={customer.address} 
-                    onChange={handleCustomerChange} 
-                    placeholder="Complete address with city" 
-                    style={{ ...inputStyle, resize: "vertical", height: 60 }} 
-                    required 
-                  />
+              )}
+
+              {/* Customer Information */}
+              <div style={sectionBox}>
+                <h3 style={sectionTitle}>👤 Customer Information</h3>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "15px", '@media (min-width: 768px)': { gridTemplateColumns: "1fr 1fr" } }}>
+                  <div>
+                    <label style={labelStyle}>Full Name *</label>
+                    <input 
+                      name="name" 
+                      type="text" 
+                      value={customer.name} 
+                      onChange={handleCustomerChange} 
+                      placeholder="Enter your full name" 
+                      required 
+                      style={inputStyle} 
+                    />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Contact Number *</label>
+                    <input 
+                      name="contact" 
+                      type="text" 
+                      value={customer.contact} 
+                      onChange={handleCustomerChange} 
+                      placeholder="03XX-XXXXXXX" 
+                      required 
+                      style={inputStyle} 
+                    />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Email Address</label>
+                    <input 
+                      name="email" 
+                      type="email" 
+                      value={customer.email} 
+                      onChange={handleCustomerChange} 
+                      placeholder="you@example.com" 
+                      style={inputStyle} 
+                    />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Installation Address *</label>
+                    <textarea 
+                      name="address" 
+                      value={customer.address} 
+                      onChange={handleCustomerChange} 
+                      placeholder="Complete address with city" 
+                      style={{ ...inputStyle, resize: "vertical", minHeight: "60px" }} 
+                      required 
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Daytime System Configuration */}
-            {systemType === "daytime" && (
-              <div style={sectionBox}>
-                <h3 style={sectionTitle}>🌞 Daytime System Configuration</h3>
-                
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 15, marginBottom: 15 }}>
-                  <div>
-                    <label style={labelStyle}>Panel Brand</label>
-                    <select value={panelBrand} onChange={e => setPanelBrand(e.target.value)} style={inputStyle}>
-                      {Object.keys(panelPrices).map((brand) => <option key={brand} value={brand}>{brand}</option>)}
-                    </select>
+              {/* Daytime System Configuration */}
+              {systemType === "daytime" && (
+                <div style={sectionBox}>
+                  <h3 style={sectionTitle}>🌞 Daytime System Configuration</h3>
+                  
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "15px", marginBottom: 15, '@media (min-width: 768px)': { gridTemplateColumns: "1fr 1fr 1fr" } }}>
+                    <div>
+                      <label style={labelStyle}>Panel Brand</label>
+                      <select value={panelBrand} onChange={e => setPanelBrand(e.target.value)} style={inputStyle}>
+                        {Object.keys(panelPrices).map((brand) => <option key={brand} value={brand}>{brand}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Panel Wattage</label>
+                      <select value={panelWatt} onChange={e => setPanelWatt(e.target.value)} style={inputStyle}>
+                        {panelBrand && Object.keys(panelPrices[panelBrand] || {}).map((watt) => 
+                          <option key={watt} value={watt}>{watt}W</option>
+                        )}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Number of Panels</label>
+                      <input 
+                        type="number" 
+                        min={1} 
+                        max={40} 
+                        value={panelQty} 
+                        onChange={e => setPanelQty(Number(e.target.value))} 
+                        style={inputStyle} 
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <label style={labelStyle}>Panel Wattage</label>
-                    <select value={panelWatt} onChange={e => setPanelWatt(e.target.value)} style={inputStyle}>
-                      {panelBrand && Object.keys(panelPrices[panelBrand] || {}).map((watt) => 
-                        <option key={watt} value={watt}>{watt}W</option>
-                      )}
-                    </select>
-                  </div>
-                  <div>
-                    <label style={labelStyle}>Number of Panels</label>
-                    <input 
-                      type="number" 
-                      min={1} 
-                      max={40} 
-                      value={panelQty} 
-                      onChange={e => setPanelQty(Number(e.target.value))} 
-                      style={inputStyle} 
-                    />
-                  </div>
-                </div>
 
-                {/* Panel Pricing Info */}
-                {panelBrand && panelWatt && (
-                  <div style={priceInfoBox}>
-                    <div><b>Per Panel:</b> Rs. {(panelPrices[panelBrand]?.[panelWatt]?.price || 0).toLocaleString()}</div>
-                    <div><b>Per Watt:</b> Rs. {panelPrices[panelBrand]?.[panelWatt]?.pricePerWatt || 0}</div>
-                    <div><b>Total Panels:</b> Rs. {((panelPrices[panelBrand]?.[panelWatt]?.price || 0) * panelQty).toLocaleString()}</div>
-                    <div><b>System Size:</b> {(panelWatt * panelQty / 1000).toFixed(1)}kW</div>
-                  </div>
-                )}
+                  {/* Panel Pricing Info */}
+                  {panelBrand && panelWatt && (
+                    <div style={priceInfoBox}>
+                      <div><b>Per Panel:</b> Rs. {(panelPrices[panelBrand]?.[panelWatt]?.price || 0).toLocaleString()}</div>
+                      <div><b>Per Watt:</b> Rs. {panelPrices[panelBrand]?.[panelWatt]?.pricePerWatt || 0}</div>
+                      <div><b>Total Panels:</b> Rs. {((panelPrices[panelBrand]?.[panelWatt]?.price || 0) * panelQty).toLocaleString()}</div>
+                      <div><b>System Size:</b> {(panelWatt * panelQty / 1000).toFixed(1)}kW</div>
+                    </div>
+                  )}
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 15, marginBottom: 15 }}>
-                  <div>
-                    <label style={labelStyle}>Daytime Inverter</label>
-                    <select value={dayInverter} onChange={e => setDayInverter(e.target.value)} style={inputStyle}>
-                      {daytimeInverters.map((inv) => 
-                        <option key={inv.id} value={inv.id}>
-                          {inv.brand} - {inv.capacity} - Rs. {inv.price.toLocaleString()}
-                        </option>
-                      )}
-                    </select>
-                  </div>
-                  <div>
-                    <label style={labelStyle}>Inverter Quantity</label>
-                    <input 
-                      type="number" 
-                      min={1} 
-                      max={5} 
-                      value={inverterQty} 
-                      onChange={e => setInverterQty(Number(e.target.value))} 
-                      style={inputStyle} 
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label style={labelStyle}>Mounting Structure</label>
-                  <select value={standType} onChange={e => setStandType(e.target.value)} style={inputStyle}>
-                    {Object.keys(standPrices).map((s) => 
-                      <option key={s} value={s}>{s} - Rs. {standPrices[s].toLocaleString()}</option>
-                    )}
-                  </select>
-                </div>
-
-                {/* Stand Info */}
-                <div style={priceInfoBox}>
-                  <div><b>Stand Quantity:</b> {getStandQty(panelQty, standType)} sets</div>
-                  <div><b>Total Stands:</b> Rs. {(standPrices[standType] * getStandQty(panelQty, standType)).toLocaleString()}</div>
-                </div>
-
-                {/* Service Charges */}
-                <div style={chargesBox}>
-                  <h4>📋 Service Charges</h4>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10 }}>
-                    <div>Safety: Rs. {safetyCharges.daytime.toLocaleString()}</div>
-                    <div>Transport: Rs. {transportCharges.toLocaleString()}</div>
-                    <div>Installation: Rs. {installCharges.daytime.toLocaleString()}</div>
-                  </div>
-                </div>
-
-                <div style={{ marginTop: 15 }}>
-                  <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-                    <input type="checkbox" checked={greenMeter} onChange={handleGreenMeter} />
-                    <span>🌿 Add Net Metering (Rs. {greenMeterCharges.toLocaleString()})</span>
-                  </label>
-                </div>
-              </div>
-            )}
-
-            {/* Hybrid System Configuration */}
-            {systemType === "hybrid" && (
-              <div style={sectionBox}>
-                <h3 style={sectionTitle}>🔋 Hybrid System Configuration</h3>
-                
-                {/* Panel Configuration */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 15, marginBottom: 15 }}>
-                  <div>
-                    <label style={labelStyle}>Panel Brand</label>
-                    <select value={panelBrand} onChange={e => setPanelBrand(e.target.value)} style={inputStyle}>
-                      {Object.keys(panelPrices).map((brand) => <option key={brand} value={brand}>{brand}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label style={labelStyle}>Panel Wattage</label>
-                    <select value={panelWatt} onChange={e => setPanelWatt(e.target.value)} style={inputStyle}>
-                      {panelBrand && Object.keys(panelPrices[panelBrand] || {}).map((watt) => 
-                        <option key={watt} value={watt}>{watt}W</option>
-                      )}
-                    </select>
-                  </div>
-                  <div>
-                    <label style={labelStyle}>Number of Panels</label>
-                    <input 
-                      type="number" 
-                      min={1} 
-                      max={40} 
-                      value={panelQty} 
-                      onChange={e => setPanelQty(Number(e.target.value))} 
-                      style={inputStyle} 
-                    />
-                  </div>
-                </div>
-
-                {/* Panel Pricing Info */}
-                {panelBrand && panelWatt && (
-                  <div style={priceInfoBox}>
-                    <div><b>Per Panel:</b> Rs. {(panelPrices[panelBrand]?.[panelWatt]?.price || 0).toLocaleString()}</div>
-                    <div><b>Per Watt:</b> Rs. {panelPrices[panelBrand]?.[panelWatt]?.pricePerWatt || 0}</div>
-                    <div><b>Total Panels:</b> Rs. {((panelPrices[panelBrand]?.[panelWatt]?.price || 0) * panelQty).toLocaleString()}</div>
-                    <div><b>System Size:</b> {(panelWatt * panelQty / 1000).toFixed(1)}kW</div>
-                  </div>
-                )}
-
-                {/* Inverter Configuration */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 15, marginBottom: 15 }}>
-                  <div>
-                    <label style={labelStyle}>Inverter Brand</label>
-                    <select 
-                      value={hybridInverterBrand} 
-                      onChange={e => {
-                        setHybridInverterBrand(e.target.value);
-                        // Set first available capacity for selected brand
-                        const brandInverters = hybridInverters.filter(inv => inv.brand === e.target.value);
-                        if (brandInverters.length > 0) {
-                          setHybridInverterCapacity(brandInverters[0].id.toString());
-                        }
-                      }} 
-                      style={inputStyle}
-                    >
-                      {[...new Set(hybridInverters.map(inv => inv.brand))].map((brand) => 
-                        <option key={brand} value={brand}>{brand}</option>
-                      )}
-                    </select>
-                  </div>
-                  <div>
-                    <label style={labelStyle}>Inverter Capacity</label>
-                    <select 
-                      value={hybridInverterCapacity} 
-                      onChange={handleHybridInverterCapacityChange} 
-                      style={inputStyle}
-                    >
-                      {hybridInverters
-                        .filter(inv => inv.brand === hybridInverterBrand)
-                        .map((inv) => 
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "15px", marginBottom: 15, '@media (min-width: 768px)': { gridTemplateColumns: "1fr 1fr" } }}>
+                    <div>
+                      <label style={labelStyle}>Daytime Inverter</label>
+                      <select value={dayInverter} onChange={e => setDayInverter(e.target.value)} style={inputStyle}>
+                        {daytimeInverters.map((inv) => 
                           <option key={inv.id} value={inv.id}>
-                            {inv.capacity} - Rs. {inv.price.toLocaleString()}
+                            {inv.brand} - {inv.capacity} - Rs. {inv.price.toLocaleString()}
                           </option>
                         )}
-                    </select>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Inverter Quantity</label>
+                      <input 
+                        type="number" 
+                        min={1} 
+                        max={5} 
+                        value={inverterQty} 
+                        onChange={e => setInverterQty(Number(e.target.value))} 
+                        style={inputStyle} 
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <label style={labelStyle}>Inverter Quantity</label>
-                    <input 
-                      type="number" 
-                      min={1} 
-                      max={3} 
-                      value={inverterQty} 
-                      onChange={e => setInverterQty(Number(e.target.value))} 
-                      style={inputStyle} 
-                    />
-                  </div>
-                </div>
 
-                {/* Battery Configuration */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 15, marginBottom: 15 }}>
                   <div>
-                    <label style={labelStyle}>Battery Type</label>
-                    <select value={batteryType} onChange={handleBatteryType} style={inputStyle}>
-                      <option value="">Select Type</option>
-                      <option value="lithium">Lithium-Ion</option>
-                      <option value="tubular">Tubular</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label style={labelStyle}>Battery Model</label>
-                    <select 
-                      value={selectedBattery} 
-                      onChange={e => setSelectedBattery(e.target.value)} 
-                      style={inputStyle} 
-                      required
-                    >
-                      <option value="">Select Model</option>
-                      {batteryModels.map((batt) => 
-                        <option key={batt.id} value={batt.id}>
-                          {batt.model} ({batt.voltage}) - Rs. {batt.price.toLocaleString()}
-                        </option>
+                    <label style={labelStyle}>Mounting Structure</label>
+                    <select value={standType} onChange={e => setStandType(e.target.value)} style={inputStyle}>
+                      {Object.keys(standPrices).map((s) => 
+                        <option key={s} value={s}>{s} - Rs. {standPrices[s].toLocaleString()}</option>
                       )}
                     </select>
                   </div>
-                  <div>
-                    <label style={labelStyle}>Battery Quantity</label>
-                    <input 
-                      type="number" 
-                      min={1} 
-                      max={12} 
-                      value={batteryQty} 
-                      onChange={e => setBatteryQty(Number(e.target.value))} 
-                      style={inputStyle} 
-                    />
-                  </div>
-                </div>
 
-                {/* Battery Info */}
-                {selectedBattery && batteryPrices[selectedBattery] && (
+                  {/* Stand Info */}
                   <div style={priceInfoBox}>
-                    <div><b>Per Battery:</b> Rs. {batteryPrices[selectedBattery].price.toLocaleString()}</div>
-                    <div><b>Total Batteries:</b> Rs. {(batteryPrices[selectedBattery].price * batteryQty).toLocaleString()}</div>
-                    <div><b>Voltage:</b> {batteryPrices[selectedBattery].voltage}</div>
-                    <div><b>Capacity:</b> {batteryPrices[selectedBattery].capacity}</div>
+                    <div><b>Stand Quantity:</b> {getStandQty(panelQty, standType)} sets</div>
+                    <div><b>Total Stands:</b> Rs. {(standPrices[standType] * getStandQty(panelQty, standType)).toLocaleString()}</div>
                   </div>
-                )}
 
-                {/* Stand Configuration */}
-                <div>
-                  <label style={labelStyle}>Mounting Structure</label>
-                  <select value={standType} onChange={e => setStandType(e.target.value)} style={inputStyle}>
-                    {Object.keys(standPrices).map((s) => 
-                      <option key={s} value={s}>{s} - Rs. {standPrices[s].toLocaleString()}</option>
-                    )}
-                  </select>
-                </div>
+                  {/* Service Charges */}
+                  <div style={chargesBox}>
+                    <h4>📋 Service Charges</h4>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 10, '@media (min-width: 480px)': { gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" } }}>
+                      <div>Safety: Rs. {safetyCharges.daytime.toLocaleString()}</div>
+                      <div>Transport: Rs. {transportCharges.toLocaleString()}</div>
+                      <div>Installation: Rs. {installCharges.daytime.toLocaleString()}</div>
+                    </div>
+                  </div>
 
-                {/* Stand Info */}
-                <div style={priceInfoBox}>
-                  <div><b>Stand Quantity:</b> {getStandQty(panelQty, standType)} sets</div>
-                  <div><b>Total Stands:</b> Rs. {(standPrices[standType] * getStandQty(panelQty, standType)).toLocaleString()}</div>
-                </div>
-
-                {/* Service Charges */}
-                <div style={chargesBox}>
-                  <h4>📋 Service Charges</h4>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10 }}>
-                    <div>Safety: Rs. {(panelQty <= 16 ? safetyCharges.hybrid : safetyCharges.hybridHigh).toLocaleString()}</div>
-                    <div>Transport: Rs. {transportCharges.toLocaleString()}</div>
-                    <div>Installation: Rs. {installCharges.hybrid.toLocaleString()}</div>
+                  <div style={{ marginTop: 15 }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: "var(--text-base)" }}>
+                      <input type="checkbox" checked={greenMeter} onChange={handleGreenMeter} />
+                      <span>🌿 Add Net Metering (Rs. {greenMeterCharges.toLocaleString()})</span>
+                    </label>
                   </div>
                 </div>
+              )}
 
-                <div style={{ marginTop: 15 }}>
-                  <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-                    <input type="checkbox" checked={greenMeter} onChange={handleGreenMeter} />
-                    <span>🌿 Add Net Metering (Rs. {greenMeterCharges.toLocaleString()})</span>
-                  </label>
+              {/* Hybrid System Configuration */}
+              {systemType === "hybrid" && (
+                <div style={sectionBox}>
+                  <h3 style={sectionTitle}>🔋 Hybrid System Configuration</h3>
+                  
+                  {/* Panel Configuration */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "15px", marginBottom: 15, '@media (min-width: 768px)': { gridTemplateColumns: "1fr 1fr 1fr" } }}>
+                    <div>
+                      <label style={labelStyle}>Panel Brand</label>
+                      <select value={panelBrand} onChange={e => setPanelBrand(e.target.value)} style={inputStyle}>
+                        {Object.keys(panelPrices).map((brand) => <option key={brand} value={brand}>{brand}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Panel Wattage</label>
+                      <select value={panelWatt} onChange={e => setPanelWatt(e.target.value)} style={inputStyle}>
+                        {panelBrand && Object.keys(panelPrices[panelBrand] || {}).map((watt) => 
+                          <option key={watt} value={watt}>{watt}W</option>
+                        )}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Number of Panels</label>
+                      <input 
+                        type="number" 
+                        min={1} 
+                        max={40} 
+                        value={panelQty} 
+                        onChange={e => setPanelQty(Number(e.target.value))} 
+                        style={inputStyle} 
+                      />
+                    </div>
+                  </div>
+
+                  {/* Panel Pricing Info */}
+                  {panelBrand && panelWatt && (
+                    <div style={priceInfoBox}>
+                      <div><b>Per Panel:</b> Rs. {(panelPrices[panelBrand]?.[panelWatt]?.price || 0).toLocaleString()}</div>
+                      <div><b>Per Watt:</b> Rs. {panelPrices[panelBrand]?.[panelWatt]?.pricePerWatt || 0}</div>
+                      <div><b>Total Panels:</b> Rs. {((panelPrices[panelBrand]?.[panelWatt]?.price || 0) * panelQty).toLocaleString()}</div>
+                      <div><b>System Size:</b> {(panelWatt * panelQty / 1000).toFixed(1)}kW</div>
+                    </div>
+                  )}
+
+                  {/* Inverter Configuration */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "15px", marginBottom: 15, '@media (min-width: 768px)': { gridTemplateColumns: "1fr 1fr 1fr" } }}>
+                    <div>
+                      <label style={labelStyle}>Inverter Brand</label>
+                      <select 
+                        value={hybridInverterBrand} 
+                        onChange={e => {
+                          setHybridInverterBrand(e.target.value);
+                          // Set first available capacity for selected brand
+                          const brandInverters = hybridInverters.filter(inv => inv.brand === e.target.value);
+                          if (brandInverters.length > 0) {
+                            setHybridInverterCapacity(brandInverters[0].id.toString());
+                          }
+                        }} 
+                        style={inputStyle}
+                      >
+                        {[...new Set(hybridInverters.map(inv => inv.brand))].map((brand) => 
+                          <option key={brand} value={brand}>{brand}</option>
+                        )}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Inverter Capacity</label>
+                      <select 
+                        value={hybridInverterCapacity} 
+                        onChange={handleHybridInverterCapacityChange} 
+                        style={inputStyle}
+                      >
+                        {hybridInverters
+                          .filter(inv => inv.brand === hybridInverterBrand)
+                          .map((inv) => 
+                            <option key={inv.id} value={inv.id}>
+                              {inv.capacity} - Rs. {inv.price.toLocaleString()}
+                            </option>
+                          )}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Inverter Quantity</label>
+                      <input 
+                        type="number" 
+                        min={1} 
+                        max={3} 
+                        value={inverterQty} 
+                        onChange={e => setInverterQty(Number(e.target.value))} 
+                        style={inputStyle} 
+                      />
+                    </div>
+                  </div>
+
+                  {/* Battery Configuration */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "15px", marginBottom: 15, '@media (min-width: 768px)': { gridTemplateColumns: "1fr 1fr 1fr" } }}>
+                    <div>
+                      <label style={labelStyle}>Battery Type</label>
+                      <select value={batteryType} onChange={handleBatteryType} style={inputStyle}>
+                        <option value="">Select Type</option>
+                        <option value="lithium">Lithium-Ion</option>
+                        <option value="tubular">Tubular</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Battery Model</label>
+                      <select 
+                        value={selectedBattery} 
+                        onChange={e => setSelectedBattery(e.target.value)} 
+                        style={inputStyle} 
+                        required
+                      >
+                        <option value="">Select Model</option>
+                        {batteryModels.map((batt) => 
+                          <option key={batt.id} value={batt.id}>
+                            {batt.model} ({batt.voltage}) - Rs. {batt.price.toLocaleString()}
+                          </option>
+                        )}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Battery Quantity</label>
+                      <input 
+                        type="number" 
+                        min={1} 
+                        max={12} 
+                        value={batteryQty} 
+                        onChange={e => setBatteryQty(Number(e.target.value))} 
+                        style={inputStyle} 
+                      />
+                    </div>
+                  </div>
+
+                  {/* Battery Info */}
+                  {selectedBattery && batteryPrices[selectedBattery] && (
+                    <div style={priceInfoBox}>
+                      <div><b>Per Battery:</b> Rs. {batteryPrices[selectedBattery].price.toLocaleString()}</div>
+                      <div><b>Total Batteries:</b> Rs. {(batteryPrices[selectedBattery].price * batteryQty).toLocaleString()}</div>
+                      <div><b>Voltage:</b> {batteryPrices[selectedBattery].voltage}</div>
+                      <div><b>Capacity:</b> {batteryPrices[selectedBattery].capacity}</div>
+                    </div>
+                  )}
+
+                  {/* Stand Configuration */}
+                  <div>
+                    <label style={labelStyle}>Mounting Structure</label>
+                    <select value={standType} onChange={e => setStandType(e.target.value)} style={inputStyle}>
+                      {Object.keys(standPrices).map((s) => 
+                        <option key={s} value={s}>{s} - Rs. {standPrices[s].toLocaleString()}</option>
+                      )}
+                    </select>
+                  </div>
+
+                  {/* Stand Info */}
+                  <div style={priceInfoBox}>
+                    <div><b>Stand Quantity:</b> {getStandQty(panelQty, standType)} sets</div>
+                    <div><b>Total Stands:</b> Rs. {(standPrices[standType] * getStandQty(panelQty, standType)).toLocaleString()}</div>
+                  </div>
+
+                  {/* Service Charges */}
+                  <div style={chargesBox}>
+                    <h4>📋 Service Charges</h4>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 10, '@media (min-width: 480px)': { gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" } }}>
+                      <div>Safety: Rs. {(panelQty <= 16 ? safetyCharges.hybrid : safetyCharges.hybridHigh).toLocaleString()}</div>
+                      <div>Transport: Rs. {transportCharges.toLocaleString()}</div>
+                      <div>Installation: Rs. {installCharges.hybrid.toLocaleString()}</div>
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: 15 }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: "var(--text-base)" }}>
+                      <input type="checkbox" checked={greenMeter} onChange={handleGreenMeter} />
+                      <span>🌿 Add Net Metering (Rs. {greenMeterCharges.toLocaleString()})</span>
+                    </label>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Generate Button */}
-            <button
-              type="submit"
-              disabled={saving || !systemType || !customer.name}
-              style={{
-                width: "100%",
-                marginTop: 30,
-                background: saving 
-                  ? "linear-gradient(90deg, #ccc, #999)" 
-                  : "linear-gradient(135deg, #ff9800 0%, #ff6600 100%)",
-                color: "#fff",
-                fontWeight: 800,
-                border: "none",
-                borderRadius: 12,
-                fontSize: 18,
-                padding: "15px 40px",
-                cursor: saving || !systemType || !customer.name ? "not-allowed" : "pointer",
-                boxShadow: "0 4px 15px rgba(255, 152, 0, 0.3)",
-                transition: "all 0.3s ease",
-                opacity: saving || !systemType || !customer.name ? 0.6 : 1
-              }}
-            >
-              {saving ? "🔄 Generating..." : "📄 Generate PDF & Send WhatsApp"}
-            </button>
-            
-            {saving && (
-              <div style={{
-                marginTop: 15,
-                textAlign: "center",
-                color: "#ff9800",
-                fontSize: 14,
-                fontWeight: 600
-              }}>
-                📊 Saving quotation to database...
-              </div>
-            )}
-          </form>
+              {/* Generate Button */}
+              <button
+                type="submit"
+                disabled={saving || !systemType || !customer.name}
+                style={{
+                  width: "100%",
+                  marginTop: "30px",
+                  background: saving 
+                    ? "linear-gradient(90deg, #ccc, #999)" 
+                    : "linear-gradient(135deg, #ff9800 0%, #ff6600 100%)",
+                  color: "#fff",
+                  fontWeight: 800,
+                  border: "none",
+                  borderRadius: "12px",
+                  fontSize: "var(--heading-3)",
+                  padding: "12px 20px",
+                  cursor: saving || !systemType || !customer.name ? "not-allowed" : "pointer",
+                  boxShadow: "0 4px 15px rgba(255, 152, 0, 0.3)",
+                  transition: "all 0.3s ease",
+                  opacity: saving || !systemType || !customer.name ? 0.6 : 1
+                }}
+              >
+                {saving ? "🔄 Generating..." : "📄 Generate PDF & Send WhatsApp"}
+              </button>
+              
+              {saving && (
+                <div style={{
+                  marginTop: 15,
+                  textAlign: "center",
+                  color: "#ff9800",
+                  fontSize: "var(--text-base)",
+                  fontWeight: 600
+                }}>
+                  📊 Saving quotation to database...
+                </div>
+              )}
+            </form>
 
-          {/* Live Preview Section */}
-          {showPreview && (
-            <div style={{ background: "#fff", borderRadius: 16, padding: 20, boxShadow: "0 8px 32px rgba(255, 152, 0, 0.1)" }}>
-              <h3 style={{ 
-                color: "#ff6600", 
-                textAlign: "center", 
-                fontWeight: 800, 
-                marginBottom: 20,
-                fontSize: 20
-              }}>
-                📋 Live Preview
-              </h3>
+            {/* Live Preview Section */}
+            {showPreview && (
               <div style={{ 
-                maxHeight: "80vh", 
-                overflowY: "auto", 
-                border: "2px dashed #ff9800", 
-                borderRadius: 12,
-                padding: 10
+                background: "#fff", 
+                borderRadius: "16px", 
+                padding: "var(--card-padding)", 
+                boxShadow: "0 8px 32px rgba(255, 152, 0, 0.1)",
+                overflow: "auto"
               }}>
-                {renderQuotationPreview()}
+                <h3 style={{ 
+                  color: "#ff6600", 
+                  textAlign: "center", 
+                  fontWeight: 800, 
+                  marginBottom: "20px",
+                  fontSize: "var(--heading-2)"
+                }}>
+                  📋 Live Preview
+                </h3>
+                <div style={{ 
+                  maxHeight: "70vh", 
+                  overflowY: "auto", 
+                  border: "2px dashed #ff9800", 
+                  borderRadius: "12px",
+                  padding: "10px",
+                  display: "flex",
+                  justifyContent: "center"
+                }}>
+                  {renderQuotationPreview()}
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
-      </div>
-      <Footer />
-    </main>
+        <Footer />
+      </main>
+    </>
   );
 }
 
 // Enhanced Styles
 const sectionBox = { 
   background: "linear-gradient(135deg, #fff8e8 0%, #fff3e0 100%)", 
-  borderRadius: 12, 
-  padding: 20, 
+  borderRadius: "12px", 
+  padding: "var(--card-padding)", 
   margin: "20px 0", 
   boxShadow: "0 4px 15px rgba(255, 152, 0, 0.1)",
   border: "1px solid #ffe0b2"
@@ -1331,25 +1340,25 @@ const sectionBox = {
 const sectionTitle = { 
   color: "#FF9800", 
   fontWeight: 800, 
-  fontSize: 18, 
+  fontSize: "var(--heading-3)", 
   margin: "0 0 15px 0",
-  paddingBottom: 10,
+  paddingBottom: "10px",
   borderBottom: "2px solid #ffcc02"
 };
 
 const labelStyle = {
   display: "block",
   fontWeight: 600,
-  marginBottom: 5,
+  marginBottom: "5px",
   color: "#333",
-  fontSize: 14
+  fontSize: "var(--text-base)"
 };
 
 const inputStyle = { 
   width: "100%", 
   padding: "10px 12px", 
-  fontSize: 14, 
-  borderRadius: 8, 
+  fontSize: "var(--text-base)", 
+  borderRadius: "8px", 
   border: "2px solid #ffe8c7", 
   background: "#fff",
   transition: "border-color 0.3s ease",
@@ -1359,22 +1368,25 @@ const inputStyle = {
 const priceInfoBox = {
   background: "linear-gradient(135deg, #e8f5e8 0%, #f1f8e9 100%)",
   border: "2px solid #c8e6c9",
-  borderRadius: 8,
-  padding: 12,
+  borderRadius: "8px",
+  padding: "12px",
   margin: "10px 0",
   display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-  gap: 8,
-  fontSize: 13,
-  color: "#2e7d32"
+  gridTemplateColumns: "1fr",
+  gap: "8px",
+  fontSize: "var(--text-base)",
+  color: "#2e7d32",
+  '@media (min-width: 480px)': {
+    gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))"
+  }
 };
 
 const chargesBox = {
   background: "linear-gradient(135deg, #e3f2fd 0%, #f1f8e9 100%)",
   border: "2px solid #bbdefb",
-  borderRadius: 8,
-  padding: 15,
+  borderRadius: "8px",
+  padding: "15px",
   margin: "15px 0",
-  fontSize: 13,
+  fontSize: "var(--text-base)",
   color: "#1565c0"
 };
