@@ -1,52 +1,42 @@
 import React from "react";
+import logo from "../assets/logo.png";
 
-const EmailVerifiedPage = () => {
+const EmailVerified = () => {
   return (
-    <div style={styles.container}>
-      <div style={styles.card}>
-        <h1 style={styles.title}>🎉 Email Verified</h1>
-        <p style={styles.text}>
-          Your email has been successfully verified.
-        </p>
-        <a href="/" style={styles.button}>Go to Home</a>
-      </div>
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        background: "linear-gradient(to right, #ff9800, #ff6f00)",
+        flexDirection: "column",
+        textAlign: "center",
+        padding: "30px",
+      }}
+    >
+      <img
+        src={logo}
+        alt="Solar Olagawa Logo"
+        style={{ width: "120px", marginBottom: "30px" }}
+      />
+      <h1 style={{ color: "#fff", fontSize: "32px", fontWeight: "bold" }}>
+        🎉 Congratulations!
+      </h1>
+      <p style={{ color: "#fff", fontSize: "20px", marginTop: "10px" }}>
+        Your email has been verified for the <b>Solar Olagawa App</b>.
+      </p>
+      <p style={{ color: "#fff", fontSize: "18px", marginTop: "10px" }}>
+        آپ کا ای میل سولر اولگاوا ایپ کے لیے کامیابی سے تصدیق ہو چکا ہے۔
+      </p>
+      <p style={{ color: "#fff", fontSize: "18px", marginTop: "10px" }}>
+        ستاسو برېښنالیک د سولر اولگاوا ایپ لپاره بریالۍ تایید شو.
+      </p>
+      <p style={{ color: "#fff", fontSize: "18px", marginTop: "20px" }}>
+        Now you can log in to the Solar Olagawa App.
+      </p>
     </div>
   );
 };
 
-const styles = {
-  container: {
-    background: "linear-gradient(135deg, #FFA726, #FB8C00)",
-    height: "100vh",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    fontFamily: "Arial, sans-serif"
-  },
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: "20px",
-    padding: "40px",
-    textAlign: "center",
-    boxShadow: "0 8px 16px rgba(0,0,0,0.2)"
-  },
-  title: {
-    fontSize: "30px",
-    marginBottom: "10px",
-    color: "#E65100"
-  },
-  text: {
-    fontSize: "18px",
-    marginBottom: "20px"
-  },
-  button: {
-    textDecoration: "none",
-    padding: "12px 24px",
-    backgroundColor: "#E65100",
-    color: "#fff",
-    borderRadius: "8px",
-    fontWeight: "bold"
-  }
-};
-
-export default EmailVerifiedPage;
+export default EmailVerified;
