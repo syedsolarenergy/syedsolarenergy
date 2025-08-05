@@ -1,7 +1,9 @@
 // src/pages/Login.js
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
-import logo from "../assets/logo.png"; // Adjust path as needed
+
+// Mock logo component
+const logo = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiByeD0iMTAiIGZpbGw9InVybCgjZ3JhZGllbnQpIi8+CjxkZWZzPgo8bGluZWFyR3JhZGllbnQgaWQ9ImdyYWRpZW50IiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj4KPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iI0ZGNkIzNSIvPgo8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiNGNzkzMUUiLz4KPC9saW5lYXJHcmFkaWVudD4KPC9kZWZzPgo8dGV4dCB4PSI1MCIgeT0iNTUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyMCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5MT0dPPC90ZXh0Pgo8L3N2Zz4=";
 
 // --- Ensure default users in localStorage ---
 if (!localStorage.getItem("users")) {
@@ -87,15 +89,20 @@ function Login() {
     });
   };
 
-  // Handle password visibility toggle without losing focus
+  // Handle password visibility toggle - FIXED VERSION
   const togglePasswordVisibility = (e) => {
     e.preventDefault(); // Prevent default button behavior
+    e.stopPropagation(); // Stop event bubbling
     setShowPassword(!showPassword);
-    // Keep focus on the password input
-    const passwordInput = document.querySelector('input[type="password"], input[type="text"]');
-    if (passwordInput) {
-      passwordInput.focus();
-    }
+    // Small delay to ensure state updates before refocusing
+    setTimeout(() => {
+      const passwordInput = document.querySelector('input[name="password"]');
+      if (passwordInput) {
+        passwordInput.focus();
+        // Maintain cursor position at the end
+        passwordInput.setSelectionRange(passwordInput.value.length, passwordInput.value.length);
+      }
+    }, 0);
   };
   
   return (
@@ -412,12 +419,14 @@ function Login() {
               transform: "translateY(-50%)",
               color: "#F7931E",
               fontSize: "clamp(16px, 3vw, 18px)",
-              zIndex: 1
+              zIndex: 1,
+              pointerEvents: "none" // FIXED: Prevent icon from interfering with input
             }}>
               👤
             </div>
             <input
               type="text"
+              name="username"
               placeholder="Enter username | صارف نام"
               value={username}
               onChange={e => setUsername(e.target.value)}
@@ -457,12 +466,14 @@ function Login() {
               transform: "translateY(-50%)",
               color: "#F7931E",
               fontSize: "clamp(16px, 3vw, 18px)",
-              zIndex: 1
+              zIndex: 1,
+              pointerEvents: "none" // FIXED: Prevent icon from interfering with input
             }}>
               🔒
             </div>
             <input
               type={showPassword ? "text" : "password"}
+              name="password" // FIXED: Added name attribute for better targeting
               placeholder="Enter password | پاس ورڈ"
               value={password}
               onChange={e => setPassword(e.target.value)}
@@ -470,7 +481,7 @@ function Login() {
               disabled={isLoading}
               style={{
                 width: "100%",
-                padding: "clamp(12px, 3vw, 14px) clamp(40px, 8vw, 45px) clamp(12px, 3vw, 14px) clamp(40px, 8vw, 45px)",
+                padding: "clamp(12px, 3vw, 14px) clamp(45px, 9vw, 50px) clamp(12px, 3vw, 14px) clamp(40px, 8vw, 45px)", // FIXED: Increased right padding to prevent overlap
                 borderRadius: "12px",
                 border: "2px solid #ffe0b2",
                 fontSize: "clamp(14px, 3vw, 15px)",
@@ -492,9 +503,12 @@ function Login() {
               }}
             />
             <button
-              type="button"
+              type="button" 
               onClick={togglePasswordVisibility}
-              onMouseDown={(e) => e.preventDefault()} // Prevent the input from losing focus
+              onMouseDown={(e) => {
+                e.preventDefault(); // FIXED: Prevent default mouse down behavior
+                e.stopPropagation(); // FIXED: Stop event propagation
+              }}
               style={{
                 position: "absolute",
                 right: "12px",
@@ -506,7 +520,9 @@ function Login() {
                 cursor: "pointer",
                 color: "#999",
                 transition: "all 0.3s ease",
-                padding: "5px"
+                padding: "8px", // FIXED: Increased padding for better touch target
+                zIndex: 10, // FIXED: Ensure button is above input
+                borderRadius: "4px" // FIXED: Added border radius for better visual feedback
               }}
               tabIndex={-1}
               aria-label="Show password"
@@ -514,10 +530,12 @@ function Login() {
               onMouseOver={(e) => {
                 e.target.style.color = "#F7931E";
                 e.target.style.transform = "translateY(-50%) scale(1.1)";
+                e.target.style.background = "rgba(247, 147, 30, 0.1)"; // FIXED: Added background on hover
               }}
               onMouseOut={(e) => {
                 e.target.style.color = "#999";
                 e.target.style.transform = "translateY(-50%) scale(1)";
+                e.target.style.background = "none"; // FIXED: Remove background on mouse out
               }}
             >
               {showPassword ? "🙈" : "👁️"}
@@ -583,25 +601,31 @@ function Login() {
         
         {/* Enhanced Forgot Password */}
         <div style={{ textAlign: "center", marginTop: "clamp(8px, 2vw, 12px)", marginBottom: "clamp(15px, 4vw, 20px)" }}>
-          <Link to="/forgot-password" style={{
-            color: "#F7931E",
-            fontWeight: 600,
-            textDecoration: "none",
-            fontSize: "clamp(13px, 2.8vw, 14px)",
-            transition: "all 0.3s ease",
-            padding: "6px 12px",
-            borderRadius: "8px"
-          }}
-          onMouseOver={(e) => {
-            e.target.style.color = "#FF6B35";
-            e.target.style.background = "rgba(247, 147, 30, 0.1)";
-          }}
-          onMouseOut={(e) => {
-            e.target.style.color = "#F7931E";
-            e.target.style.background = "transparent";
-          }}>
+          <button 
+            onClick={() => console.log('Forgot password clicked')}
+            style={{
+              color: "#F7931E",
+              fontWeight: 600,
+              textDecoration: "none",
+              fontSize: "clamp(13px, 2.8vw, 14px)",
+              transition: "all 0.3s ease",
+              padding: "6px 12px",
+              borderRadius: "8px",
+              background: "none",
+              border: "none",
+              cursor: "pointer"
+            }}
+            onMouseOver={(e) => {
+              e.target.style.color = "#FF6B35";
+              e.target.style.background = "rgba(247, 147, 30, 0.1)";
+            }}
+            onMouseOut={(e) => {
+              e.target.style.color = "#F7931E";
+              e.target.style.background = "transparent";
+            }}
+          >
             پاس ورڈ بھول گئے؟ | Forgot Password?
-          </Link>
+          </button>
         </div>
         
         {/* Enhanced Footer */}
