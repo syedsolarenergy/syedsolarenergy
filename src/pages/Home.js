@@ -70,7 +70,7 @@ const cssVariables = `
     display: flex;
     align-items: center;
     gap: clamp(30px, 8vw, 80px);
-    flex-wrap: wrap;
+    flex-wrap: wrap-reverse; /* Wrap and reverse order on wrap */
     min-height: var(--hero-height);
   }
 
@@ -104,7 +104,7 @@ const cssVariables = `
     
     .hero-animation {
       min-width: 100%;
-      order: -1;
+      order: -1; /* This will make the animation appear first */
     }
   }
 
@@ -135,7 +135,7 @@ const SolarEnergyFlow = () => {
     <div style={{
       position: 'relative',
       width: '100%',
-      height: 'clamp(300px, 50vw, 400px)',
+      height: 'clamp(250px, 40vh, 400px)', // Reduced height for mobile
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -1289,7 +1289,7 @@ export default function Home() {
         {/* Enhanced Hero Section with Solar Animation */}
         <section
           style={{
-            minHeight: 'var(--hero-height)',
+            minHeight: 'clamp(400px, 85vh, 800px)', // Adjusted for mobile
             background: heroSection?.background_color || 
               `linear-gradient(135deg, 
                 rgba(255, 107, 53, 0.95) 0%, 
@@ -1302,7 +1302,7 @@ export default function Home() {
             alignItems: 'center',
             justifyContent: 'center',
             padding: 'var(--section-padding) 0',
-            margin: 'clamp(15px, 3vw, 20px)',
+            margin: 'clamp(10px, 2vw, 20px)', // Reduced margin for mobile
             borderRadius: 'clamp(20px, 4vw, 30px)',
             textAlign: 'center',
             position: 'relative',
@@ -1336,12 +1336,17 @@ export default function Home() {
           <div className="universal-container" style={{ position: 'relative', zIndex: 2 }}>
             <div className="hero-content">
               
+              {/* Solar Animation - Now first on mobile via CSS order */}
+              <div className="hero-animation">
+                <SolarEnergyFlow />
+              </div>
+              
               {/* Text Content */}
               <div className="hero-text">
                 <h1 style={{ 
-                  fontSize: 'var(--heading-1)', 
+                  fontSize: 'clamp(1.8rem, 6vw, 3.5rem)', // Responsive font
                   fontWeight: 'bold', 
-                  marginBottom: 'clamp(20px, 4vw, 25px)',
+                  marginBottom: 'clamp(15px, 3vw, 20px)',
                   textShadow: '3px 3px 6px rgba(0,0,0,0.3)',
                   lineHeight: '1.1',
                   background: 'linear-gradient(45deg, #ffffff, #fff9c4)',
@@ -1352,8 +1357,8 @@ export default function Home() {
                   {heroSection?.title || "Power Your Future with Solar Energy"}
                 </h1>
                 <p style={{ 
-                  fontSize: 'clamp(20px, 4vw, 28px)', 
-                  marginBottom: 'clamp(16px, 3vw, 20px)', 
+                  fontSize: 'clamp(1rem, 3.5vw, 1.4rem)', 
+                  marginBottom: 'clamp(12px, 2.5vw, 18px)', 
                   opacity: 0.95,
                   fontWeight: '300',
                   textShadow: '1px 1px 2px rgba(0,0,0,0.2)'
@@ -1361,8 +1366,8 @@ export default function Home() {
                   {heroSection?.subtitle || "Clean • Efficient • Sustainable"}
                 </p>
                 <p style={{ 
-                  fontSize: 'clamp(16px, 3vw, 20px)', 
-                  marginBottom: 'clamp(30px, 6vw, 40px)', 
+                  fontSize: 'clamp(0.9rem, 2.8vw, 1.1rem)', 
+                  marginBottom: 'clamp(20px, 5vw, 30px)', 
                   opacity: 0.9,
                   lineHeight: '1.7',
                   maxWidth: 'min(600px, 90vw)'
@@ -1372,9 +1377,10 @@ export default function Home() {
                 
                 <div style={{ 
                   display: 'flex', 
-                  gap: 'clamp(15px, 3vw, 20px)', 
+                  gap: 'clamp(12px, 2.5vw, 18px)', 
                   flexWrap: 'wrap',
-                  justifyContent: window.innerWidth <= 640 ? 'center' : 'flex-start'
+                  justifyContent: 'center',
+                  flexDirection: window.innerWidth <= 640 ? 'column' : 'row' // Stack buttons vertically on mobile
                 }}>
                   <button
                     onClick={() => window.location.href = '/quotation'}
@@ -1382,27 +1388,16 @@ export default function Home() {
                       background: 'linear-gradient(45deg, #ffffff, #f0f0f0)',
                       color: '#FF6600',
                       border: 'none',
-                      padding: 'clamp(16px, 3vw, 20px) clamp(35px, 7vw, 45px)',
-                      borderRadius: 'clamp(35px, 7vw, 50px)',
-                      fontSize: 'clamp(16px, 3vw, 20px)',
+                      padding: 'clamp(12px, 2.5vw, 16px) clamp(25px, 6vw, 35px)',
+                      borderRadius: 'clamp(30px, 6vw, 45px)',
+                      fontSize: 'clamp(0.9rem, 3vw, 1.1rem)',
                       fontWeight: 'bold',
                       cursor: 'pointer',
                       boxShadow: '0 12px 32px rgba(0,0,0,0.2)',
                       transition: 'all 0.4s ease',
-                      transform: 'translateY(0) scale(1)',
                       textTransform: 'uppercase',
-                      letterSpacing: '1px',
+                      letterSpacing: '0.8px',
                       minWidth: 'clamp(180px, 35vw, 220px)'
-                    }}
-                    onMouseEnter={(e) => {
-                      if (window.innerWidth > 768) {
-                        e.target.style.transform = 'translateY(-5px) scale(1.05)';
-                        e.target.style.boxShadow = '0 16px 40px rgba(0,0,0,0.3)';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.transform = 'translateY(0) scale(1)';
-                      e.target.style.boxShadow = '0 12px 32px rgba(0,0,0,0.2)';
                     }}
                   >
                     {heroSection?.button_text || "Get Started"} 🚀
@@ -1414,35 +1409,20 @@ export default function Home() {
                       background: 'transparent',
                       color: '#ffffff',
                       border: '2px solid rgba(255,255,255,0.8)',
-                      padding: 'clamp(14px, 2.8vw, 18px) clamp(30px, 6vw, 40px)',
-                      borderRadius: 'clamp(35px, 7vw, 50px)',
-                      fontSize: 'clamp(14px, 2.8vw, 18px)',
+                      padding: 'clamp(10px, 2.5vw, 14px) clamp(22px, 5vw, 32px)',
+                      borderRadius: 'clamp(30px, 6vw, 45px)',
+                      fontSize: 'clamp(0.85rem, 2.8vw, 1rem)',
                       fontWeight: 'bold',
                       cursor: 'pointer',
                       transition: 'all 0.4s ease',
                       textTransform: 'uppercase',
-                      letterSpacing: '1px',
+                      letterSpacing: '0.8px',
                       minWidth: 'clamp(160px, 32vw, 200px)'
-                    }}
-                    onMouseEnter={(e) => {
-                      if (window.innerWidth > 768) {
-                        e.target.style.background = 'rgba(255,255,255,0.2)';
-                        e.target.style.transform = 'scale(1.05)';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.background = 'transparent';
-                      e.target.style.transform = 'scale(1)';
                     }}
                   >
                     Learn More 📚
                   </button>
                 </div>
-              </div>
-
-              {/* Solar Energy Flow Animation */}
-              <div className="hero-animation">
-                <SolarEnergyFlow />
               </div>
             </div>
           </div>
