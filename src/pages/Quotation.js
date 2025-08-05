@@ -17,9 +17,24 @@ const cssVariables = `
     --heading-3: clamp(1rem, 2.5vw, 1.3rem);
     --text-base: clamp(0.9rem, 1.6vw, 1rem);
   }
+  
+  @media (max-width: 768px) {
+    .preview-container {
+      transform: scale(0.85);
+      transform-origin: top left;
+      width: 120%;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .preview-container {
+      transform: scale(0.75);
+    }
+  }
 `;
 
 export default function Quotation() {
+  // State declarations (same as before)
   const [systemType, setSystemType] = useState("");
   const [autoType, setAutoType] = useState("daytime");
   const [kwAuto, setKwAuto] = useState(5);
@@ -48,7 +63,7 @@ export default function Quotation() {
   const [standPrices, setStandPrices] = useState({});
   const [charges, setCharges] = useState({});
 
-  // Fetch pricing data from Supabase
+  // Fetch pricing data from Supabase (same as before)
   useEffect(() => {
     const fetchPricingData = async () => {
       try {
@@ -157,7 +172,7 @@ export default function Quotation() {
   const greenMeterCharges = charges.green_meter || 140000;
   const siteVisitCharges = charges.site_visit || 2000;
 
-  // Enhanced battery filtering logic
+  // Enhanced battery filtering logic (same as before)
   const updateBatteryModels = (type, allBatteries = null) => {
     const batteries = allBatteries || Object.values(batteryPrices);
     
@@ -183,13 +198,13 @@ export default function Quotation() {
     }
   };
 
-  // Stand quantity logic
+  // Stand quantity logic (same as before)
   function getStandQty(qty, stand) {
     if (stand === "L2") return Math.ceil(qty / 2) || 0;
     return qty || 0;
   }
 
-  // Enhanced auto suggestion logic
+  // Enhanced auto suggestion logic (same as before)
   function getAutoSuggestion() {
     if (autoType === "daytime") {
       const availablePanels = Object.keys(panelPrices);
@@ -230,7 +245,7 @@ export default function Quotation() {
     }
   }
 
-  // Handle battery type change with enhanced logic
+  // Handle battery type change with enhanced logic (same as before)
   const handleBatteryType = (e) => {
     const val = e.target.value;
     setBatteryType(val);
@@ -238,7 +253,7 @@ export default function Quotation() {
     setSelectedBattery("");
   };
 
-  // Handle hybrid inverter capacity change
+  // Handle hybrid inverter capacity change (same as before)
   const handleHybridInverterCapacityChange = (e) => {
     const selectedId = e.target.value;
     setHybridInverterCapacity(selectedId);
@@ -256,7 +271,7 @@ export default function Quotation() {
   
   const handleGreenMeter = e => setGreenMeter(e.target.checked);
 
-  // Enhanced cost calculations
+  // Enhanced cost calculations (same as before)
   function getDaytimeCost(qty, stand, invQty = 1) {
     const panelUnitPrice = panelPrices[panelBrand]?.[panelWatt]?.price || 0;
     const panelTotal = qty * panelUnitPrice;
@@ -301,7 +316,7 @@ export default function Quotation() {
     };
   }
 
-  // Enhanced Supabase save function
+  // Enhanced Supabase save function with error handling
   async function saveQuotationToSupabase(quotationData) {
     try {
       setSaving(true);
@@ -353,7 +368,7 @@ export default function Quotation() {
     }
   }
 
-  // Enhanced PDF generation with better layout
+  // Enhanced PDF generation with high-quality output
   const pdfRef = useRef();
   async function handleGenerateQuotation(e) {
     e.preventDefault();
@@ -443,7 +458,7 @@ export default function Quotation() {
       try {
         const input = pdfRef.current;
         const canvas = await html2canvas(input, {
-          scale: 2,
+          scale: 2, // Higher scale for better quality
           useCORS: true,
           allowTaint: true,
           backgroundColor: '#ffffff',
@@ -458,8 +473,26 @@ export default function Quotation() {
         const imgWidth = 595;
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
         
-        // Add page
-        pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
+        // Check if content exceeds single page
+        if (imgHeight > pdf.internal.pageSize.getHeight()) {
+          // Split into multiple pages if needed
+          let heightLeft = imgHeight;
+          let position = 0;
+          const pageHeight = pdf.internal.pageSize.getHeight() - 20; // Add margin
+          
+          while (heightLeft > 0) {
+            pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+            heightLeft -= pageHeight;
+            
+            if (heightLeft > 0) {
+              position -= pageHeight;
+              pdf.addPage();
+            }
+          }
+        } else {
+          // Add single page
+          pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
+        }
         
         pdf.save(`SyedSolarQuotation-${customer.name || "Customer"}-${new Date().toLocaleDateString()}.pdf`);
         
@@ -506,7 +539,7 @@ JazakAllah! 🤝`
     }, 1000);
   }
 
-  // Enhanced preview rendering
+  // Enhanced preview rendering with responsive design
   function renderQuotationPreview() {
     let data, sysType, sysLabel, previewConfig;
     if (systemType === "auto") {
@@ -540,16 +573,21 @@ JazakAllah! 🤝`
                    (parseInt(panelWatt) * panelQty / 1000).toFixed(1);
 
     return (
-      <div ref={pdfRef} style={{
-        background: "#fff", 
-        width: 595, 
-        minHeight: 842, 
-        padding: "20px", 
-        margin: "0 auto",
-        fontFamily: "'Segoe UI', 'Roboto', sans-serif", 
-        position: "relative",
-        fontSize: 12
-      }}>
+      <div 
+        ref={pdfRef} 
+        className="preview-container"
+        style={{
+          background: "#fff", 
+          width: 595, 
+          minHeight: 842, 
+          padding: "20px", 
+          margin: "0 auto",
+          fontFamily: "'Segoe UI', 'Roboto', sans-serif", 
+          position: "relative",
+          fontSize: 12,
+          boxSizing: "border-box"
+        }}
+      >
         {/* Header */}
         <div style={{ 
           marginBottom: 15,
@@ -788,7 +826,7 @@ JazakAllah! 🤝`
     );
   }
 
-  // Enhanced form UI
+  // Enhanced form UI with responsive improvements
   return (
     <>
       <style>{cssVariables}</style>
@@ -819,7 +857,7 @@ JazakAllah! 🤝`
 
           <div style={{ 
             display: "grid", 
-            gridTemplateColumns: showPreview ? "1fr" : "1fr", 
+            gridTemplateColumns: "1fr", 
             gap: "30px",
             '@media (min-width: 992px)': {
               gridTemplateColumns: showPreview ? "1fr 1fr" : "1fr"
@@ -1313,7 +1351,8 @@ JazakAllah! 🤝`
                   borderRadius: "12px",
                   padding: "10px",
                   display: "flex",
-                  justifyContent: "center"
+                  justifyContent: "center",
+                  overflowX: "auto"
                 }}>
                   {renderQuotationPreview()}
                 </div>
