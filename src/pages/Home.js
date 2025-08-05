@@ -165,7 +165,7 @@ const SolarEnergyFlow = () => {
               width: 'clamp(2px, 0.5vw, 4px)',
               height: 'clamp(15px, 4vw, 25px)',
               background: 'linear-gradient(transparent, #FFD700, transparent)',
-              transformOrigin: `${clamp(1, 0.25, 2)}px 0px`,
+              transformOrigin: '2px 0px',
               transform: `translate(-50%, -100%) rotate(${i * 45}deg)`,
               animation: `sunRays 2s ease-in-out infinite ${i * 0.1}s`
             }}
@@ -385,7 +385,7 @@ const SolarEnergyFlow = () => {
               width: 'clamp(1px, 0.3vw, 2px)',
               height: 'clamp(15px, 3vw, 20px)',
               background: 'linear-gradient(transparent, #fff9c4, transparent)',
-              transformOrigin: `${clamp(0.5, 0.15, 1)}px 0px`,
+              transformOrigin: '1px 0px',
               transform: `translate(-50%, -100%) rotate(${i * 30}deg)`,
               animation: `lightRays 2s ease-in-out infinite ${i * 0.1}s`,
               opacity: 0.7
