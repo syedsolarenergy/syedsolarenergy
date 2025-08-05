@@ -1124,6 +1124,14 @@ export default function Home() {
   const [eventsMode, setEventsMode] = useState("grid");
   const [partnersMode, setPartnersMode] = useState("grid");
   const [customersMode, setCustomersMode] = useState("grid");
+    // track screen width for responsive layout
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
 
   // Real-time subscription setup
   const setupRealtimeSubscription = useCallback(() => {
