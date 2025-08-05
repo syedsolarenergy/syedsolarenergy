@@ -594,10 +594,10 @@ JazakAllah! 🤝`
         <ul style={{ marginTop: 10, paddingLeft: 20, marginBottom: 10, lineHeight: 1.6 }}>
           <li>All solar panels are <b>A-Grade, Tier-1</b></li>
           <li>Inverters include comprehensive warranty: <b>Daytime (5 years)</b>, <b>Hybrid (as per brand policy)</b></li>
-          <li>Lithium batteries: <b>5-10 years as per company</b> | Tubular batteries: <b>as per comapny policy</b></li>
+          <li>Lithium batteries: <b>5-10 years as per company policy</b> | Tubular batteries: <b>as per comapny policy</b></li>
           <li>Professional installation with <b>6 months after-sales service warranty</b></li>
-          <li>Site visit charges: <b>Rs. 2,000/-</b> (Peshawar city) - <b>Adjustable in final bill</b></li>
-          <li><b>Free system monitoring</b> and maintenance guidance for first months</li>
+          <li>Site visit charges: <b>Rs. 2,000/-</b> (Peshawar city)</li>
+          <li><b>Free system monitoring</b> and maintenance guidance for first month</li>
         </ul>
       </div>
     );
@@ -838,7 +838,7 @@ JazakAllah! 🤝`
           marginTop: 15
         }}>
           <div style={{ marginBottom: 8 }}>
-            📧 sales@syedsolarenergy.com | 📱 WhatsApp: 0304-467-8929 | ☎️ Office: 0307-5596695
+            📧 sales@syedsolarenergy.com | 📱 WhatsApp: 0304-4678929/0307-5596695
           </div>
           <div style={{ fontSize: 12, opacity: 0.9 }}>
             🏢 Office #23, Mustafa Plaza, Ring Road, Peshawar | 🌐 www.syedsolarenergy.com
