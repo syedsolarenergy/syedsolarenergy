@@ -1324,15 +1324,15 @@ export default function Home() {
       }}>
 
         {/* Enhanced Hero Section with Solar Animation */}
-        <section style={{ padding: 'var(--section-padding) 0', margin: 0 }}>
-            {/* Centered hero “card” */}
-  
+<section style={{ padding: 'var(--section-padding) 0', margin: 0 }}>
+  {/* Centered hero “card” */}
+  <div
     style={{
       maxWidth: isMobile ? '90vw' : '800px',
       margin: '0 auto',
       minHeight: 'clamp(400px, 85vh, 800px)',
-      background: '…orange gradient…',        // copy your old background
-      borderRadius: 'clamp(20px, 4vw, 30px)', // copy old radius
+      background: 'linear-gradient(135deg, #FF6B35 0%, #F7931E 100%)', // ← your actual gradient
+      borderRadius: 'clamp(20px, 4vw, 30px)',
       boxShadow: '0 20px 60px rgba(255, 107, 53, 0.3)',
       overflow: 'hidden',
       color: 'white',
@@ -1340,7 +1340,34 @@ export default function Home() {
       alignItems: 'center',
       justifyContent: 'center',
     }}
-  
+  >
+    {/* Content Container */}
+    <div className="universal-container" style={{ position: 'relative', zIndex: 2 }}>
+      <div
+        className="hero-content"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: isMobile ? 'center' : 'space-between',
+          flexDirection: isMobile ? 'column' : 'row',
+          gap: 'clamp(30px, 8vw, 80px)',
+        }}
+      >
+        {/* Solar Animation */}
+        <div
+          className="hero-animation"
+          style={{ margin: isMobile ? '0 auto' : undefined }}
+        >
+          <SolarEnergyFlow />
+        </div>
+
+        {/* Text Content */}
+        <div className="hero-text">
+          {/* …your headings, paragraphs, buttons… */}
+        </div>
+      </div>
+    </div>
+  </div>{/* ← closes the hero “card” wrapper */}
 
           
           {/* Animated background particles */}
