@@ -393,7 +393,7 @@ const EmailVerified = () => {
                 if (isAndroid) {
                   // Try to open Android app with custom scheme
                   const appScheme = 'solarolagawa://login';
-                  const playStoreUrl = 'https://play.google.com/store/apps/details?id=com.solarolagawa.app';
+                  const playStoreUrl = 'https://play.google.com/store/apps/details?id=syedsolarenergy.com.solar_olagawa';
                   
                   // Create a hidden iframe to attempt app launch
                   const iframe = document.createElement('iframe');
