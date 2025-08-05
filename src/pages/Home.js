@@ -85,20 +85,31 @@ const cssVariables = `
     min-width: min(350px, 100%);
   }
 
-  .hero-animation {
+  .hero-image {
     flex: 1 1 min(350px, 100%);
     min-width: min(300px, 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .hero-image img {
+    width: 100%;
+    max-width: min(550px, 100%);
+    height: auto;
+    border-radius: var(--border-radius);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+    object-fit: cover;
   }
 
   /* Mobile Optimizations */
-    @media (max-width: 768px) {
+  @media (max-width: 768px) {
     :root {
       --card-min-width: 100%;
       --grid-gap: clamp(12px, 4vw, 20px);
       --hero-height: auto;
     }
 
-    /* Center the flex and stack items neatly */
     .hero-content {
       flex-direction: column;
       justify-content: center;
@@ -107,20 +118,17 @@ const cssVariables = `
       gap: clamp(20px, 6vw, 40px);
     }
 
-    /* Make both animation and text full-width and centered */
-    .hero-animation,
+    .hero-image,
     .hero-text {
       min-width: auto;
       width: 100%;
       margin: 0 auto;
     }
 
-    /* Keep the animation above the text */
-    .hero-animation {
+    .hero-image {
       order: -1;
     }
   }
-
 
   @media (min-width: 641px) and (max-width: 1024px) {
     .grid-features {
@@ -134,312 +142,7 @@ const cssVariables = `
       --container-max: 1600px;
     }
   }
-
-  /* High DPI displays */
-  @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 2dppx) {
-    .hero-animation {
-      transform: scale(0.95);
-    }
-  }
 `;
-
-// Enhanced Solar Energy Flow Component with better mobile support
-const SolarEnergyFlow = () => {
-  // Mobile detection hook
-  const [isMobile, setIsMobile] = useState(false);
-  
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth <= 768);
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
-  return (
-    <div style={{
-      position: 'relative',
-      width: '100%',
-      height: isMobile ? '150px' : 'clamp(200px, 30vh, 350px)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginBottom: 'clamp(20px, 4vw, 40px)',
-      overflow: 'hidden'
-    }}>
-      {/* Animated Sun */}
-      <div style={{
-        position: 'absolute',
-        top: isMobile ? '10px' : 'clamp(10px, 3vw, 20px)',
-        left: isMobile ? '5%' : 'clamp(5%, 2vw, 10%)',
-        width: isMobile ? '40px' : 'clamp(60px, 12vw, 80px)',
-        height: isMobile ? '40px' : 'clamp(60px, 12vw, 80px)',
-        background: 'radial-gradient(circle, #FFD700, #FFA500)',
-        borderRadius: '50%',
-        animation: 'sunPulse 3s ease-in-out infinite',
-        boxShadow: isMobile ? '0 0 10px rgba(255, 215, 0, 0.6)' : '0 0 clamp(20px, 4vw, 30px) rgba(255, 215, 0, 0.6)',
-        zIndex: 3
-      }}>
-        {/* Sun Rays */}
-        {[...Array(8)].map((_, i) => (
-          <div
-            key={i}
-            style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              width: 'clamp(2px, 0.5vw, 4px)',
-              height: isMobile ? '10px' : 'clamp(15px, 4vw, 25px)',
-              background: 'linear-gradient(transparent, #FFD700, transparent)',
-              transformOrigin: '2px 0px',
-              transform: `translate(-50%, -100%) rotate(${i * 45}deg)`,
-              animation: `sunRays 2s ease-in-out infinite ${i * 0.1}s`
-            }}
-          />
-        ))}
-      </div>
-
-      {/* Energy Rays from Sun to Solar Panel - Simplified on mobile */}
-      {!isMobile && [...Array(5)].map((_, i) => (
-        <div
-          key={i}
-          style={{
-            position: 'absolute',
-            top: 'clamp(60px, 15vw, 80px)',
-            left: `${15 + i * 2}%`,
-            width: 'clamp(2px, 0.4vw, 3px)',
-            height: 'clamp(70px, 15vw, 100px)',
-            background: 'linear-gradient(to bottom, #FFD700, transparent)',
-            transform: 'rotate(15deg)',
-            animation: `energyRays 1.5s ease-in-out infinite ${i * 0.2}s`,
-            opacity: 0.8
-          }}
-        />
-      ))}
-
-      {/* Solar Panel */}
-      <div style={{
-        position: 'absolute',
-        top: isMobile ? '60px' : 'clamp(130px, 25vw, 180px)',
-        left: isMobile ? '20%' : 'clamp(15%, 4vw, 20%)',
-        width: isMobile ? '70px' : 'clamp(90px, 18vw, 120px)',
-        height: isMobile ? '45px' : 'clamp(60px, 12vw, 80px)',
-        background: 'linear-gradient(145deg, #1a237e, #3949ab)',
-        borderRadius: isMobile ? '5px' : 'clamp(6px, 1vw, 8px)',
-        border: `${isMobile ? '1px' : 'clamp(2px, 0.4vw, 3px)'} solid #0d47a1`,
-        display: 'grid',
-        gridTemplateColumns: 'repeat(4, 1fr)',
-        gridTemplateRows: 'repeat(3, 1fr)',
-        gap: 'clamp(1px, 0.2vw, 2px)',
-        padding: 'clamp(2px, 0.5vw, 4px)',
-        animation: 'panelGlow 2s ease-in-out infinite',
-        zIndex: 2
-      }}>
-        {[...Array(12)].map((_, i) => (
-          <div
-            key={i}
-            style={{
-              background: 'linear-gradient(145deg, #283593, #1a237e)',
-              borderRadius: 'clamp(1px, 0.2vw, 2px)',
-              animation: `panelCell 2s ease-in-out infinite ${i * 0.1}s`
-            }}
-          />
-        ))}
-      </div>
-
-      {/* Electricity Flow Line */}
-      <svg
-        style={{
-          position: 'absolute',
-          top: '0',
-          left: '0',
-          width: '100%',
-          height: '100%',
-          zIndex: 1,
-          pointerEvents: 'none'
-        }}
-        viewBox="0 0 800 400"
-        preserveAspectRatio="xMidYMid meet"
-      >
-        <defs>
-          <linearGradient id="electricFlow" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#00e5ff" stopOpacity="0"/>
-            <stop offset="50%" stopColor="#00e5ff" stopOpacity="1"/>
-            <stop offset="100%" stopColor="#00e5ff" stopOpacity="0"/>
-          </linearGradient>
-        </defs>
-        
-        {/* Curved path from solar panel to inverter */}
-        <path
-          d={isMobile ? "M 160 120 Q 280 100 380 140" : "M 280 220 Q 400 180 520 240"}
-          stroke="url(#electricFlow)"
-          strokeWidth={isMobile ? "2" : "clamp(2, 0.5vw, 4)"}
-          fill="none"
-          strokeDasharray="10,5"
-          style={{
-            animation: 'electricFlow 2s linear infinite'
-          }}
-        />
-        
-        {/* Path from inverter to bulb */}
-        <path
-          d={isMobile ? "M 380 140 Q 500 100 580 80" : "M 600 240 Q 680 200 720 160"}
-          stroke="url(#electricFlow)"
-          strokeWidth={isMobile ? "2" : "clamp(2, 0.5vw, 4)"}
-          fill="none"
-          strokeDasharray="10,5"
-          style={{
-            animation: 'electricFlow 2s linear infinite 0.5s'
-          }}
-        />
-        
-        {/* Electric sparks - Simplified on mobile */}
-        {!isMobile && [...Array(3)].map((_, i) => (
-          <circle
-            key={i}
-            cx={350 + i * 100}
-            cy={200 + Math.sin(i) * 20}
-            r="clamp(2, 0.4vw, 3)"
-            fill="#00e5ff"
-            style={{
-              animation: `electricSpark 1s ease-in-out infinite ${i * 0.3}s`
-            }}
-          />
-        ))}
-      </svg>
-
-      {/* Inverter */}
-      <div style={{
-        position: 'absolute',
-        top: isMobile ? '80px' : 'clamp(150px, 30vw, 200px)',
-        left: isMobile ? '50%' : 'clamp(60%, 12vw, 65%)',
-        width: isMobile ? '50px' : 'clamp(60px, 12vw, 80px)',
-        height: isMobile ? '35px' : 'clamp(45px, 9vw, 60px)',
-        background: 'linear-gradient(145deg, #424242, #616161)',
-        borderRadius: isMobile ? '5px' : 'clamp(6px, 1vw, 8px)',
-        border: `${isMobile ? '1px' : 'clamp(1px, 0.3vw, 2px)'} solid #212121`,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        animation: 'inverterHum 3s ease-in-out infinite',
-        zIndex: 2
-      }}>
-        <div style={{
-          width: isMobile ? '30px' : 'clamp(35px, 7vw, 50px)',
-          height: isMobile ? '4px' : 'clamp(6px, 1.2vw, 8px)',
-          background: 'linear-gradient(90deg, #4caf50, #8bc34a)',
-          borderRadius: isMobile ? '2px' : 'clamp(3px, 0.6vw, 4px)',
-          marginBottom: 'clamp(2px, 0.5vw, 4px)',
-          animation: 'statusLight 1s ease-in-out infinite alternate'
-        }} />
-        <div style={{
-          fontSize: isMobile ? '8px' : 'clamp(6px, 1.5vw, 10px)',
-          color: '#fff',
-          fontWeight: 'bold'
-        }}>
-          INVERTER
-        </div>
-      </div>
-
-      {/* Light Bulb */}
-      <div style={{
-        position: 'absolute',
-        top: isMobile ? '30px' : 'clamp(90px, 18vw, 120px)',
-        right: isMobile ? '10%' : 'clamp(8%, 2vw, 10%)',
-        width: isMobile ? '30px' : 'clamp(40px, 8vw, 50px)',
-        height: isMobile ? '45px' : 'clamp(55px, 11vw, 70px)',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        animation: 'bulbGlow 2s ease-in-out infinite',
-        zIndex: 2
-      }}>
-        {/* Bulb Glass */}
-        <div style={{
-          width: isMobile ? '25px' : 'clamp(30px, 6vw, 40px)',
-          height: isMobile ? '25px' : 'clamp(30px, 6vw, 40px)',
-          background: 'radial-gradient(circle, #fff9c4, #fff176)',
-          borderRadius: '50% 50% 50% 50% / 60% 60% 40% 40%',
-          border: `${isMobile ? '1px' : 'clamp(1px, 0.3vw, 2px)'} solid #fbc02d`,
-          position: 'relative',
-          animation: 'lightFlicker 3s ease-in-out infinite'
-        }}>
-          {/* Filament */}
-          <div style={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: isMobile ? '10px' : 'clamp(15px, 3vw, 20px)',
-            height: isMobile ? '10px' : 'clamp(15px, 3vw, 20px)',
-            background: 'none',
-            border: `${isMobile ? '0.5px' : 'clamp(0.5px, 0.2vw, 1px)'} solid #f57f17`,
-            borderRadius: '50%'
-          }} />
-        </div>
-        
-        {/* Bulb Base */}
-        <div style={{
-          width: isMobile ? '18px' : 'clamp(22px, 4.5vw, 30px)',
-          height: isMobile ? '12px' : 'clamp(15px, 3vw, 20px)',
-          background: 'linear-gradient(145deg, #666, #999)',
-          borderRadius: '0 0 clamp(6px, 1vw, 8px) clamp(6px, 1vw, 8px)',
-          position: 'relative'
-        }}>
-          {[...Array(3)].map((_, i) => (
-            <div
-              key={i}
-              style={{
-                width: '100%',
-                height: isMobile ? '1px' : 'clamp(1px, 0.3vw, 2px)',
-                background: '#444',
-                marginTop: isMobile ? '1px' : 'clamp(1px, 0.3vw, 2px)'
-              }}
-            />
-          ))}
-        </div>
-
-        {/* Light Rays - Simplified on mobile */}
-        {!isMobile && [...Array(6)].map((_, i) => (
-          <div
-            key={i}
-            style={{
-              position: 'absolute',
-              top: 'clamp(15px, 3vw, 20px)',
-              left: '50%',
-              width: 'clamp(1px, 0.3vw, 2px)',
-              height: 'clamp(15px, 3vw, 20px)',
-              background: 'linear-gradient(transparent, #fff9c4, transparent)',
-              transformOrigin: '1px 0px',
-              transform: `translate(-50%, -100%) rotate(${i * 30}deg)`,
-              animation: `lightRays 2s ease-in-out infinite ${i * 0.1}s`,
-              opacity: 0.7
-            }}
-          />
-        ))}
-      </div>
-
-      {/* Energy Flow Particles - Removed on mobile */}
-      {!isMobile && [...Array(6)].map((_, i) => (
-        <div
-          key={i}
-          style={{
-            position: 'absolute',
-            width: 'clamp(3px, 0.6vw, 4px)',
-            height: 'clamp(3px, 0.6vw, 4px)',
-            background: '#00e5ff',
-            borderRadius: '50%',
-            animation: `flowParticles 3s linear infinite ${i * 0.3}s`,
-            opacity: 0.8
-          }}
-        />
-      ))}
-    </div>
-  );
-};
 
 // Enhanced WhatsApp Popup Component
 const WhatsAppPopup = () => {
@@ -907,7 +610,7 @@ const SpecialOfferPopup = () => {
   );
 };
 
-// Enhanced Counter Component with better mobile support
+// Enhanced Counter Component
 const Counter = ({ value, label, color = "#FF6B35" }) => {
   const [count, setCount] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
@@ -1044,7 +747,7 @@ const Counter = ({ value, label, color = "#FF6B35" }) => {
   );
 };
 
-// Enhanced Card Component with better mobile support
+// Enhanced Card Component
 const Card3D = ({ children, className = "", style = {} }) => (
   <div
     style={{
@@ -1132,14 +835,6 @@ export default function Home() {
   const [eventsMode, setEventsMode] = useState("grid");
   const [partnersMode, setPartnersMode] = useState("grid");
   const [customersMode, setCustomersMode] = useState("grid");
-    // track screen width for responsive layout
-  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth <= 768);
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
 
   // Real-time subscription setup
   const setupRealtimeSubscription = useCallback(() => {
@@ -1217,7 +912,7 @@ export default function Home() {
     setupRealtimeSubscription();
   }, [setupRealtimeSubscription]);
 
-  // Enhanced slider settings with better mobile support
+  // Enhanced slider settings
   const sliderSettings = {
     dots: true,
     infinite: true,
@@ -1320,108 +1015,13 @@ export default function Home() {
           radial-gradient(circle at 40% 80%, rgba(255, 152, 0, 0.08) 0%, transparent 50%),
           linear-gradient(135deg, #f8faff 0%, #fff3e0 25%, #ffe0b2 50%, #ffcc80 75%, #ffb74d 100%)
         `,
-        overflowX: 'hidden' // Prevent horizontal overflow
+        overflowX: 'hidden'
       }}>
-
-        {/* Enhanced Hero Section with Solar Animation */}
-<section style={{ padding: 'var(--section-padding) 0', margin: 0 }}>
-  {/* Centered hero “card” */}
-  <div
-    style={{
-      maxWidth: isMobile ? '90vw' : '800px',
-      margin: '0 auto',
-      minHeight: 'clamp(400px, 85vh, 800px)',
-      background: 'linear-gradient(135deg, #FF6B35 0%, #F7931E 100%)', // ← your actual gradient
-      borderRadius: 'clamp(20px, 4vw, 30px)',
-      boxShadow: '0 20px 60px rgba(255, 107, 53, 0.3)',
-      overflow: 'hidden',
-      color: 'white',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-    }}
-  >
-    {/* Content Container */}
-    <div className="universal-container" style={{ position: 'relative', zIndex: 2 }}>
-      <div
-        className="hero-content"
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: isMobile ? 'center' : 'space-between',
-          flexDirection: isMobile ? 'column' : 'row',
-          gap: 'clamp(30px, 8vw, 80px)',
-        }}
-      >
-        {/* Solar Animation */}
-        <div
-          className="hero-animation"
-          style={{ margin: isMobile ? '0 auto' : undefined }}
-        >
-          <SolarEnergyFlow />
-        </div>
-
-        {/* Text Content */}
-        <div className="hero-text">
-          {/* …your headings, paragraphs, buttons… */}
-        </div>
-      </div>
-    </div>
-  </div>{/* ← closes the hero “card” wrapper */}
-
-          
-          {/* Animated background particles */}
-          {[...Array(window.innerWidth <= 768 ? 8 : 15)].map((_, i) => (
-            <div
-              key={i}
-              style={{
-                position: 'absolute',
-                width: `clamp(3px, 1vw, ${Math.random() * 8 + 4}px)`,
-                height: `clamp(3px, 1vw, ${Math.random() * 8 + 4}px)`,
-                background: 'rgba(255,255,255,0.3)',
-                borderRadius: '50%',
-                top: `${Math.random() * 100}%`,
-                left: `${Math.random() * 100}%`,
-                animation: `floatingParticles ${Math.random() * 15 + 10}s linear infinite ${Math.random() * 5}s`
-              }}
-            />
-          ))}
-
+        {/* Enhanced Hero Section with Professional Image */}
+        <section style={{ padding: 'var(--section-padding) 0', margin: 0 }}>
           {/* Content Container */}
-          <div
-  className="universal-container"
-  style={{
-    position: 'relative',
-    zIndex: 2,
-    maxWidth: isMobile ? '90vw' : '800px',   // ← limit width
-    margin: '0 auto'                          // ← center it
-  }}
->
-            <div
-  className="hero-content"
-  style={{
-    display: 'flex',
-    alignItems: 'center',
-    // center on mobile, space out on desktop:
-    justifyContent: isMobile ? 'center' : 'space-between',
-    // stack vertically on mobile, horizontally on desktop:
-    flexDirection: isMobile ? 'column' : 'row',
-    // restore your gap:
-    gap: 'clamp(30px, 8vw, 80px)',
-  }}
->
-              
-              {/* Solar Animation */}
-              <div
-  className="hero-animation"
-  style={{
-    // center the animation on narrow screens:
-    margin: isMobile ? '0 auto' : undefined,
-  }}
->
-                <SolarEnergyFlow />
-              </div>
-              
+          <div className="universal-container">
+            <div className="hero-content">
               {/* Text Content */}
               <div className="hero-text">
                 <h1 style={{ 
@@ -1461,7 +1061,7 @@ export default function Home() {
                   gap: 'clamp(12px, 2.5vw, 18px)', 
                   flexWrap: 'wrap',
                   justifyContent: 'center',
-                  flexDirection: window.innerWidth <= 640 ? 'column' : 'row'
+                  flexDirection: 'row'
                 }}>
                   <button
                     onClick={() => window.location.href = '/quotation'}
@@ -1504,6 +1104,14 @@ export default function Home() {
                     Learn More 📚
                   </button>
                 </div>
+              </div>
+              
+              {/* Professional Solar Image */}
+              <div className="hero-image">
+                <img 
+                  src="/solar-panel-hero.jpg" 
+                  alt="Professional Solar Energy Solutions"
+                />
               </div>
             </div>
           </div>
@@ -2051,132 +1659,6 @@ export default function Home() {
               50% { transform: scale(1.05); opacity: 1; }
             }
 
-            @keyframes sunPulse {
-              0%, 100% { 
-                transform: scale(1); 
-                box-shadow: 0 0 clamp(20px, 4vw, 30px) rgba(255, 215, 0, 0.6); 
-              }
-              50% { 
-                transform: scale(1.05); 
-                box-shadow: 0 0 clamp(35px, 6vw, 50px) rgba(255, 215, 0, 0.8); 
-              }
-            }
-
-            @keyframes sunRays {
-              0%, 100% { 
-                opacity: 0.5; 
-                transform: translate(-50%, -100%) rotate(var(--rotation)) scale(1); 
-              }
-              50% { 
-                opacity: 1; 
-                transform: translate(-50%, -100%) rotate(var(--rotation)) scale(1.1); 
-              }
-            }
-
-            @keyframes energyRays {
-              0% { opacity: 0; height: clamp(40px, 8vw, 50px); }
-              50% { opacity: 1; height: clamp(70px, 15vw, 100px); }
-              100% { opacity: 0; height: clamp(100px, 20vw, 150px); }
-            }
-
-            @keyframes panelGlow {
-              0%, 100% { box-shadow: 0 0 clamp(15px, 3vw, 20px) rgba(26, 35, 126, 0.3); }
-              50% { box-shadow: 0 0 clamp(25px, 5vw, 30px) rgba(26, 35, 126, 0.6); }
-            }
-
-            @keyframes panelCell {
-              0%, 100% { background: linear-gradient(145deg, #283593, #1a237e); }
-              50% { background: linear-gradient(145deg, #3949ab, #283593); }
-            }
-
-            @keyframes electricFlow {
-              0% { stroke-dashoffset: 100; }
-              100% { stroke-dashoffset: 0; }
-            }
-
-            @keyframes electricSpark {
-              0%, 100% { opacity: 0; r: clamp(1, 0.2vw, 1); }
-              50% { opacity: 1; r: clamp(3, 0.6vw, 4); }
-            }
-
-            @keyframes inverterHum {
-              0%, 100% { transform: translateY(0px); }
-              50% { transform: translateY(clamp(-1px, -0.3vw, -2px)); }
-            }
-
-            @keyframes statusLight {
-              0% { background: linear-gradient(90deg, #4caf50, #8bc34a); }
-              100% { background: linear-gradient(90deg, #8bc34a, #4caf50); }
-            }
-
-            @keyframes bulbGlow {
-              0%, 100% { transform: scale(1); }
-              50% { transform: scale(1.03); }
-            }
-
-            @keyframes lightFlicker {
-              0%, 100% { 
-                background: radial-gradient(circle, #fff9c4, #fff176);
-                box-shadow: 0 0 clamp(15px, 3vw, 20px) rgba(255, 249, 196, 0.8);
-              }
-              50% { 
-                background: radial-gradient(circle, #ffffff, #fff9c4);
-                box-shadow: 0 0 clamp(25px, 5vw, 30px) rgba(255, 249, 196, 1);
-              }
-            }
-
-            @keyframes lightRays {
-              0%, 100% { opacity: 0.4; height: clamp(12px, 2.5vw, 15px); }
-              50% { opacity: 0.8; height: clamp(20px, 4vw, 25px); }
-            }
-
-            @keyframes flowParticles {
-              0% {
-                left: 20%;
-                top: 55%;
-                opacity: 0;
-              }
-              25% {
-                left: 40%;
-                top: 45%;
-                opacity: 1;
-              }
-              50% {
-                left: 65%;
-                top: 60%;
-                opacity: 1;
-              }
-              75% {
-                left: 85%;
-                top: 40%;
-                opacity: 1;
-              }
-              100% {
-                left: 90%;
-                top: 30%;
-                opacity: 0;
-              }
-            }
-
-            @keyframes floatingParticles {
-              0% { 
-                transform: translateY(0px) translateX(0px) rotate(0deg) scale(1); 
-                opacity: 0.2;
-              }
-              33% { 
-                transform: translateY(clamp(-20px, -3vw, -30px)) translateX(clamp(15px, 2vw, 20px)) rotate(120deg) scale(1.1); 
-                opacity: 0.6;
-              }
-              66% { 
-                transform: translateY(clamp(-8px, -1.5vw, -10px)) translateX(clamp(-10px, -2vw, -15px)) rotate(240deg) scale(0.9); 
-                opacity: 0.8;
-              }
-              100% { 
-                transform: translateY(0px) translateX(0px) rotate(360deg) scale(1); 
-                opacity: 0.2;
-              }
-            }
-
             @keyframes fadeIn {
               0% { opacity: 0; backdrop-filter: blur(0px); }
               100% { opacity: 1; backdrop-filter: blur(8px); }
@@ -2232,22 +1714,6 @@ export default function Home() {
               .slick-dots li button:before {
                 font-size: 8px !important;
               }
-              
-              /* Reduce animation intensity on mobile */
-              @keyframes floatingParticles {
-                0% { 
-                  transform: translateY(0px) translateX(0px) rotate(0deg) scale(0.7); 
-                  opacity: 0.15;
-                }
-                50% { 
-                  transform: translateY(-15px) translateX(10px) rotate(180deg) scale(0.8); 
-                  opacity: 0.4;
-                }
-                100% { 
-                  transform: translateY(0px) translateX(0px) rotate(360deg) scale(0.7); 
-                  opacity: 0.15;
-                }
-              }
             }
 
             @media (min-width: 481px) and (max-width: 768px) {
@@ -2286,11 +1752,6 @@ export default function Home() {
 
             /* High DPI display optimizations */
             @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 2dppx) {
-              .hero-animation svg {
-                image-rendering: -webkit-optimize-contrast;
-                image-rendering: crisp-edges;
-              }
-              
               img {
                 image-rendering: -webkit-optimize-contrast;
                 image-rendering: crisp-edges;
@@ -2313,72 +1774,6 @@ export default function Home() {
                 transition-duration: 0.01ms !important;
                 scroll-behavior: auto !important;
               }
-              
-              .hero-animation {
-                transform: none !important;
-              }
-            }
-
-            /* High contrast mode support */
-            @media (prefers-contrast: high) {
-              .card3d, .universal-container > div {
-                border: 2px solid #000 !important;
-              }
-              
-              button {
-                border: 2px solid #000 !important;
-              }
-            }
-
-            /* Print styles */
-            @media print {
-              .floating-particle,
-              .hero-animation,
-              .whatsapp-popup,
-              .special-offer-popup {
-                display: none !important;
-              }
-              
-              .universal-container {
-                max-width: 100% !important;
-                margin: 0 !important;
-                padding: 10px !important;
-              }
-              
-              section {
-                break-inside: avoid;
-                page-break-inside: avoid;
-              }
-            }
-
-            /* Touch device optimizations */
-            @media (hover: none) and (pointer: coarse) {
-              .card3d:active {
-                transform: scale(0.98) !important;
-              }
-              
-              button:active {
-                transform: scale(0.95) !important;
-              }
-              
-              /* Increase touch targets on mobile */
-              button {
-                min-height: 44px;
-                min-width: 44px;
-              }
-            }
-
-            /* Landscape orientation on mobile */
-            @media (max-width: 896px) and (orientation: landscape) {
-              .hero-content {
-                flex-direction: row;
-                min-height: clamp(400px, 60vh, 500px);
-              }
-              
-              .hero-text, .hero-animation {
-                flex: 1;
-                min-width: 300px;
-              }
             }
 
             /* Focus management for accessibility */
@@ -2388,7 +1783,7 @@ export default function Home() {
               outline-offset: 2px;
             }
 
-            /* Smooth scrolling with better browser support */
+            /* Smooth scrolling */
             html {
               scroll-behavior: smooth;
             }
@@ -2420,7 +1815,7 @@ export default function Home() {
               box-shadow: 0 0 8px rgba(255, 107, 53, 0.3);
             }
 
-            /* Slider customizations for better mobile experience */
+            /* Slider customizations */
             .slick-slider {
               margin-bottom: clamp(20px, 4vw, 30px);
             }
@@ -2442,26 +1837,6 @@ export default function Home() {
             .slick-dots li.slick-active button:before {
               opacity: 1;
               color: #F7931E !important;
-            }
-            
-            .slick-prev, .slick-next {
-              z-index: 1;
-            }
-            
-            .slick-prev:before, .slick-next:before {
-              color: #FF6B35 !important;
-              font-size: clamp(16px, 3vw, 20px) !important;
-            }
-
-            /* Enhanced loading states */
-            .shimmer-loading {
-              background: linear-gradient(90deg, 
-                #f0f0f0 25%, 
-                #e0e0e0 50%, 
-                #f0f0f0 75%
-              );
-              background-size: 200% 100%;
-              animation: shimmer 1.5s infinite;
             }
           `}
         </style>

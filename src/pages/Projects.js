@@ -893,9 +893,9 @@ export default function Projects() {
               flexWrap: 'wrap'
             }}>
               {[
-                { number: projects.length, label: 'Projects' },
-                { number: '98%', label: 'Satisfaction' },
-                { number: '25+', label: 'Years Warranty' }
+                { number: '2000+', label: 'Projects' },
+                { number: '99.9%', label: 'Satisfaction' },
+                { number: '10+', label: 'Years Installation Warranty' }
               ].map((stat, index) => (
                 <div key={index} style={{
                   textAlign: 'center',
