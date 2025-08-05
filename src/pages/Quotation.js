@@ -18,6 +18,17 @@ const cssVariables = `
     --text-base: clamp(0.9rem, 1.6vw, 1rem);
   }
   
+  /* Remove number input spinners for mobile */
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  
+  input[type=number] {
+    -moz-appearance: textfield;
+  }
+  
   @media (max-width: 768px) {
     .preview-container {
       transform: scale(0.85);
@@ -62,7 +73,7 @@ export default function Quotation() {
   const [batteryPrices, setBatteryPrices] = useState({});
   const [standPrices, setStandPrices] = useState({});
   const [charges, setCharges] = useState({});
-
+  
   // Fetch pricing data from Supabase (same as before)
   useEffect(() => {
     const fetchPricingData = async () => {
@@ -84,7 +95,7 @@ export default function Quotation() {
           setPanelBrand(panels[0].brand);
           setPanelWatt(panels[0].wattage.toString());
         }
-
+        
         // Fetch inverters separately by type
         const { data: inverters } = await supabase.from("inverters").select("*").order('type, capacity');
         const daytimeInvs = inverters?.filter(inv => inv.type === "daytime") || [];
@@ -101,7 +112,7 @@ export default function Quotation() {
           setHybridInverterBrand(hybridInvs[0].brand);
           setHybridInverterCapacity(hybridInvs[0].id.toString());
         }
-
+        
         // Fetch batteries
         const { data: batteries } = await supabase.from("batteries").select("*").order('type, voltage');
         const batteryMap = {};
@@ -119,7 +130,7 @@ export default function Quotation() {
           setSelectedBattery(batteries[0].id.toString());
           updateBatteryModels(batteries[0].type, batteries);
         }
-
+        
         // Fetch stands
         const { data: stands } = await supabase.from("stands").select("*").order('type');
         const standMap = {};
@@ -131,7 +142,7 @@ export default function Quotation() {
         if (stands?.length > 0) {
           setStandType(stands[0].type);
         }
-
+        
         // Fetch charges
         const { data: chargeData } = await supabase.from("charges").select("*");
         const chargeMap = {};
@@ -139,23 +150,21 @@ export default function Quotation() {
           chargeMap[charge.name] = charge.amount;
         });
         setCharges(chargeMap);
-
       } catch (err) {
         console.error("Error fetching pricing data:", err);
         alert("Error loading pricing data. Please refresh the page.");
       }
     };
-
     fetchPricingData();
   }, []);
-
+  
   // Auto-update preview when form values change
   useEffect(() => {
     if (systemType && customer.name) {
       setShowPreview(true);
     }
   }, [systemType, customer.name, panelQty, panelBrand, panelWatt, batteryQty, batteryType, selectedBattery, inverterQty]);
-
+  
   // Derived charge values
   const safetyCharges = { 
     daytime: charges.safety_daytime || 25000,
@@ -171,8 +180,8 @@ export default function Quotation() {
   const transportCharges = charges.transport || 5000;
   const greenMeterCharges = charges.green_meter || 140000;
   const siteVisitCharges = charges.site_visit || 2000;
-
-  // Enhanced battery filtering logic (same as before)
+  
+  // Enhanced battery filtering logic
   const updateBatteryModels = (type, allBatteries = null) => {
     const batteries = allBatteries || Object.values(batteryPrices);
     
@@ -197,14 +206,14 @@ export default function Quotation() {
       setBatteryQty(systemCapacity <= 4.2 ? 2 : 4);
     }
   };
-
-  // Stand quantity logic (same as before)
+  
+  // Stand quantity logic
   function getStandQty(qty, stand) {
     if (stand === "L2") return Math.ceil(qty / 2) || 0;
     return qty || 0;
   }
-
-  // Enhanced auto suggestion logic (same as before)
+  
+  // Enhanced auto suggestion logic
   function getAutoSuggestion() {
     if (autoType === "daytime") {
       const availablePanels = Object.keys(panelPrices);
@@ -244,16 +253,16 @@ export default function Quotation() {
       };
     }
   }
-
-  // Handle battery type change with enhanced logic (same as before)
+  
+  // Handle battery type change with enhanced logic
   const handleBatteryType = (e) => {
     const val = e.target.value;
     setBatteryType(val);
     updateBatteryModels(val);
     setSelectedBattery("");
   };
-
-  // Handle hybrid inverter capacity change (same as before)
+  
+  // Handle hybrid inverter capacity change
   const handleHybridInverterCapacityChange = (e) => {
     const selectedId = e.target.value;
     setHybridInverterCapacity(selectedId);
@@ -263,15 +272,15 @@ export default function Quotation() {
       updateBatteryModels(batteryType);
     }
   };
-
+  
   const handleCustomerChange = (e) => {
     const { name, value } = e.target;
     setCustomer((prev) => ({ ...prev, [name]: value }));
   };
   
   const handleGreenMeter = e => setGreenMeter(e.target.checked);
-
-  // Enhanced cost calculations (same as before)
+  
+  // Enhanced cost calculations
   function getDaytimeCost(qty, stand, invQty = 1) {
     const panelUnitPrice = panelPrices[panelBrand]?.[panelWatt]?.price || 0;
     const panelTotal = qty * panelUnitPrice;
@@ -292,7 +301,7 @@ export default function Quotation() {
       grandTotal: panelTotal + invTotal + standTotal + safety + transport + install + green
     };
   }
-
+  
   function getHybridCost(qty, stand, bQty, battModel, invQty = 1) {
     const panelUnitPrice = panelPrices[panelBrand]?.[panelWatt]?.price || 0;
     const panelTotal = qty * panelUnitPrice;
@@ -315,17 +324,20 @@ export default function Quotation() {
       grandTotal: panelTotal + invTotal + battTotal + standTotal + safety + transport + install + green
     };
   }
-
+  
   // Enhanced Supabase save function with error handling
   async function saveQuotationToSupabase(quotationData) {
     try {
       setSaving(true);
       
+      // Log the data for debugging
+      console.log("Attempting to save to Supabase:", quotationData);
+      
       const { data, error } = await supabase
         .from("quotations")
         .insert([quotationData])
         .select();
-
+        
       if (error) {
         console.error("Supabase error:", error);
         let errorMessage = "Note: Quotation generated successfully, but couldn't save to database.\n\n";
@@ -336,6 +348,12 @@ export default function Quotation() {
           errorMessage += "Issue: Permission denied. Please check Row Level Security policies.";
         } else if (error.message?.includes('violates not-null constraint')) {
           errorMessage += "Issue: Missing required field. Please check all required fields are filled.";
+          
+          // Try to identify the missing field
+          const fieldMatch = error.message.match(/column "(.+?)" of relation/);
+          if (fieldMatch && fieldMatch[1]) {
+            errorMessage += `\nMissing field: ${fieldMatch[1]}`;
+          }
         } else if (error.message?.includes('column') && error.message?.includes('does not exist')) {
           errorMessage += "Issue: Database column mismatch. Please check table structure.";
         } else {
@@ -367,7 +385,7 @@ export default function Quotation() {
       setSaving(false);
     }
   }
-
+  
   // Enhanced PDF generation with high-quality output
   const pdfRef = useRef();
   async function handleGenerateQuotation(e) {
@@ -406,7 +424,7 @@ export default function Quotation() {
       systemLabel = "Hybrid";
       quotationData = getHybridCost(panelQty, standType, batteryQty, selectedBattery, inverterQty);
     }
-
+    
     // Enhanced Supabase data preparation
     const supabaseData = {
       customer_name: customer.name,
@@ -423,18 +441,19 @@ export default function Quotation() {
       inverter_capacity: quotationData.selectedInverter?.capacity || "",
       inverter_quantity: systemType === "auto" ? previewConfig.inverterQty : inverterQty,
       inverter_total: quotationData.invTotal,
+      // Fixed: Set battery fields to empty strings instead of null for non-hybrid systems
       battery_type: sysType === "hybrid" 
         ? (systemType === "auto" ? previewConfig.batteryType : batteryType)
-        : null,
+        : "",
       battery_model: sysType === "hybrid" 
         ? (quotationData.selectedBattery?.model || "")
-        : null,
+        : "",
       battery_voltage: sysType === "hybrid" 
         ? (quotationData.selectedBattery?.voltage || "")
-        : null,
+        : "",
       battery_quantity: sysType === "hybrid" 
         ? (systemType === "auto" ? previewConfig.batteryQty : batteryQty)
-        : null,
+        : 0,
       battery_total: quotationData.battTotal || 0,
       stand_type: systemType === "auto" ? previewConfig.standType : standType,
       stand_quantity: quotationData.standQty,
@@ -448,17 +467,17 @@ export default function Quotation() {
       quotation_date: new Date().toISOString(),
       created_at: new Date().toISOString()
     };
-
+    
     // Save to Supabase
     const savedData = await saveQuotationToSupabase(supabaseData);
     if (!savedData) return;
-
+    
     // Generate enhanced PDF
     setTimeout(async () => {
       try {
         const input = pdfRef.current;
         const canvas = await html2canvas(input, {
-          scale: 2, // Higher scale for better quality
+          scale: 3, // Increased scale for better quality
           useCORS: true,
           allowTaint: true,
           backgroundColor: '#ffffff',
@@ -470,29 +489,18 @@ export default function Quotation() {
         const imgData = canvas.toDataURL("image/png", 1.0);
         const pdf = new jsPDF("p", "pt", "a4");
         
-        const imgWidth = 595;
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const imgWidth = canvas.width;
+        const imgHeight = canvas.height;
         
-        // Check if content exceeds single page
-        if (imgHeight > pdf.internal.pageSize.getHeight()) {
-          // Split into multiple pages if needed
-          let heightLeft = imgHeight;
-          let position = 0;
-          const pageHeight = pdf.internal.pageSize.getHeight() - 20; // Add margin
-          
-          while (heightLeft > 0) {
-            pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-            heightLeft -= pageHeight;
-            
-            if (heightLeft > 0) {
-              position -= pageHeight;
-              pdf.addPage();
-            }
-          }
-        } else {
-          // Add single page
-          pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
-        }
+        // Calculate scaling to fit the entire content on one page
+        const ratio = Math.min(pdfWidth / imgWidth, (pdfHeight - 40) / imgHeight);
+        const imgX = (pdfWidth - imgWidth * ratio) / 2;
+        const imgY = 20; // Top margin
+        
+        // Add the image to the PDF with proper scaling
+        pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
         
         pdf.save(`SyedSolarQuotation-${customer.name || "Customer"}-${new Date().toLocaleDateString()}.pdf`);
         
@@ -503,23 +511,18 @@ export default function Quotation() {
         
         const msg = encodeURIComponent(
           `🌞 Assalam-o-Alaikum! I have generated my solar quotation from Syed Solar Energy website.
-
 📋 Quotation Details:
 • Name: ${customer.name}
 • Contact: ${customer.contact}
 • System: ${systemLabel} (${totalKW}kW)
 • Total Amount: Rs. ${quotationData.grandTotal.toLocaleString()}
-
 📍 Installation Address:
 ${customer.address}
-
 🔋 System Specifications:
 • Panels: ${systemType === "auto" ? previewConfig.panelQty : panelQty} x ${systemType === "auto" ? previewConfig.panelBrand : panelBrand} (${systemType === "auto" ? previewConfig.panelWatt : panelWatt}W)
 • Inverter: ${quotationData.selectedInverter?.brand || ""} ${quotationData.selectedInverter?.capacity || ""} x ${systemType === "auto" ? previewConfig.inverterQty : inverterQty}
 ${sysType === "hybrid" ? `• Battery: ${quotationData.selectedBattery?.model || ""} x ${systemType === "auto" ? previewConfig.batteryQty : batteryQty}` : ""}
-
 I am interested in installing this solar system. Please review my quotation and contact me to discuss further details, site visit, and installation timeline.
-
 JazakAllah! 🤝`
         );
         
@@ -538,7 +541,7 @@ JazakAllah! 🤝`
       }
     }, 1000);
   }
-
+  
   // Enhanced preview rendering with responsive design
   function renderQuotationPreview() {
     let data, sysType, sysLabel, previewConfig;
@@ -566,12 +569,9 @@ JazakAllah! 🤝`
       sysLabel = "Hybrid (Solar + Battery)";
       data = getHybridCost(panelQty, standType, batteryQty, selectedBattery, inverterQty);
     }
-
     if (!data) return null;
-
     const totalKW = systemType === "auto" ? kwAuto : 
                    (parseInt(panelWatt) * panelQty / 1000).toFixed(1);
-
     return (
       <div 
         ref={pdfRef} 
@@ -585,7 +585,8 @@ JazakAllah! 🤝`
           fontFamily: "'Segoe UI', 'Roboto', sans-serif", 
           position: "relative",
           fontSize: 12,
-          boxSizing: "border-box"
+          boxSizing: "border-box",
+          overflow: "hidden" // Prevent content overflow
         }}
       >
         {/* Header */}
@@ -619,7 +620,7 @@ JazakAllah! 🤝`
             </div>
           </div>
         </div>
-
+        
         {/* Customer Details */}
         <div style={{
           background: "#f8f9fa",
@@ -639,7 +640,7 @@ JazakAllah! 🤝`
             <div><b>Address:</b> {customer.address || "-"}</div>
           </div>
         </div>
-
+        
         {/* System Configuration */}
         <table style={{
           width: "100%",
@@ -752,7 +753,7 @@ JazakAllah! 🤝`
             </tr>
           </tbody>
         </table>
-
+        
         {/* Terms & Payment */}
         <div style={{
           padding: "15px",
@@ -783,7 +784,7 @@ JazakAllah! 🤝`
             </div>
           </div>
         </div>
-
+        
         {/* Warranty */}
         <div style={{
           background: "#fffde7",
@@ -803,7 +804,7 @@ JazakAllah! 🤝`
             <li>Professional installation with <b>6 months service warranty</b></li>
           </ul>
         </div>
-
+        
         {/* Footer */}
         <div style={{
           background: "#1976d2",
@@ -825,7 +826,7 @@ JazakAllah! 🤝`
       </div>
     );
   }
-
+  
   // Enhanced form UI with responsive improvements
   return (
     <>
@@ -854,7 +855,7 @@ JazakAllah! 🤝`
               Get instant pricing for your solar energy system
             </p>
           </div>
-
+          
           <div style={{ 
             display: "grid", 
             gridTemplateColumns: "1fr", 
@@ -918,7 +919,7 @@ JazakAllah! 🤝`
                   </label>
                 </div>
               </div>
-
+              
               {/* Auto Suggest Section */}
               {systemType === "auto" && (
                 <div style={sectionBox}>
@@ -955,7 +956,7 @@ JazakAllah! 🤝`
                   </div>
                 </div>
               )}
-
+              
               {/* Customer Information */}
               <div style={sectionBox}>
                 <h3 style={sectionTitle}>👤 Customer Information</h3>
@@ -1008,7 +1009,7 @@ JazakAllah! 🤝`
                   </div>
                 </div>
               </div>
-
+              
               {/* Daytime System Configuration */}
               {systemType === "daytime" && (
                 <div style={sectionBox}>
@@ -1041,7 +1042,7 @@ JazakAllah! 🤝`
                       />
                     </div>
                   </div>
-
+                  
                   {/* Panel Pricing Info */}
                   {panelBrand && panelWatt && (
                     <div style={priceInfoBox}>
@@ -1051,7 +1052,7 @@ JazakAllah! 🤝`
                       <div><b>System Size:</b> {(panelWatt * panelQty / 1000).toFixed(1)}kW</div>
                     </div>
                   )}
-
+                  
                   <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "15px", marginBottom: 15, '@media (min-width: 768px)': { gridTemplateColumns: "1fr 1fr" } }}>
                     <div>
                       <label style={labelStyle}>Daytime Inverter</label>
@@ -1075,7 +1076,7 @@ JazakAllah! 🤝`
                       />
                     </div>
                   </div>
-
+                  
                   <div>
                     <label style={labelStyle}>Mounting Structure</label>
                     <select value={standType} onChange={e => setStandType(e.target.value)} style={inputStyle}>
@@ -1084,13 +1085,13 @@ JazakAllah! 🤝`
                       )}
                     </select>
                   </div>
-
+                  
                   {/* Stand Info */}
                   <div style={priceInfoBox}>
                     <div><b>Stand Quantity:</b> {getStandQty(panelQty, standType)} sets</div>
                     <div><b>Total Stands:</b> Rs. {(standPrices[standType] * getStandQty(panelQty, standType)).toLocaleString()}</div>
                   </div>
-
+                  
                   {/* Service Charges */}
                   <div style={chargesBox}>
                     <h4>📋 Service Charges</h4>
@@ -1100,7 +1101,7 @@ JazakAllah! 🤝`
                       <div>Installation: Rs. {installCharges.daytime.toLocaleString()}</div>
                     </div>
                   </div>
-
+                  
                   <div style={{ marginTop: 15 }}>
                     <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: "var(--text-base)" }}>
                       <input type="checkbox" checked={greenMeter} onChange={handleGreenMeter} />
@@ -1109,7 +1110,7 @@ JazakAllah! 🤝`
                   </div>
                 </div>
               )}
-
+              
               {/* Hybrid System Configuration */}
               {systemType === "hybrid" && (
                 <div style={sectionBox}>
@@ -1143,7 +1144,7 @@ JazakAllah! 🤝`
                       />
                     </div>
                   </div>
-
+                  
                   {/* Panel Pricing Info */}
                   {panelBrand && panelWatt && (
                     <div style={priceInfoBox}>
@@ -1153,7 +1154,7 @@ JazakAllah! 🤝`
                       <div><b>System Size:</b> {(panelWatt * panelQty / 1000).toFixed(1)}kW</div>
                     </div>
                   )}
-
+                  
                   {/* Inverter Configuration */}
                   <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "15px", marginBottom: 15, '@media (min-width: 768px)': { gridTemplateColumns: "1fr 1fr 1fr" } }}>
                     <div>
@@ -1203,7 +1204,7 @@ JazakAllah! 🤝`
                       />
                     </div>
                   </div>
-
+                  
                   {/* Battery Configuration */}
                   <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "15px", marginBottom: 15, '@media (min-width: 768px)': { gridTemplateColumns: "1fr 1fr 1fr" } }}>
                     <div>
@@ -1242,7 +1243,7 @@ JazakAllah! 🤝`
                       />
                     </div>
                   </div>
-
+                  
                   {/* Battery Info */}
                   {selectedBattery && batteryPrices[selectedBattery] && (
                     <div style={priceInfoBox}>
@@ -1252,7 +1253,7 @@ JazakAllah! 🤝`
                       <div><b>Capacity:</b> {batteryPrices[selectedBattery].capacity}</div>
                     </div>
                   )}
-
+                  
                   {/* Stand Configuration */}
                   <div>
                     <label style={labelStyle}>Mounting Structure</label>
@@ -1262,13 +1263,13 @@ JazakAllah! 🤝`
                       )}
                     </select>
                   </div>
-
+                  
                   {/* Stand Info */}
                   <div style={priceInfoBox}>
                     <div><b>Stand Quantity:</b> {getStandQty(panelQty, standType)} sets</div>
                     <div><b>Total Stands:</b> Rs. {(standPrices[standType] * getStandQty(panelQty, standType)).toLocaleString()}</div>
                   </div>
-
+                  
                   {/* Service Charges */}
                   <div style={chargesBox}>
                     <h4>📋 Service Charges</h4>
@@ -1278,7 +1279,7 @@ JazakAllah! 🤝`
                       <div>Installation: Rs. {installCharges.hybrid.toLocaleString()}</div>
                     </div>
                   </div>
-
+                  
                   <div style={{ marginTop: 15 }}>
                     <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: "var(--text-base)" }}>
                       <input type="checkbox" checked={greenMeter} onChange={handleGreenMeter} />
@@ -1287,7 +1288,7 @@ JazakAllah! 🤝`
                   </div>
                 </div>
               )}
-
+              
               {/* Generate Button */}
               <button
                 type="submit"
@@ -1325,7 +1326,7 @@ JazakAllah! 🤝`
                 </div>
               )}
             </form>
-
+            
             {/* Live Preview Section */}
             {showPreview && (
               <div style={{ 
