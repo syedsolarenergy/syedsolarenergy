@@ -379,7 +379,7 @@ const EmailVerified = () => {
               e.target.style.boxShadow = '0 4px 15px rgba(76, 175, 80, 0.4)';
             }}
             onClick={() => {
-              // Add your navigation logic here
+              solarolagawa://login
               console.log('Proceed to app');
             }}
           >
