@@ -520,6 +520,7 @@ export default function About() {
                 padding: "var(--card-padding)",
                 textAlign: 'center',
                 position: 'relative',
+                overflow: 'visible',
                 animation: 'fadeInUp 0.8s ease-out 0.2s both',
                 minHeight: 'clamp(280px, 35vw, 350px)',
                 display: 'flex',
@@ -545,10 +546,10 @@ export default function About() {
                 </div>
                 <h3 style={{
                   color: "#FF6B35",
-                  fontWeight: 1600,
+                  fontWeight: 800,
                   fontSize: 'var(--heading-3)',
-                  marginTop: 'clamp(90px, 4vw, 35px)',
-                  marginBottom: 'clamp(8px, 2.5vw, 20px)',
+                  marginTop: 'clamp(28px, 4vw, 35px)',
+                  marginBottom: 'clamp(16px, 2.5vw, 20px)',
                   letterSpacing: ".01em"
                 }}>
                   Our Mission
@@ -566,6 +567,7 @@ export default function About() {
                 padding: "var(--card-padding)",
                 textAlign: 'center',
                 position: 'relative',
+                overflow: 'visible',
                 animation: 'fadeInUp 0.8s ease-out 0.4s both',
                 minHeight: 'clamp(280px, 35vw, 350px)',
                 display: 'flex',
@@ -612,6 +614,7 @@ export default function About() {
                 padding: "var(--card-padding)",
                 textAlign: 'center',
                 position: 'relative',
+                overflow: 'visible',
                 animation: 'fadeInUp 0.8s ease-out 0.6s both',
                 minHeight: 'clamp(280px, 35vw, 350px)',
                 display: 'flex',
