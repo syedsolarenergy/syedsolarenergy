@@ -11,6 +11,15 @@ export default function Quotation() {
   const [kwAuto, setKwAuto] = useState(5);
   const [panelBrand, setPanelBrand] = useState("");
   const [panelWatt, setPanelWatt] = useState("");
+  // ── Add this right after panelBrand/panelWatt
+const handlePanelBrandChange = (e) => {
+  const newBrand = e.target.value;
+  setPanelBrand(newBrand);
+  // get all wattages for the new brand, pick the first or blank
+  const watts = Object.keys(panelPrices[newBrand] || {});
+  setPanelWatt(watts[0] || "");
+};
+
   const [panelQty, setPanelQty] = useState(6);
   const [dayInverter, setDayInverter] = useState("");
   const [hybridInverterBrand, setHybridInverterBrand] = useState("");
@@ -979,7 +988,7 @@ JazakAllah! 🤝`
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 15, marginBottom: 15 }}>
                   <div>
                     <label style={labelStyle}>Panel Brand</label>
-                    <select value={panelBrand} onChange={e => setPanelBrand(e.target.value)} style={inputStyle}>
+                    <select value={panelBrand} onChange={handlePanelBrandChange} style={inputStyle}>
                       {Object.keys(panelPrices).map((brand) => <option key={brand} value={brand}>{brand}</option>)}
                     </select>
                   </div>
@@ -1081,7 +1090,7 @@ JazakAllah! 🤝`
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 15, marginBottom: 15 }}>
                   <div>
                     <label style={labelStyle}>Panel Brand</label>
-                    <select value={panelBrand} onChange={e => setPanelBrand(e.target.value)} style={inputStyle}>
+                    <select value={panelBrand} onChange={handlePanelBrandChange} style={inputStyle}>
                       {Object.keys(panelPrices).map((brand) => <option key={brand} value={brand}>{brand}</option>)}
                     </select>
                   </div>
