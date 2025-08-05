@@ -379,8 +379,53 @@ const EmailVerified = () => {
               e.target.style.boxShadow = '0 4px 15px rgba(76, 175, 80, 0.4)';
             }}
             onClick={() => {
-              solarolagawa://login
-              console.log('Proceed to app');
+              // Detect device type and redirect accordingly
+              const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+              
+              // Check if it's a mobile device
+              const isMobile = /android|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase());
+              
+              if (isMobile) {
+                // For mobile devices, try to open the app first, then fallback to store
+                const isAndroid = /android/i.test(userAgent);
+                const isIOS = /iphone|ipad|ipod/i.test(userAgent);
+                
+                if (isAndroid) {
+                  // Try to open Android app with custom scheme
+                  const appScheme = 'solarolagawa://login';
+                  const playStoreUrl = 'https://play.google.com/store/apps/details?id=com.solarolagawa.app';
+                  
+                  // Create a hidden iframe to attempt app launch
+                  const iframe = document.createElement('iframe');
+                  iframe.style.display = 'none';
+                  iframe.src = appScheme;
+                  document.body.appendChild(iframe);
+                  
+                  // Fallback to Play Store after a short delay
+                  setTimeout(() => {
+                    window.location.href = playStoreUrl;
+                    document.body.removeChild(iframe);
+                  }, 2000);
+                  
+                } else if (isIOS) {
+                  // Try to open iOS app with custom scheme
+                  const appScheme = 'solarolagawa://login';
+                  const appStoreUrl = 'https://apps.apple.com/app/solar-olagawa/id123456789'; // Replace with actual App Store ID
+                  
+                  // Try to open the app
+                  window.location.href = appScheme;
+                  
+                  // Fallback to App Store after a short delay
+                  setTimeout(() => {
+                    if (!document.hidden) {
+                      window.location.href = appStoreUrl;
+                    }
+                  }, 2000);
+                }
+              } else {
+                // For desktop/web, redirect to web app login page
+                window.location.href = '/login'; // Replace with your actual web app login route
+              }
             }}
           >
             ⚡ Continue to App
