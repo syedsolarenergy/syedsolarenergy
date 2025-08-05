@@ -1370,7 +1370,15 @@ export default function Home() {
           ))}
 
           {/* Content Container */}
-          <div className="universal-container" style={{ position: 'relative', zIndex: 2 }}>
+          <div
+  className="universal-container"
+  style={{
+    position: 'relative',
+    zIndex: 2,
+    maxWidth: isMobile ? '90vw' : '800px',   // ← limit width
+    margin: '0 auto'                          // ← center it
+  }}
+>
             <div
   className="hero-content"
   style={{
