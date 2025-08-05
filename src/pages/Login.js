@@ -21,9 +21,8 @@ function Login() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const navigate = useNavigate();
   const location = useLocation();
-
   const from = location.state?.from?.pathname || "/";
-
+  
   // Update time every minute
   useEffect(() => {
     const timer = setInterval(() => {
@@ -31,13 +30,13 @@ function Login() {
     }, 60000);
     return () => clearInterval(timer);
   }, []);
-
+  
   useEffect(() => {
     localStorage.removeItem("loggedIn");
     localStorage.removeItem("loggedInUser");
     localStorage.removeItem("userRole");
   }, []);
-
+  
   const handleLogin = async (e) => {
     e.preventDefault();
     
@@ -48,9 +47,7 @@ function Login() {
     
     setError("");
     setIsLoading(true);
-
     await new Promise(resolve => setTimeout(resolve, 800));
-
     try {
       const users = JSON.parse(localStorage.getItem("users")) || [];
       const user = users.find(
@@ -73,7 +70,7 @@ function Login() {
       setIsLoading(false);
     }
   };
-
+  
   const formatTime = (date) => {
     return date.toLocaleTimeString('en-US', { 
       hour: '2-digit', 
@@ -81,7 +78,7 @@ function Login() {
       hour12: true 
     });
   };
-
+  
   const formatDate = (date) => {
     return date.toLocaleDateString('en-US', { 
       weekday: 'long',
@@ -89,7 +86,7 @@ function Login() {
       day: 'numeric'
     });
   };
-
+  
   return (
     <div style={{
       minHeight: "100vh",
@@ -104,7 +101,8 @@ function Login() {
       backgroundSize: "100% 100%, 60px 60px, 80px 80px",
       fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
       position: "relative",
-      overflow: "hidden"
+      overflow: "hidden",
+      padding: "20px 15px"
     }}>
       
       {/* Floating Background Elements */}
@@ -138,13 +136,13 @@ function Login() {
         borderRadius: "50%",
         animation: "float 12s ease-in-out infinite"
       }} />
-
+      
       <div style={{
         background: "rgba(255, 255, 255, 0.95)",
         borderRadius: "25px",
-        padding: "45px 40px 35px 40px",
-        width: "420px",
-        maxWidth: "90vw",
+        padding: "clamp(20px, 5vw, 45px) clamp(15px, 4vw, 40px)",
+        width: "100%",
+        maxWidth: "500px",
         boxShadow: `
           0 25px 80px rgba(255, 171, 0, 0.4),
           0 15px 40px rgba(0, 0, 0, 0.1),
@@ -157,7 +155,7 @@ function Login() {
       }}>
         
         {/* Enhanced Header */}
-        <div style={{ textAlign: "center", marginBottom: "15px" }}>
+        <div style={{ textAlign: "center", marginBottom: "clamp(10px, 3vw, 15px)" }}>
           
           {/* Live Time Display */}
           <div style={{
@@ -165,14 +163,14 @@ function Login() {
             justifyContent: "center",
             alignItems: "center",
             gap: "12px",
-            marginBottom: "20px"
+            marginBottom: "clamp(15px, 4vw, 20px)"
           }}>
             <div style={{
               background: "linear-gradient(135deg, #FF6B35, #F7931E)",
               color: "#FFF",
               padding: "6px 14px",
               borderRadius: "15px",
-              fontSize: "13px",
+              fontSize: "clamp(12px, 2.5vw, 13px)",
               fontWeight: "700",
               textShadow: "0 1px 3px rgba(0,0,0,0.3)",
               boxShadow: "0 4px 15px rgba(247, 147, 30, 0.3)"
@@ -184,7 +182,7 @@ function Login() {
               color: "#FFF",
               padding: "6px 14px",
               borderRadius: "15px",
-              fontSize: "11px",
+              fontSize: "clamp(10px, 2vw, 11px)",
               fontWeight: "600",
               textShadow: "0 1px 3px rgba(0,0,0,0.3)",
               boxShadow: "0 4px 15px rgba(247, 147, 30, 0.3)"
@@ -197,7 +195,7 @@ function Login() {
           <div style={{
             position: "relative",
             display: "inline-block",
-            marginBottom: "15px"
+            marginBottom: "clamp(10px, 3vw, 15px)"
           }}>
             <div style={{
               padding: "10px",
@@ -211,7 +209,7 @@ function Login() {
                 src={logo}
                 alt="Syed Solar Logo"
                 style={{
-                  width: "90px",
+                  width: "clamp(70px, 15vw, 90px)",
                   height: "auto",
                   borderRadius: "16px",
                   filter: "brightness(1.1) contrast(1.05) saturate(1.1)",
@@ -228,8 +226,8 @@ function Login() {
               top: "50%",
               left: "50%",
               transform: "translate(-50%, -50%)",
-              width: "130px",
-              height: "130px",
+              width: "clamp(100px, 20vw, 130px)",
+              height: "clamp(100px, 20vw, 130px)",
               borderRadius: "50%",
               background: "radial-gradient(circle, rgba(247, 147, 30, 0.2) 0%, transparent 70%)",
               animation: "pulse 3s ease-in-out infinite",
@@ -240,12 +238,12 @@ function Login() {
           {/* Enhanced Company Title */}
           <h2 style={{
             fontWeight: 900,
-            margin: "0 0 8px 0",
+            margin: "0 0 clamp(5px, 2vw, 8px) 0",
             background: "linear-gradient(135deg, #FF6B35, #F7931E)",
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
             backgroundClip: "text",
-            fontSize: "2.2rem",
+            fontSize: "clamp(1.5rem, 5vw, 2.2rem)",
             textShadow: "0 4px 12px rgba(247, 147, 30, 0.3)",
             letterSpacing: "-0.5px"
           }}>
@@ -256,8 +254,8 @@ function Login() {
             color: "#F7931E",
             fontWeight: 600,
             letterSpacing: "0.02em",
-            fontSize: "17px",
-            marginBottom: "12px",
+            fontSize: "clamp(14px, 3vw, 17px)",
+            marginBottom: "clamp(8px, 2vw, 12px)",
             opacity: 0.9
           }}>
             Pvt Ltd
@@ -269,13 +267,13 @@ function Login() {
             padding: "12px 18px",
             borderRadius: "15px",
             border: "2px solid rgba(247, 147, 30, 0.2)",
-            marginBottom: "8px",
+            marginBottom: "clamp(5px, 2vw, 8px)",
             backdropFilter: "blur(10px)"
           }}>
             <p style={{
               color: "#FF6B35",
-              fontWeight: "700",
-              fontSize: "16px",
+              fontWeight: 700,
+              fontSize: "clamp(14px, 3vw, 16px)",
               fontFamily: "'Noto Nastaliq Urdu', serif",
               margin: "0",
               textShadow: "0 2px 6px rgba(255, 107, 53, 0.3)",
@@ -285,8 +283,8 @@ function Login() {
             </p>
             <p style={{
               color: "#F7931E",
-              fontWeight: "500",
-              fontSize: "12px",
+              fontWeight: 500,
+              fontSize: "clamp(10px, 2vw, 12px)",
               margin: "5px 0 0 0",
               opacity: "0.8",
               fontStyle: "italic"
@@ -299,17 +297,17 @@ function Login() {
             color: "#F7931E",
             fontWeight: 600,
             letterSpacing: "0.02em",
-            fontSize: "16px",
-            marginBottom: "15px"
+            fontSize: "clamp(14px, 3vw, 16px)",
+            marginBottom: "clamp(10px, 3vw, 15px)"
           }}>
             Solar Energy Management Login
           </div>
-
+          
           {/* Welcome Messages */}
-          <div style={{ marginBottom: "10px" }}>
+          <div style={{ marginBottom: "clamp(8px, 2vw, 10px)" }}>
             <h3 style={{
-              fontSize: "22px",
-              fontWeight: "800",
+              fontSize: "clamp(1.2rem, 4vw, 1.4rem)",
+              fontWeight: 800,
               color: "#F7931E",
               marginBottom: "5px",
               fontFamily: "'Noto Nastaliq Urdu', serif"
@@ -317,16 +315,16 @@ function Login() {
               خوش آمدید
             </h3>
             <h4 style={{
-              fontSize: "18px",
-              fontWeight: "700",
+              fontSize: "clamp(1rem, 3.5vw, 1.1rem)",
+              fontWeight: 700,
               color: "#333",
-              marginBottom: "8px",
-              margin: "0 0 8px 0"
+              marginBottom: "clamp(5px, 2vw, 8px)",
+              margin: "0 0 clamp(5px, 2vw, 8px) 0"
             }}>
               Welcome Back!
             </h4>
             <p style={{
-              fontSize: "13px",
+              fontSize: "clamp(12px, 2.5vw, 13px)",
               color: "#666",
               lineHeight: "1.5",
               marginBottom: "0"
@@ -335,7 +333,7 @@ function Login() {
             </p>
           </div>
         </div>
-
+        
         {/* Enhanced BACK BUTTON */}
         <button
           type="button"
@@ -346,14 +344,14 @@ function Login() {
             justifyContent: "center",
             gap: "8px",
             width: "100%",
-            margin: "0 auto 20px auto",
+            margin: "0 auto clamp(15px, 4vw, 20px) auto",
             background: "linear-gradient(135deg, #FF6B35, #F7931E)",
             color: "#fff",
             border: "none",
             borderRadius: "12px",
-            padding: "10px 28px",
+            padding: "clamp(10px, 2.5vw, 12px) 28px",
             fontWeight: 700,
-            fontSize: "15px",
+            fontSize: "clamp(14px, 3vw, 15px)",
             letterSpacing: "0.03em",
             boxShadow: "0 6px 20px rgba(255, 171, 0, 0.35), 0 3px 10px rgba(0,0,0,0.1)",
             cursor: "pointer",
@@ -372,7 +370,7 @@ function Login() {
           <span style={{ fontSize: "16px" }}>←</span>
           <span>واپس | Back</span>
         </button>
-
+        
         {/* Enhanced Error message */}
         {error && (
           <div style={{
@@ -381,9 +379,9 @@ function Login() {
             borderRadius: "12px",
             color: "#c62828",
             padding: "16px",
-            marginBottom: "18px",
-            fontWeight: "600",
-            fontSize: "14px",
+            marginBottom: "clamp(15px, 4vw, 18px)",
+            fontWeight: 600,
+            fontSize: "clamp(12px, 2.5vw, 14px)",
             boxShadow: "0 6px 20px rgba(244, 67, 54, 0.2)",
             textAlign: "center",
             whiteSpace: "pre-line",
@@ -392,17 +390,17 @@ function Login() {
             {error}
           </div>
         )}
-
+        
         {/* Enhanced Login Form */}
         <form onSubmit={handleLogin} autoComplete="off">
-          <div style={{ marginBottom: "18px", position: "relative" }}>
+          <div style={{ marginBottom: "clamp(15px, 4vw, 18px)", position: "relative" }}>
             <div style={{
               position: "absolute",
               left: "15px",
               top: "50%",
               transform: "translateY(-50%)",
               color: "#F7931E",
-              fontSize: "18px",
+              fontSize: "clamp(16px, 3vw, 18px)",
               zIndex: 1
             }}>
               👤
@@ -416,10 +414,10 @@ function Login() {
               disabled={isLoading}
               style={{
                 width: "100%",
-                padding: "14px 14px 14px 45px",
+                padding: "clamp(12px, 3vw, 14px) clamp(12px, 3vw, 14px) clamp(12px, 3vw, 14px) clamp(40px, 8vw, 45px)",
                 borderRadius: "12px",
                 border: "2px solid #ffe0b2",
-                fontSize: "15px",
+                fontSize: "clamp(14px, 3vw, 15px)",
                 marginBottom: "6px",
                 fontWeight: "500",
                 background: "#FFF",
@@ -440,14 +438,14 @@ function Login() {
             />
           </div>
           
-          <div style={{ marginBottom: "22px", position: "relative" }}>
+          <div style={{ marginBottom: "clamp(18px, 5vw, 22px)", position: "relative" }}>
             <div style={{
               position: "absolute",
               left: "15px",
               top: "50%",
               transform: "translateY(-50%)",
               color: "#F7931E",
-              fontSize: "18px",
+              fontSize: "clamp(16px, 3vw, 18px)",
               zIndex: 1
             }}>
               🔒
@@ -461,10 +459,10 @@ function Login() {
               disabled={isLoading}
               style={{
                 width: "100%",
-                padding: "14px 45px 14px 45px",
+                padding: "clamp(12px, 3vw, 14px) clamp(40px, 8vw, 45px) clamp(12px, 3vw, 14px) clamp(40px, 8vw, 45px)",
                 borderRadius: "12px",
                 border: "2px solid #ffe0b2",
-                fontSize: "15px",
+                fontSize: "clamp(14px, 3vw, 15px)",
                 fontWeight: "500",
                 background: "#FFF",
                 boxShadow: "0 4px 15px rgba(255, 171, 0, 0.1), inset 0 2px 4px rgba(255,255,255,0.8)",
@@ -492,7 +490,7 @@ function Login() {
                 transform: "translateY(-50%)",
                 border: "none",
                 background: "none",
-                fontSize: "18px",
+                fontSize: "clamp(16px, 3vw, 18px)",
                 cursor: "pointer",
                 color: "#999",
                 transition: "all 0.3s ease",
@@ -520,16 +518,16 @@ function Login() {
             disabled={isLoading}
             style={{
               width: "100%",
-              padding: "16px",
-              fontSize: "17px",
+              padding: "clamp(14px, 3.5vw, 16px)",
+              fontSize: "clamp(15px, 3.5vw, 17px)",
               background: isLoading 
                 ? "linear-gradient(135deg, #FFB74D 0%, #FFCC80 100%)"
                 : "linear-gradient(135deg, #FF6B35 0%, #F7931E 100%)",
               color: "white",
               border: "none",
               borderRadius: "12px",
-              fontWeight: "800",
-              marginBottom: "16px",
+              fontWeight: 800,
+              marginBottom: "clamp(12px, 3vw, 16px)",
               cursor: isLoading ? "not-allowed" : "pointer",
               opacity: isLoading ? 0.85 : 1,
               boxShadow: "0 8px 25px rgba(247, 147, 30, 0.4), 0 4px 15px rgba(0,0,0,0.1)",
@@ -572,12 +570,12 @@ function Login() {
         </form>
         
         {/* Enhanced Forgot Password */}
-        <div style={{ textAlign: "center", marginTop: "12px", marginBottom: "20px" }}>
+        <div style={{ textAlign: "center", marginTop: "clamp(8px, 2vw, 12px)", marginBottom: "clamp(15px, 4vw, 20px)" }}>
           <Link to="/forgot-password" style={{
             color: "#F7931E",
             fontWeight: 600,
             textDecoration: "none",
-            fontSize: "14px",
+            fontSize: "clamp(13px, 2.8vw, 14px)",
             transition: "all 0.3s ease",
             padding: "6px 12px",
             borderRadius: "8px"
@@ -594,88 +592,11 @@ function Login() {
           </Link>
         </div>
         
-        {/* Enhanced Demo Credentials */}
-        <div style={{
-          marginTop: "20px",
-          background: "linear-gradient(135deg, #FFF8E1 0%, #FFECB3 100%)",
-          borderRadius: "15px",
-          padding: "18px",
-          fontSize: "14px",
-          color: "#ab6100",
-          border: "2px solid rgba(247, 147, 30, 0.2)",
-          boxShadow: "0 6px 20px rgba(255, 171, 0, 0.15), inset 0 2px 8px rgba(255,255,255,0.8)"
-        }}>
-          <div style={{
-            fontWeight: "800",
-            marginBottom: "12px",
-            color: "#F7931E",
-            fontSize: "15px",
-            textAlign: "center",
-            textShadow: "0 2px 4px rgba(247, 147, 30, 0.3)"
-          }}>
-            🔐 Demo Login | ڈیمو لاگ ان
-          </div>
-          <div style={{ display: "grid", gap: "8px" }}>
-            <div style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              background: "rgba(247, 147, 30, 0.1)",
-              padding: "8px 12px",
-              borderRadius: "8px",
-              border: "1px solid rgba(247, 147, 30, 0.2)"
-            }}>
-              <strong>Admin:</strong>
-              <span>
-                <code style={{ 
-                  background: "rgba(247,147,30,0.25)", 
-                  padding: "2px 6px", 
-                  borderRadius: "4px", 
-                  marginRight: "6px",
-                  fontWeight: "600"
-                }}>admin</code>
-                <code style={{ 
-                  background: "rgba(247,147,30,0.25)", 
-                  padding: "2px 6px", 
-                  borderRadius: "4px",
-                  fontWeight: "600"
-                }}>admin123</code>
-              </span>
-            </div>
-            <div style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              background: "rgba(247, 147, 30, 0.1)",
-              padding: "8px 12px",
-              borderRadius: "8px",
-              border: "1px solid rgba(247, 147, 30, 0.2)"
-            }}>
-              <strong>User:</strong>
-              <span>
-                <code style={{ 
-                  background: "rgba(247,147,30,0.25)", 
-                  padding: "2px 6px", 
-                  borderRadius: "4px", 
-                  marginRight: "6px",
-                  fontWeight: "600"
-                }}>zubair</code>
-                <code style={{ 
-                  background: "rgba(247,147,30,0.25)", 
-                  padding: "2px 6px", 
-                  borderRadius: "4px",
-                  fontWeight: "600"
-                }}>12345</code>
-              </span>
-            </div>
-          </div>
-        </div>
-
         {/* Enhanced Footer */}
         <div style={{
           textAlign: "center",
-          marginTop: "20px",
-          paddingTop: "15px",
+          marginTop: "clamp(15px, 4vw, 20px)",
+          paddingTop: "clamp(12px, 3vw, 15px)",
           borderTop: "2px solid rgba(247, 147, 30, 0.1)"
         }}>
           <div style={{
@@ -683,18 +604,18 @@ function Login() {
             height: "3px",
             background: "linear-gradient(90deg, #FF6B35, #F7931E)",
             borderRadius: "2px",
-            margin: "0 auto 12px"
+            margin: "0 auto clamp(8px, 2vw, 12px)"
           }} />
           <p style={{
-            fontSize: "12px",
+            fontSize: "clamp(11px, 2.5vw, 12px)",
             color: "#666",
-            fontWeight: "600",
-            marginBottom: "10px"
+            fontWeight: 600,
+            marginBottom: "clamp(8px, 2vw, 10px)"
           }}>
             محفوظ اور قابل اعتماد | Secure & Trusted
           </p>
           <div style={{
-            fontSize: "11px",
+            fontSize: "clamp(10px, 2vw, 11px)",
             color: "#999",
             lineHeight: "1.4"
           }}>
@@ -703,7 +624,7 @@ function Login() {
           </div>
         </div>
       </div>
-
+      
       {/* Enhanced Animations */}
       <style>
         {`

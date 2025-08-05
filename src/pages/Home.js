@@ -80,8 +80,8 @@ const cssVariables = `
   }
 
   .hero-animation {
-    flex: 1 1 min(350px, 80%);
-    min-width: min(300px, 80%);
+    flex: 1 1 min(350px, 100%);
+    min-width: min(300px, 100%);
   }
 
   /* Mobile Optimizations */
