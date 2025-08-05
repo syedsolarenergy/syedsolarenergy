@@ -1,17 +1,5 @@
 import React, { useState, useEffect } from "react";
-
-// Mock Footer component
-const Footer = () => (
-  <div style={{
-    padding: '20px',
-    textAlign: 'center',
-    background: 'rgba(255, 107, 53, 0.1)',
-    color: '#666',
-    fontSize: '14px'
-  }}>
-    © 2025 Syed Solar Energy. All rights reserved.
-  </div>
-);
+import Footer from "../components/Footer";
 
 // Enhanced Card3D Component with responsive styling
 const Card3D = ({ children, className = "", style = {} }) => (
