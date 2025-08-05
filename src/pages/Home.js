@@ -91,28 +91,36 @@ const cssVariables = `
   }
 
   /* Mobile Optimizations */
-  @media (max-width: 768px) {
+    @media (max-width: 768px) {
     :root {
       --card-min-width: 100%;
       --grid-gap: clamp(12px, 4vw, 20px);
       --hero-height: auto;
     }
-    
+
+    /* Center the flex and stack items neatly */
     .hero-content {
       flex-direction: column;
+      justify-content: center;
+      align-items: center;
       text-align: center;
       gap: clamp(20px, 6vw, 40px);
     }
-    
+
+    /* Make both animation and text full-width and centered */
+    .hero-animation,
     .hero-text {
-      min-width: 100%;
+      min-width: auto;
+      width: 100%;
+      margin: 0 auto;
     }
-    
+
+    /* Keep the animation above the text */
     .hero-animation {
-      min-width: 100%;
       order: -1;
     }
   }
+
 
   @media (min-width: 641px) and (max-width: 1024px) {
     .grid-features {
