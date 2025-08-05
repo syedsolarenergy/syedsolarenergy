@@ -439,33 +439,42 @@ const handlePanelBrandChange = (e) => {
           logging: false
         });
         
-// ——— Professional multi-page PDF with margins & page numbers ———
+// ——— Professional PDF, max 2 pages ———
 const imgData = canvas.toDataURL("image/png", 1.0);
-const pdf = new jsPDF("p", "pt", "a4");
+const pdf    = new jsPDF("p", "pt", "a4");
 
-// set 20 pt margins
+// 20pt margins
 const M = 20;
 const pageW = pdf.internal.pageSize.getWidth();
 const pageH = pdf.internal.pageSize.getHeight();
-const usableW = pageW - M * 2;
-const usableH = pageH - M * 2;
+const usableW = pageW - M*2;
+const usableH = pageH - M*2;
 
-// get actual image dimensions
+// actual image size
 const props = pdf.getImageProperties(imgData);
-const imgW = usableW;
-const imgH = (props.height * imgW) / props.width;
+let imgW = usableW;
+let imgH = (props.height * usableW) / props.width;
 
+// if it would take >2 pages, shrink to fit exactly 2
+const pagesNeeded = Math.ceil(imgH / usableH);
+if (pagesNeeded > 2) {
+  const scale = (usableH * 2) / imgH;
+  imgW *= scale;
+  imgH *= scale;
+}
+
+// draw in up to two pages
 let yOffset = M;
+let remaining = imgH;
 let pageNum = 1;
-let remainingH = imgH;
 
-// draw pages until done
-while (remainingH > 0) {
-  // add the slice of image at current offset
-  pdf.addImage(imgData, "PNG", M, yOffset, imgW, imgH);
+while (remaining > 0) {
+  // position the correct slice
+  const sliceY = M - (imgH - remaining);
+  pdf.addImage(imgData, "PNG", M, sliceY, imgW, imgH);
 
-  // footer: page number
-  pdf.setFontSize(10);
+  // page number in 8pt font
+  pdf.setFontSize(8);
   pdf.text(
     `Page ${pageNum}`,
     pageW / 2,
@@ -473,22 +482,20 @@ while (remainingH > 0) {
     { align: "center" }
   );
 
-  remainingH -= usableH;
-  if (remainingH > 0) {
+  remaining -= usableH;
+  if (remaining > 0) {
     pdf.addPage();
     pageNum++;
-    // on new page, start the image higher so it aligns seamlessly
-    yOffset = M - (imgH - remainingH);
   }
 }
 
-// finally save
+// save with customer name and date
 pdf.save(
   `SyedSolarQuotation-${customer.name || "Customer"}-${new Date()
-    .toLocaleDateString()
-    .replace(/\//g, "-")}.pdf`
+    .toISOString()
+    .split("T")[0]}.pdf`
 );
-// ———————————————————————————————————————————————
+// ————————————————————————————————————————
 
 
 
