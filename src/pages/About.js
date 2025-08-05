@@ -545,10 +545,10 @@ export default function About() {
                 </div>
                 <h3 style={{
                   color: "#FF6B35",
-                  fontWeight: 800,
+                  fontWeight: 1600,
                   fontSize: 'var(--heading-3)',
-                  marginTop: 'clamp(28px, 4vw, 35px)',
-                  marginBottom: 'clamp(16px, 2.5vw, 20px)',
+                  marginTop: 'clamp(90px, 4vw, 35px)',
+                  marginBottom: 'clamp(8px, 2.5vw, 20px)',
                   letterSpacing: ".01em"
                 }}>
                   Our Mission
