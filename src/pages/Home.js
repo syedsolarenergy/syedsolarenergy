@@ -1324,34 +1324,25 @@ export default function Home() {
       }}>
 
         {/* Enhanced Hero Section with Solar Animation */}
-        <section
-          style={{
-            minHeight: 'clamp(400px, 85vh, 800px)',
-            background: heroSection?.background_color || 
-              `linear-gradient(135deg, 
-                rgba(255, 107, 53, 0.95) 0%, 
-                rgba(247, 147, 30, 0.95) 30%, 
-                rgba(255, 152, 0, 0.95) 60%, 
-                rgba(255, 193, 7, 0.95) 100%),
-              url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>')`,
-            color: heroSection?.text_color || '#ffffff',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 'var(--section-padding) 0',
-            margin: 'clamp(10px, 2vw, 20px)',
-            borderRadius: 'clamp(20px, 4vw, 30px)',
-            textAlign: 'center',
-            position: 'relative',
-            overflow: 'hidden',
-            boxShadow: `
-              0 20px 60px rgba(255, 107, 53, 0.3),
-              inset 0 1px 0 rgba(255, 255, 255, 0.2),
-              inset 0 -1px 0 rgba(0, 0, 0, 0.1)
-            `,
-            border: '2px solid rgba(255,255,255,0.2)'
-          }}
-        >
+        <section style={{ padding: 'var(--section-padding) 0', margin: 0 }}>
+            {/* Centered hero “card” */}
+  
+    style={{
+      maxWidth: isMobile ? '90vw' : '800px',
+      margin: '0 auto',
+      minHeight: 'clamp(400px, 85vh, 800px)',
+      background: '…orange gradient…',        // copy your old background
+      borderRadius: 'clamp(20px, 4vw, 30px)', // copy old radius
+      boxShadow: '0 20px 60px rgba(255, 107, 53, 0.3)',
+      overflow: 'hidden',
+      color: 'white',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+    }}
+  
+
+          
           {/* Animated background particles */}
           {[...Array(window.innerWidth <= 768 ? 8 : 15)].map((_, i) => (
             <div
