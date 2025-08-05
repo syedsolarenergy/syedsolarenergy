@@ -35,6 +35,8 @@ import ChangePassword from "./pages/ChangePassword";
 
 // New Admin Panel (public login)
 import AdminPanel from "./pages/AdminPanel";
+import EmailVerified from "./pages/email-verified";
+
 
 function AppContent() {
   const location = useLocation();
@@ -61,6 +63,8 @@ function AppContent() {
 
           {/* Public Admin Panel (new) */}
           <Route path="/adminpanel" element={<AdminPanel />} />
+          <Route path="/email-verified" element={<EmailVerified />} />
+
 
           {/* Auth Pages */}
           <Route path="/login" element={<Login />} />
