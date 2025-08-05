@@ -439,29 +439,40 @@ const handlePanelBrandChange = (e) => {
           logging: false
         });
         
-        const imgData = canvas.toDataURL("image/png", 1.0);
-        const pdf = new jsPDF("p", "pt", "a4");
-        
-        // Calculate dimensions for better fit
-        const imgWidth = 595;
-        const pageHeight = 842;
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        let heightLeft = imgHeight;
-        let position = 0;
+        // ——— One-page PDF code ———
+const imgData = canvas.toDataURL("image/png", 1.0);
+const pdf = new jsPDF("p", "pt", "a4");
 
-        // Add first page
-        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
+// get the PDF page dimensions
+const pageWidth  = pdf.internal.pageSize.getWidth();
+const pageHeight = pdf.internal.pageSize.getHeight();
 
-        // Add additional pages if needed
-        while (heightLeft >= 0) {
-          position = heightLeft - imgHeight;
-          pdf.addPage();
-          pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-          heightLeft -= pageHeight;
-        }
-        
-        pdf.save(`SyedSolarQuotation-${customer.name || "Customer"}-${new Date().toLocaleDateString()}.pdf`);
+// compute image size to maintain aspect ratio
+const imgWidth  = pageWidth;
+const imgHeight = (canvas.height * pageWidth) / canvas.width;
+
+if (imgHeight > pageHeight) {
+  // scale down to fit height
+  const scale = pageHeight / imgHeight;
+  pdf.addImage(
+    imgData,
+    "PNG",
+    0,
+    0,
+    imgWidth  * scale,
+    imgHeight * scale
+  );
+} else {
+  // fits without scaling
+  pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
+}
+
+// save the PDF
+pdf.save(
+  `SyedSolarQuotation-${customer.name || "Customer"}-${new Date().toLocaleDateString()}.pdf`
+);
+// ————————————————
+
         
         // Enhanced WhatsApp message
         const whatsappNumber = "923044678929";
