@@ -89,20 +89,18 @@ function Login() {
     });
   };
 
-  // Handle password visibility toggle - FIXED VERSION
-  const togglePasswordVisibility = (e) => {
-    e.preventDefault(); // Prevent default button behavior
-    e.stopPropagation(); // Stop event bubbling
+  // Handle password visibility toggle - COMPLETELY FIXED VERSION
+  const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
-    // Small delay to ensure state updates before refocusing
+    // Maintain focus on password input after toggle
     setTimeout(() => {
       const passwordInput = document.querySelector('input[name="password"]');
       if (passwordInput) {
         passwordInput.focus();
-        // Maintain cursor position at the end
+        // Keep cursor at the end
         passwordInput.setSelectionRange(passwordInput.value.length, passwordInput.value.length);
       }
-    }, 0);
+    }, 10);
   };
   
   return (
@@ -467,13 +465,13 @@ function Login() {
               color: "#F7931E",
               fontSize: "clamp(16px, 3vw, 18px)",
               zIndex: 1,
-              pointerEvents: "none" // FIXED: Prevent icon from interfering with input
+              pointerEvents: "none" // Prevent icon from interfering with input
             }}>
               🔒
             </div>
             <input
               type={showPassword ? "text" : "password"}
-              name="password" // FIXED: Added name attribute for better targeting
+              name="password"
               placeholder="Enter password | پاس ورڈ"
               value={password}
               onChange={e => setPassword(e.target.value)}
@@ -481,7 +479,7 @@ function Login() {
               disabled={isLoading}
               style={{
                 width: "100%",
-                padding: "clamp(12px, 3vw, 14px) clamp(45px, 9vw, 50px) clamp(12px, 3vw, 14px) clamp(40px, 8vw, 45px)", // FIXED: Increased right padding to prevent overlap
+                padding: "clamp(12px, 3vw, 14px) clamp(55px, 11vw, 60px) clamp(12px, 3vw, 14px) clamp(40px, 8vw, 45px)", // More right padding
                 borderRadius: "12px",
                 border: "2px solid #ffe0b2",
                 fontSize: "clamp(14px, 3vw, 15px)",
@@ -502,44 +500,41 @@ function Login() {
                 e.target.style.transform = "translateY(0)";
               }}
             />
-            <button
-              type="button" 
+            <div
               onClick={togglePasswordVisibility}
-              onMouseDown={(e) => {
-                e.preventDefault(); // FIXED: Prevent default mouse down behavior
-                e.stopPropagation(); // FIXED: Stop event propagation
-              }}
               style={{
                 position: "absolute",
-                right: "12px",
+                right: "15px",
                 top: "50%",
                 transform: "translateY(-50%)",
-                border: "none",
-                background: "none",
                 fontSize: "clamp(16px, 3vw, 18px)",
                 cursor: "pointer",
                 color: "#999",
                 transition: "all 0.3s ease",
-                padding: "8px", // FIXED: Increased padding for better touch target
-                zIndex: 10, // FIXED: Ensure button is above input
-                borderRadius: "4px" // FIXED: Added border radius for better visual feedback
+                padding: "10px", // Better touch target
+                zIndex: 10,
+                borderRadius: "6px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: "32px",
+                height: "32px",
+                userSelect: "none" // Prevent text selection
               }}
-              tabIndex={-1}
-              aria-label="Show password"
               title={showPassword ? "Hide password" : "Show password"}
               onMouseOver={(e) => {
                 e.target.style.color = "#F7931E";
+                e.target.style.background = "rgba(247, 147, 30, 0.1)";
                 e.target.style.transform = "translateY(-50%) scale(1.1)";
-                e.target.style.background = "rgba(247, 147, 30, 0.1)"; // FIXED: Added background on hover
               }}
               onMouseOut={(e) => {
                 e.target.style.color = "#999";
+                e.target.style.background = "transparent";
                 e.target.style.transform = "translateY(-50%) scale(1)";
-                e.target.style.background = "none"; // FIXED: Remove background on mouse out
               }}
             >
               {showPassword ? "🙈" : "👁️"}
-            </button>
+            </div>
           </div>
           
           {/* Enhanced Login Button */}
