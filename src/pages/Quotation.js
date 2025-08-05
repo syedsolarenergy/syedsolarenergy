@@ -34,7 +34,7 @@ const cssVariables = `
 `;
 
 export default function Quotation() {
-  // State declarations (same as before)
+  // State declarations
   const [systemType, setSystemType] = useState("");
   const [autoType, setAutoType] = useState("daytime");
   const [kwAuto, setKwAuto] = useState(5);
@@ -62,8 +62,8 @@ export default function Quotation() {
   const [batteryPrices, setBatteryPrices] = useState({});
   const [standPrices, setStandPrices] = useState({});
   const [charges, setCharges] = useState({});
-
-  // Fetch pricing data from Supabase (same as before)
+  
+  // Fetch pricing data from Supabase
   useEffect(() => {
     const fetchPricingData = async () => {
       try {
@@ -84,7 +84,7 @@ export default function Quotation() {
           setPanelBrand(panels[0].brand);
           setPanelWatt(panels[0].wattage.toString());
         }
-
+        
         // Fetch inverters separately by type
         const { data: inverters } = await supabase.from("inverters").select("*").order('type, capacity');
         const daytimeInvs = inverters?.filter(inv => inv.type === "daytime") || [];
@@ -101,7 +101,7 @@ export default function Quotation() {
           setHybridInverterBrand(hybridInvs[0].brand);
           setHybridInverterCapacity(hybridInvs[0].id.toString());
         }
-
+        
         // Fetch batteries
         const { data: batteries } = await supabase.from("batteries").select("*").order('type, voltage');
         const batteryMap = {};
@@ -119,7 +119,7 @@ export default function Quotation() {
           setSelectedBattery(batteries[0].id.toString());
           updateBatteryModels(batteries[0].type, batteries);
         }
-
+        
         // Fetch stands
         const { data: stands } = await supabase.from("stands").select("*").order('type');
         const standMap = {};
@@ -131,7 +131,7 @@ export default function Quotation() {
         if (stands?.length > 0) {
           setStandType(stands[0].type);
         }
-
+        
         // Fetch charges
         const { data: chargeData } = await supabase.from("charges").select("*");
         const chargeMap = {};
@@ -139,23 +139,21 @@ export default function Quotation() {
           chargeMap[charge.name] = charge.amount;
         });
         setCharges(chargeMap);
-
       } catch (err) {
         console.error("Error fetching pricing data:", err);
         alert("Error loading pricing data. Please refresh the page.");
       }
     };
-
     fetchPricingData();
   }, []);
-
+  
   // Auto-update preview when form values change
   useEffect(() => {
     if (systemType && customer.name) {
       setShowPreview(true);
     }
   }, [systemType, customer.name, panelQty, panelBrand, panelWatt, batteryQty, batteryType, selectedBattery, inverterQty]);
-
+  
   // Derived charge values
   const safetyCharges = { 
     daytime: charges.safety_daytime || 25000,
@@ -171,8 +169,8 @@ export default function Quotation() {
   const transportCharges = charges.transport || 5000;
   const greenMeterCharges = charges.green_meter || 140000;
   const siteVisitCharges = charges.site_visit || 2000;
-
-  // Enhanced battery filtering logic (same as before)
+  
+  // Enhanced battery filtering logic
   const updateBatteryModels = (type, allBatteries = null) => {
     const batteries = allBatteries || Object.values(batteryPrices);
     
@@ -197,14 +195,14 @@ export default function Quotation() {
       setBatteryQty(systemCapacity <= 4.2 ? 2 : 4);
     }
   };
-
-  // Stand quantity logic (same as before)
+  
+  // Stand quantity logic
   function getStandQty(qty, stand) {
     if (stand === "L2") return Math.ceil(qty / 2) || 0;
     return qty || 0;
   }
-
-  // Enhanced auto suggestion logic (same as before)
+  
+  // Enhanced auto suggestion logic
   function getAutoSuggestion() {
     if (autoType === "daytime") {
       const availablePanels = Object.keys(panelPrices);
@@ -244,16 +242,16 @@ export default function Quotation() {
       };
     }
   }
-
-  // Handle battery type change with enhanced logic (same as before)
+  
+  // Handle battery type change with enhanced logic
   const handleBatteryType = (e) => {
     const val = e.target.value;
     setBatteryType(val);
     updateBatteryModels(val);
     setSelectedBattery("");
   };
-
-  // Handle hybrid inverter capacity change (same as before)
+  
+  // Handle hybrid inverter capacity change
   const handleHybridInverterCapacityChange = (e) => {
     const selectedId = e.target.value;
     setHybridInverterCapacity(selectedId);
@@ -263,15 +261,15 @@ export default function Quotation() {
       updateBatteryModels(batteryType);
     }
   };
-
+  
   const handleCustomerChange = (e) => {
     const { name, value } = e.target;
     setCustomer((prev) => ({ ...prev, [name]: value }));
   };
   
   const handleGreenMeter = e => setGreenMeter(e.target.checked);
-
-  // Enhanced cost calculations (same as before)
+  
+  // Enhanced cost calculations
   function getDaytimeCost(qty, stand, invQty = 1) {
     const panelUnitPrice = panelPrices[panelBrand]?.[panelWatt]?.price || 0;
     const panelTotal = qty * panelUnitPrice;
@@ -292,7 +290,7 @@ export default function Quotation() {
       grandTotal: panelTotal + invTotal + standTotal + safety + transport + install + green
     };
   }
-
+  
   function getHybridCost(qty, stand, bQty, battModel, invQty = 1) {
     const panelUnitPrice = panelPrices[panelBrand]?.[panelWatt]?.price || 0;
     const panelTotal = qty * panelUnitPrice;
@@ -315,7 +313,7 @@ export default function Quotation() {
       grandTotal: panelTotal + invTotal + battTotal + standTotal + safety + transport + install + green
     };
   }
-
+  
   // Enhanced Supabase save function with error handling
   async function saveQuotationToSupabase(quotationData) {
     try {
@@ -325,7 +323,7 @@ export default function Quotation() {
         .from("quotations")
         .insert([quotationData])
         .select();
-
+        
       if (error) {
         console.error("Supabase error:", error);
         let errorMessage = "Note: Quotation generated successfully, but couldn't save to database.\n\n";
@@ -367,8 +365,8 @@ export default function Quotation() {
       setSaving(false);
     }
   }
-
-  // Enhanced PDF generation with high-quality output
+  
+  // Enhanced PDF generation with single-page optimization
   const pdfRef = useRef();
   async function handleGenerateQuotation(e) {
     e.preventDefault();
@@ -406,7 +404,7 @@ export default function Quotation() {
       systemLabel = "Hybrid";
       quotationData = getHybridCost(panelQty, standType, batteryQty, selectedBattery, inverterQty);
     }
-
+    
     // Enhanced Supabase data preparation
     const supabaseData = {
       customer_name: customer.name,
@@ -448,17 +446,17 @@ export default function Quotation() {
       quotation_date: new Date().toISOString(),
       created_at: new Date().toISOString()
     };
-
+    
     // Save to Supabase
     const savedData = await saveQuotationToSupabase(supabaseData);
     if (!savedData) return;
-
+    
     // Generate enhanced PDF
     setTimeout(async () => {
       try {
         const input = pdfRef.current;
         const canvas = await html2canvas(input, {
-          scale: 2, // Higher scale for better quality
+          scale: 2.5, // Higher scale for better quality
           useCORS: true,
           allowTaint: true,
           backgroundColor: '#ffffff',
@@ -503,23 +501,18 @@ export default function Quotation() {
         
         const msg = encodeURIComponent(
           `🌞 Assalam-o-Alaikum! I have generated my solar quotation from Syed Solar Energy website.
-
 📋 Quotation Details:
 • Name: ${customer.name}
 • Contact: ${customer.contact}
 • System: ${systemLabel} (${totalKW}kW)
 • Total Amount: Rs. ${quotationData.grandTotal.toLocaleString()}
-
 📍 Installation Address:
 ${customer.address}
-
 🔋 System Specifications:
 • Panels: ${systemType === "auto" ? previewConfig.panelQty : panelQty} x ${systemType === "auto" ? previewConfig.panelBrand : panelBrand} (${systemType === "auto" ? previewConfig.panelWatt : panelWatt}W)
 • Inverter: ${quotationData.selectedInverter?.brand || ""} ${quotationData.selectedInverter?.capacity || ""} x ${systemType === "auto" ? previewConfig.inverterQty : inverterQty}
 ${sysType === "hybrid" ? `• Battery: ${quotationData.selectedBattery?.model || ""} x ${systemType === "auto" ? previewConfig.batteryQty : batteryQty}` : ""}
-
 I am interested in installing this solar system. Please review my quotation and contact me to discuss further details, site visit, and installation timeline.
-
 JazakAllah! 🤝`
         );
         
@@ -538,7 +531,7 @@ JazakAllah! 🤝`
       }
     }, 1000);
   }
-
+  
   // Enhanced preview rendering with responsive design
   function renderQuotationPreview() {
     let data, sysType, sysLabel, previewConfig;
@@ -566,12 +559,9 @@ JazakAllah! 🤝`
       sysLabel = "Hybrid (Solar + Battery)";
       data = getHybridCost(panelQty, standType, batteryQty, selectedBattery, inverterQty);
     }
-
     if (!data) return null;
-
     const totalKW = systemType === "auto" ? kwAuto : 
                    (parseInt(panelWatt) * panelQty / 1000).toFixed(1);
-
     return (
       <div 
         ref={pdfRef} 
@@ -580,110 +570,111 @@ JazakAllah! 🤝`
           background: "#fff", 
           width: 595, 
           minHeight: 842, 
-          padding: "20px", 
+          padding: "15px", // Reduced padding
           margin: "0 auto",
           fontFamily: "'Segoe UI', 'Roboto', sans-serif", 
           position: "relative",
-          fontSize: 12,
-          boxSizing: "border-box"
+          fontSize: 10, // Reduced base font size
+          boxSizing: "border-box",
+          lineHeight: 1.3 // Reduced line height
         }}
       >
         {/* Header */}
         <div style={{ 
-          marginBottom: 15,
+          marginBottom: 10, // Reduced margin
           textAlign: "center",
           borderBottom: "2px solid #ff9800",
-          paddingBottom: 15
+          paddingBottom: 10 // Reduced padding
         }}>
           <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
             <img 
               src={logo} 
               alt="Syed Solar Logo" 
-              style={{ width: 60, height: "auto", marginRight: 15 }} 
+              style={{ width: 50, height: "auto", marginRight: 10 }} // Reduced logo size
             />
             <div>
-              <div style={{ fontSize: 18, fontWeight: 900, color: "#ff6600" }}>
+              <div style={{ fontSize: 16, fontWeight: 900, color: "#ff6600" }}> // Reduced font size
                 Syed Solar Energy Pvt Ltd
               </div>
-              <div style={{ fontSize: 11, color: "#666", marginTop: 3 }}>
+              <div style={{ fontSize: 9, color: "#666", marginTop: 2 }}> // Reduced font size
                 📍 Office #23, Mustafa Plaza, Ring Road, Peshawar
               </div>
             </div>
           </div>
-          <div style={{ marginTop: 10 }}>
-            <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 5 }}>
+          <div style={{ marginTop: 8 }}> // Reduced margin
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 3 }}> // Reduced font size
               {sysLabel} Quotation
             </div>
-            <div style={{ fontSize: 12, color: "#666" }}>
+            <div style={{ fontSize: 10, color: "#666" }}> // Reduced font size
               📅 Date: {new Date().toLocaleDateString()} | ⚡ System Size: {totalKW}kW
             </div>
           </div>
         </div>
-
+        
         {/* Customer Details */}
         <div style={{
           background: "#f8f9fa",
           borderRadius: 5,
-          padding: "10px 15px",
-          marginBottom: 15,
+          padding: "8px 12px", // Reduced padding
+          marginBottom: 10, // Reduced margin
           border: "1px solid #dee2e6",
-          fontSize: 11
+          fontSize: 9 // Reduced font size
         }}>
-          <div style={{ fontWeight: 700, marginBottom: 5, color: "#495057" }}>
+          <div style={{ fontWeight: 700, marginBottom: 3, color: "#495057" }}> // Reduced margin
             👤 Customer Information
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "5px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "3px" }}> // Reduced gap
             <div><b>Name:</b> {customer.name || "-"}</div>
             <div><b>Contact:</b> {customer.contact || "-"}</div>
             <div><b>Email:</b> {customer.email || "-"}</div>
             <div><b>Address:</b> {customer.address || "-"}</div>
           </div>
         </div>
-
+        
         {/* System Configuration */}
         <table style={{
           width: "100%",
           borderCollapse: "collapse",
-          fontSize: 11,
+          fontSize: 9, // Reduced font size
           backgroundColor: "white",
-          marginBottom: 15
+          marginBottom: 10 // Reduced margin
         }}>
           <thead>
             <tr style={{ backgroundColor: "#ff9800", color: "white" }}>
-              <th style={{ padding: "8px 10px", textAlign: "left" }}>Component</th>
-              <th style={{ padding: "8px 10px", textAlign: "left" }}>Details</th>
-              <th style={{ padding: "8px 10px", textAlign: "right" }}>Amount (Rs)</th>
+              <th style={{ padding: "5px 8px", textAlign: "left" }}>Component</th> // Reduced padding
+              <th style={{ padding: "5px 8px", textAlign: "left" }}>Details</th> // Reduced padding
+              <th style={{ padding: "5px 8px", textAlign: "right" }}>Amount (Rs)</th> // Reduced padding
             </tr>
           </thead>
           <tbody>
             {/* Solar Panels */}
             <tr>
-              <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>
+              <td style={{ padding: "5px 8px", borderBottom: "1px solid #eee" }}> // Reduced padding
                 <b>Solar Panels</b>
               </td>
-              <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>
+              <td style={{ padding: "5px 8px", borderBottom: "1px solid #eee" }}> // Reduced padding
                 {systemType === "auto" ? previewConfig.panelQty : panelQty} × {systemType === "auto" ? previewConfig.panelBrand : panelBrand} ({systemType === "auto" ? previewConfig.panelWatt : panelWatt}W)
-                <div style={{ fontSize: 10, color: "#666", marginTop: 3 }}>
+                <div style={{ fontSize: 8, color: "#666", marginTop: 1 }}> // Reduced font size and margin
                   Unit: Rs. {(data.panelUnitPrice || 0).toLocaleString()} | Watt: Rs. {(panelPrices[systemType === "auto" ? previewConfig.panelBrand : panelBrand]?.[systemType === "auto" ? previewConfig.panelWatt : panelWatt]?.pricePerWatt || 0)}
                 </div>
               </td>
-              <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee", textAlign: "right" }}>
+              <td style={{ padding: "5px 8px", borderBottom: "1px solid #eee", textAlign: "right" }}> // Reduced padding
                 {data.panelTotal.toLocaleString()}
               </td>
             </tr>
             
             {/* Inverter */}
             <tr>
-              <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>
+              <td style={{ padding: "5px 8px", borderBottom: "1px solid #eee" }}> // Reduced padding
                 <b>{sysType === "daytime" ? "Daytime" : "Hybrid"} Inverter</b>
               </td>
-              <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>
+              <td style={{ padding: "5px 8px", borderBottom: "1px solid #eee" }}> // Reduced padding
                 {systemType === "auto" ? previewConfig.inverterQty : inverterQty} × {data.selectedInverter?.brand || ""} {data.selectedInverter?.capacity || ""}
-                <div style={{ fontSize: 10, color: "#666", marginTop: 3 }}>
+                <div style={{ fontSize: 8, color: "#666", marginTop: 1 }}> // Reduced font size and margin
                   Model: {data.selectedInverter?.model || ""}
                 </div>
               </td>
-              <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee", textAlign: "right" }}>
+              <td style={{ padding: "5px 8px", borderBottom: "1px solid #eee", textAlign: "right" }}> // Reduced padding
                 {data.invTotal.toLocaleString()}
               </td>
             </tr>
@@ -691,16 +682,16 @@ JazakAllah! 🤝`
             {/* Battery (for hybrid only) */}
             {sysType === "hybrid" && (
               <tr>
-                <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>
+                <td style={{ padding: "5px 8px", borderBottom: "1px solid #eee" }}> // Reduced padding
                   <b>Batteries</b>
                 </td>
-                <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>
+                <td style={{ padding: "5px 8px", borderBottom: "1px solid #eee" }}> // Reduced padding
                   {systemType === "auto" ? previewConfig.batteryQty : batteryQty} × {data.selectedBattery?.model || ""}
-                  <div style={{ fontSize: 10, color: "#666", marginTop: 3 }}>
+                  <div style={{ fontSize: 8, color: "#666", marginTop: 1 }}> // Reduced font size and margin
                     Type: {data.selectedBattery?.type || ""} | Voltage: {data.selectedBattery?.voltage || ""}
                   </div>
                 </td>
-                <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee", textAlign: "right" }}>
+                <td style={{ padding: "5px 8px", borderBottom: "1px solid #eee", textAlign: "right" }}> // Reduced padding
                   {(data.battTotal || 0).toLocaleString()}
                 </td>
               </tr>
@@ -708,31 +699,31 @@ JazakAllah! 🤝`
             
             {/* Mounting Structure */}
             <tr>
-              <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>
+              <td style={{ padding: "5px 8px", borderBottom: "1px solid #eee" }}> // Reduced padding
                 <b>Mounting Structure</b>
               </td>
-              <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>
+              <td style={{ padding: "5px 8px", borderBottom: "1px solid #eee" }}> // Reduced padding
                 {data.standQty} × {systemType === "auto" ? previewConfig.standType : standType}
               </td>
-              <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee", textAlign: "right" }}>
+              <td style={{ padding: "5px 8px", borderBottom: "1px solid #eee", textAlign: "right" }}> // Reduced padding
                 {data.standTotal.toLocaleString()}
               </td>
             </tr>
             
             {/* Service Charges */}
             <tr>
-              <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>
+              <td style={{ padding: "5px 8px", borderBottom: "1px solid #eee" }}> // Reduced padding
                 <b>Installation & Services</b>
               </td>
-              <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>
-                <div style={{ fontSize: 10, color: "#666" }}>
+              <td style={{ padding: "5px 8px", borderBottom: "1px solid #eee" }}> // Reduced padding
+                <div style={{ fontSize: 8, color: "#666" }}> // Reduced font size
                   <div>Safety Materials</div>
                   <div>Transportation</div>
                   <div>Installation</div>
                   {greenMeter && <div style={{ color: "#28a745" }}>Net Metering</div>}
                 </div>
               </td>
-              <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee", textAlign: "right" }}>
+              <td style={{ padding: "5px 8px", borderBottom: "1px solid #eee", textAlign: "right" }}> // Reduced padding
                 <div>{data.safety.toLocaleString()}</div>
                 <div>{data.transport.toLocaleString()}</div>
                 <div>{data.install.toLocaleString()}</div>
@@ -742,32 +733,32 @@ JazakAllah! 🤝`
             
             {/* Grand Total */}
             <tr style={{ backgroundColor: "#ff6600", color: "white" }}>
-              <td style={{ padding: "10px", fontWeight: 700, fontSize: 12 }}>
+              <td style={{ padding: "8px", fontWeight: 700, fontSize: 11 }}> // Reduced padding and font size
                 TOTAL AMOUNT
               </td>
               <td></td>
-              <td style={{ padding: "10px", fontSize: 16, fontWeight: 900, textAlign: "right" }}>
+              <td style={{ padding: "8px", fontSize: 14, fontWeight: 900, textAlign: "right" }}> // Reduced padding and font size
                 Rs. {data.grandTotal.toLocaleString()}
               </td>
             </tr>
           </tbody>
         </table>
-
+        
         {/* Terms & Payment */}
         <div style={{
-          padding: "15px",
+          padding: "10px", // Reduced padding
           borderRadius: 5,
-          marginBottom: 15,
+          marginBottom: 10, // Reduced margin
           border: "1px solid #dee2e6",
-          fontSize: 11
+          fontSize: 9 // Reduced font size
         }}>
-          <div style={{ fontWeight: 700, marginBottom: 8, color: "#2e7d32" }}>
+          <div style={{ fontWeight: 700, marginBottom: 5, color: "#2e7d32" }}> // Reduced margin
             💳 Payment Terms & Conditions
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", fontSize: 10 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", fontSize: 8 }}> // Reduced gap and font size
             <div>
               <b>Payment Schedule:</b>
-              <ul style={{ marginTop: 5, paddingLeft: 15, lineHeight: 1.5 }}>
+              <ul style={{ marginTop: 3, paddingLeft: 12, lineHeight: 1.3 }}> // Reduced margin and padding
                 <li><b>5%</b> advance for booking</li>
                 <li><b>70%</b> on material delivery</li>
                 <li><b>25%</b> after installation</li>
@@ -775,7 +766,7 @@ JazakAllah! 🤝`
             </div>
             <div>
               <b>Important Notes:</b>
-              <ul style={{ marginTop: 5, paddingLeft: 15, lineHeight: 1.5 }}>
+              <ul style={{ marginTop: 3, paddingLeft: 12, lineHeight: 1.3 }}> // Reduced margin and padding
                 <li>Quotation valid for <b>7 days</b></li>
                 <li>Prices subject to market changes</li>
                 <li>Installation within 15-20 days</li>
@@ -783,39 +774,39 @@ JazakAllah! 🤝`
             </div>
           </div>
         </div>
-
+        
         {/* Warranty */}
         <div style={{
           background: "#fffde7",
-          padding: "15px",
+          padding: "10px", // Reduced padding
           borderRadius: 5,
-          marginBottom: 15,
+          marginBottom: 10, // Reduced margin
           border: "1px solid #ffecb3",
-          fontSize: 11
+          fontSize: 9 // Reduced font size
         }}>
-          <div style={{ fontWeight: 700, marginBottom: 5, color: "#3b2400" }}>
+          <div style={{ fontWeight: 700, marginBottom: 3, color: "#3b2400" }}> // Reduced margin
             🛡️ Warranty & Quality Assurance
           </div>
-          <ul style={{ marginTop: 5, paddingLeft: 15, lineHeight: 1.5, fontSize: 10 }}>
+          <ul style={{ marginTop: 3, paddingLeft: 12, lineHeight: 1.3, fontSize: 8 }}> // Reduced margin, padding and font size
             <li>Solar panels: <b>12 years product, 25 years performance</b></li>
             <li>Inverters: <b>5 years warranty</b></li>
             <li>Lithium batteries: <b>5-10 years warranty</b></li>
             <li>Professional installation with <b>6 months service warranty</b></li>
           </ul>
         </div>
-
+        
         {/* Footer */}
         <div style={{
           background: "#1976d2",
           color: "#fff",
           fontWeight: 600,
           textAlign: "center",
-          padding: "10px 15px",
+          padding: "8px 12px", // Reduced padding
           borderRadius: 5,
-          fontSize: 10,
-          marginTop: 10
+          fontSize: 8, // Reduced font size
+          marginTop: 8 // Reduced margin
         }}>
-          <div style={{ marginBottom: 5 }}>
+          <div style={{ marginBottom: 3 }}> // Reduced margin
             📧 sales@syedsolarenergy.com | 📱 WhatsApp: 0304-467-8929 | ☎️ Office: 091-5844567
           </div>
           <div>
@@ -825,7 +816,7 @@ JazakAllah! 🤝`
       </div>
     );
   }
-
+  
   // Enhanced form UI with responsive improvements
   return (
     <>
@@ -854,7 +845,7 @@ JazakAllah! 🤝`
               Get instant pricing for your solar energy system
             </p>
           </div>
-
+          
           <div style={{ 
             display: "grid", 
             gridTemplateColumns: "1fr", 
@@ -918,7 +909,7 @@ JazakAllah! 🤝`
                   </label>
                 </div>
               </div>
-
+              
               {/* Auto Suggest Section */}
               {systemType === "auto" && (
                 <div style={sectionBox}>
@@ -955,7 +946,7 @@ JazakAllah! 🤝`
                   </div>
                 </div>
               )}
-
+              
               {/* Customer Information */}
               <div style={sectionBox}>
                 <h3 style={sectionTitle}>👤 Customer Information</h3>
@@ -1008,7 +999,7 @@ JazakAllah! 🤝`
                   </div>
                 </div>
               </div>
-
+              
               {/* Daytime System Configuration */}
               {systemType === "daytime" && (
                 <div style={sectionBox}>
@@ -1041,7 +1032,7 @@ JazakAllah! 🤝`
                       />
                     </div>
                   </div>
-
+                  
                   {/* Panel Pricing Info */}
                   {panelBrand && panelWatt && (
                     <div style={priceInfoBox}>
@@ -1051,7 +1042,7 @@ JazakAllah! 🤝`
                       <div><b>System Size:</b> {(panelWatt * panelQty / 1000).toFixed(1)}kW</div>
                     </div>
                   )}
-
+                  
                   <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "15px", marginBottom: 15, '@media (min-width: 768px)': { gridTemplateColumns: "1fr 1fr" } }}>
                     <div>
                       <label style={labelStyle}>Daytime Inverter</label>
@@ -1075,7 +1066,7 @@ JazakAllah! 🤝`
                       />
                     </div>
                   </div>
-
+                  
                   <div>
                     <label style={labelStyle}>Mounting Structure</label>
                     <select value={standType} onChange={e => setStandType(e.target.value)} style={inputStyle}>
@@ -1084,13 +1075,13 @@ JazakAllah! 🤝`
                       )}
                     </select>
                   </div>
-
+                  
                   {/* Stand Info */}
                   <div style={priceInfoBox}>
                     <div><b>Stand Quantity:</b> {getStandQty(panelQty, standType)} sets</div>
                     <div><b>Total Stands:</b> Rs. {(standPrices[standType] * getStandQty(panelQty, standType)).toLocaleString()}</div>
                   </div>
-
+                  
                   {/* Service Charges */}
                   <div style={chargesBox}>
                     <h4>📋 Service Charges</h4>
@@ -1100,7 +1091,7 @@ JazakAllah! 🤝`
                       <div>Installation: Rs. {installCharges.daytime.toLocaleString()}</div>
                     </div>
                   </div>
-
+                  
                   <div style={{ marginTop: 15 }}>
                     <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: "var(--text-base)" }}>
                       <input type="checkbox" checked={greenMeter} onChange={handleGreenMeter} />
@@ -1109,7 +1100,7 @@ JazakAllah! 🤝`
                   </div>
                 </div>
               )}
-
+              
               {/* Hybrid System Configuration */}
               {systemType === "hybrid" && (
                 <div style={sectionBox}>
@@ -1143,7 +1134,7 @@ JazakAllah! 🤝`
                       />
                     </div>
                   </div>
-
+                  
                   {/* Panel Pricing Info */}
                   {panelBrand && panelWatt && (
                     <div style={priceInfoBox}>
@@ -1153,7 +1144,7 @@ JazakAllah! 🤝`
                       <div><b>System Size:</b> {(panelWatt * panelQty / 1000).toFixed(1)}kW</div>
                     </div>
                   )}
-
+                  
                   {/* Inverter Configuration */}
                   <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "15px", marginBottom: 15, '@media (min-width: 768px)': { gridTemplateColumns: "1fr 1fr 1fr" } }}>
                     <div>
@@ -1203,7 +1194,7 @@ JazakAllah! 🤝`
                       />
                     </div>
                   </div>
-
+                  
                   {/* Battery Configuration */}
                   <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "15px", marginBottom: 15, '@media (min-width: 768px)': { gridTemplateColumns: "1fr 1fr 1fr" } }}>
                     <div>
@@ -1242,7 +1233,7 @@ JazakAllah! 🤝`
                       />
                     </div>
                   </div>
-
+                  
                   {/* Battery Info */}
                   {selectedBattery && batteryPrices[selectedBattery] && (
                     <div style={priceInfoBox}>
@@ -1252,7 +1243,7 @@ JazakAllah! 🤝`
                       <div><b>Capacity:</b> {batteryPrices[selectedBattery].capacity}</div>
                     </div>
                   )}
-
+                  
                   {/* Stand Configuration */}
                   <div>
                     <label style={labelStyle}>Mounting Structure</label>
@@ -1262,13 +1253,13 @@ JazakAllah! 🤝`
                       )}
                     </select>
                   </div>
-
+                  
                   {/* Stand Info */}
                   <div style={priceInfoBox}>
                     <div><b>Stand Quantity:</b> {getStandQty(panelQty, standType)} sets</div>
                     <div><b>Total Stands:</b> Rs. {(standPrices[standType] * getStandQty(panelQty, standType)).toLocaleString()}</div>
                   </div>
-
+                  
                   {/* Service Charges */}
                   <div style={chargesBox}>
                     <h4>📋 Service Charges</h4>
@@ -1278,7 +1269,7 @@ JazakAllah! 🤝`
                       <div>Installation: Rs. {installCharges.hybrid.toLocaleString()}</div>
                     </div>
                   </div>
-
+                  
                   <div style={{ marginTop: 15 }}>
                     <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: "var(--text-base)" }}>
                       <input type="checkbox" checked={greenMeter} onChange={handleGreenMeter} />
@@ -1287,7 +1278,7 @@ JazakAllah! 🤝`
                   </div>
                 </div>
               )}
-
+              
               {/* Generate Button */}
               <button
                 type="submit"
@@ -1325,7 +1316,7 @@ JazakAllah! 🤝`
                 </div>
               )}
             </form>
-
+            
             {/* Live Preview Section */}
             {showPreview && (
               <div style={{ 
@@ -1375,7 +1366,6 @@ const sectionBox = {
   boxShadow: "0 4px 15px rgba(255, 152, 0, 0.1)",
   border: "1px solid #ffe0b2"
 };
-
 const sectionTitle = { 
   color: "#FF9800", 
   fontWeight: 800, 
@@ -1384,7 +1374,6 @@ const sectionTitle = {
   paddingBottom: "10px",
   borderBottom: "2px solid #ffcc02"
 };
-
 const labelStyle = {
   display: "block",
   fontWeight: 600,
@@ -1392,7 +1381,6 @@ const labelStyle = {
   color: "#333",
   fontSize: "var(--text-base)"
 };
-
 const inputStyle = { 
   width: "100%", 
   padding: "10px 12px", 
@@ -1403,7 +1391,6 @@ const inputStyle = {
   transition: "border-color 0.3s ease",
   boxSizing: "border-box"
 };
-
 const priceInfoBox = {
   background: "linear-gradient(135deg, #e8f5e8 0%, #f1f8e9 100%)",
   border: "2px solid #c8e6c9",
@@ -1419,7 +1406,6 @@ const priceInfoBox = {
     gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))"
   }
 };
-
 const chargesBox = {
   background: "linear-gradient(135deg, #e3f2fd 0%, #f1f8e9 100%)",
   border: "2px solid #bbdefb",
