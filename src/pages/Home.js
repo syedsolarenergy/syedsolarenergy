@@ -28,6 +28,12 @@ const cssVariables = `
     --hero-height: clamp(500px, 70vh, 800px);
   }
 
+  /* Mobile overflow prevention */
+  html, body {
+    overflow-x: hidden;
+    max-width: 100%;
+  }
+
   /* Universal Container System */
   .universal-container {
     width: 100%;
@@ -70,7 +76,7 @@ const cssVariables = `
     display: flex;
     align-items: center;
     gap: clamp(30px, 8vw, 80px);
-    flex-wrap: wrap-reverse; /* Wrap and reverse order on wrap */
+    flex-wrap: wrap-reverse;
     min-height: var(--hero-height);
   }
 
@@ -85,7 +91,7 @@ const cssVariables = `
   }
 
   /* Mobile Optimizations */
-  @media (max-width: 640px) {
+  @media (max-width: 768px) {
     :root {
       --card-min-width: 100%;
       --grid-gap: clamp(12px, 4vw, 20px);
@@ -104,7 +110,7 @@ const cssVariables = `
     
     .hero-animation {
       min-width: 100%;
-      order: -1; /* This will make the animation appear first */
+      order: -1;
     }
   }
 
@@ -131,27 +137,41 @@ const cssVariables = `
 
 // Enhanced Solar Energy Flow Component with better mobile support
 const SolarEnergyFlow = () => {
+  // Mobile detection hook
+  const [isMobile, setIsMobile] = useState(false);
+  
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   return (
     <div style={{
       position: 'relative',
       width: '100%',
-      height: 'clamp(250px, 40vh, 400px)', // Reduced height for mobile
+      height: isMobile ? '200px' : 'clamp(250px, 40vh, 400px)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      marginBottom: 'clamp(20px, 4vw, 40px)'
+      marginBottom: 'clamp(20px, 4vw, 40px)',
+      overflow: 'hidden'
     }}>
       {/* Animated Sun */}
       <div style={{
         position: 'absolute',
-        top: 'clamp(10px, 3vw, 20px)',
-        left: 'clamp(5%, 2vw, 10%)',
-        width: 'clamp(60px, 12vw, 80px)',
-        height: 'clamp(60px, 12vw, 80px)',
+        top: isMobile ? '10px' : 'clamp(10px, 3vw, 20px)',
+        left: isMobile ? '5%' : 'clamp(5%, 2vw, 10%)',
+        width: isMobile ? '40px' : 'clamp(60px, 12vw, 80px)',
+        height: isMobile ? '40px' : 'clamp(60px, 12vw, 80px)',
         background: 'radial-gradient(circle, #FFD700, #FFA500)',
         borderRadius: '50%',
         animation: 'sunPulse 3s ease-in-out infinite',
-        boxShadow: '0 0 clamp(20px, 4vw, 30px) rgba(255, 215, 0, 0.6)',
+        boxShadow: isMobile ? '0 0 10px rgba(255, 215, 0, 0.6)' : '0 0 clamp(20px, 4vw, 30px) rgba(255, 215, 0, 0.6)',
         zIndex: 3
       }}>
         {/* Sun Rays */}
@@ -163,7 +183,7 @@ const SolarEnergyFlow = () => {
               top: '50%',
               left: '50%',
               width: 'clamp(2px, 0.5vw, 4px)',
-              height: 'clamp(15px, 4vw, 25px)',
+              height: isMobile ? '10px' : 'clamp(15px, 4vw, 25px)',
               background: 'linear-gradient(transparent, #FFD700, transparent)',
               transformOrigin: '2px 0px',
               transform: `translate(-50%, -100%) rotate(${i * 45}deg)`,
@@ -173,8 +193,8 @@ const SolarEnergyFlow = () => {
         ))}
       </div>
 
-      {/* Energy Rays from Sun to Solar Panel */}
-      {[...Array(5)].map((_, i) => (
+      {/* Energy Rays from Sun to Solar Panel - Simplified on mobile */}
+      {!isMobile && [...Array(5)].map((_, i) => (
         <div
           key={i}
           style={{
@@ -194,13 +214,13 @@ const SolarEnergyFlow = () => {
       {/* Solar Panel */}
       <div style={{
         position: 'absolute',
-        top: 'clamp(130px, 25vw, 180px)',
-        left: 'clamp(15%, 4vw, 20%)',
-        width: 'clamp(90px, 18vw, 120px)',
-        height: 'clamp(60px, 12vw, 80px)',
+        top: isMobile ? '60px' : 'clamp(130px, 25vw, 180px)',
+        left: isMobile ? '20%' : 'clamp(15%, 4vw, 20%)',
+        width: isMobile ? '70px' : 'clamp(90px, 18vw, 120px)',
+        height: isMobile ? '45px' : 'clamp(60px, 12vw, 80px)',
         background: 'linear-gradient(145deg, #1a237e, #3949ab)',
-        borderRadius: 'clamp(6px, 1vw, 8px)',
-        border: `clamp(2px, 0.4vw, 3px) solid #0d47a1`,
+        borderRadius: isMobile ? '5px' : 'clamp(6px, 1vw, 8px)',
+        border: `${isMobile ? '1px' : 'clamp(2px, 0.4vw, 3px)'} solid #0d47a1`,
         display: 'grid',
         gridTemplateColumns: 'repeat(4, 1fr)',
         gridTemplateRows: 'repeat(3, 1fr)',
@@ -245,9 +265,9 @@ const SolarEnergyFlow = () => {
         
         {/* Curved path from solar panel to inverter */}
         <path
-          d="M 280 220 Q 400 180 520 240"
+          d={isMobile ? "M 160 120 Q 280 100 380 140" : "M 280 220 Q 400 180 520 240"}
           stroke="url(#electricFlow)"
-          strokeWidth="clamp(2, 0.5vw, 4)"
+          strokeWidth={isMobile ? "2" : "clamp(2, 0.5vw, 4)"}
           fill="none"
           strokeDasharray="10,5"
           style={{
@@ -257,9 +277,9 @@ const SolarEnergyFlow = () => {
         
         {/* Path from inverter to bulb */}
         <path
-          d="M 600 240 Q 680 200 720 160"
+          d={isMobile ? "M 380 140 Q 500 100 580 80" : "M 600 240 Q 680 200 720 160"}
           stroke="url(#electricFlow)"
-          strokeWidth="clamp(2, 0.5vw, 4)"
+          strokeWidth={isMobile ? "2" : "clamp(2, 0.5vw, 4)"}
           fill="none"
           strokeDasharray="10,5"
           style={{
@@ -267,8 +287,8 @@ const SolarEnergyFlow = () => {
           }}
         />
         
-        {/* Electric sparks */}
-        {[...Array(3)].map((_, i) => (
+        {/* Electric sparks - Simplified on mobile */}
+        {!isMobile && [...Array(3)].map((_, i) => (
           <circle
             key={i}
             cx={350 + i * 100}
@@ -285,13 +305,13 @@ const SolarEnergyFlow = () => {
       {/* Inverter */}
       <div style={{
         position: 'absolute',
-        top: 'clamp(150px, 30vw, 200px)',
-        left: 'clamp(60%, 12vw, 65%)',
-        width: 'clamp(60px, 12vw, 80px)',
-        height: 'clamp(45px, 9vw, 60px)',
+        top: isMobile ? '80px' : 'clamp(150px, 30vw, 200px)',
+        left: isMobile ? '50%' : 'clamp(60%, 12vw, 65%)',
+        width: isMobile ? '50px' : 'clamp(60px, 12vw, 80px)',
+        height: isMobile ? '35px' : 'clamp(45px, 9vw, 60px)',
         background: 'linear-gradient(145deg, #424242, #616161)',
-        borderRadius: 'clamp(6px, 1vw, 8px)',
-        border: `clamp(1px, 0.3vw, 2px) solid #212121`,
+        borderRadius: isMobile ? '5px' : 'clamp(6px, 1vw, 8px)',
+        border: `${isMobile ? '1px' : 'clamp(1px, 0.3vw, 2px)'} solid #212121`,
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -300,15 +320,15 @@ const SolarEnergyFlow = () => {
         zIndex: 2
       }}>
         <div style={{
-          width: 'clamp(35px, 7vw, 50px)',
-          height: 'clamp(6px, 1.2vw, 8px)',
+          width: isMobile ? '30px' : 'clamp(35px, 7vw, 50px)',
+          height: isMobile ? '4px' : 'clamp(6px, 1.2vw, 8px)',
           background: 'linear-gradient(90deg, #4caf50, #8bc34a)',
-          borderRadius: 'clamp(3px, 0.6vw, 4px)',
+          borderRadius: isMobile ? '2px' : 'clamp(3px, 0.6vw, 4px)',
           marginBottom: 'clamp(2px, 0.5vw, 4px)',
           animation: 'statusLight 1s ease-in-out infinite alternate'
         }} />
         <div style={{
-          fontSize: 'clamp(6px, 1.5vw, 10px)',
+          fontSize: isMobile ? '8px' : 'clamp(6px, 1.5vw, 10px)',
           color: '#fff',
           fontWeight: 'bold'
         }}>
@@ -319,10 +339,10 @@ const SolarEnergyFlow = () => {
       {/* Light Bulb */}
       <div style={{
         position: 'absolute',
-        top: 'clamp(90px, 18vw, 120px)',
-        right: 'clamp(8%, 2vw, 10%)',
-        width: 'clamp(40px, 8vw, 50px)',
-        height: 'clamp(55px, 11vw, 70px)',
+        top: isMobile ? '30px' : 'clamp(90px, 18vw, 120px)',
+        right: isMobile ? '10%' : 'clamp(8%, 2vw, 10%)',
+        width: isMobile ? '30px' : 'clamp(40px, 8vw, 50px)',
+        height: isMobile ? '45px' : 'clamp(55px, 11vw, 70px)',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -331,11 +351,11 @@ const SolarEnergyFlow = () => {
       }}>
         {/* Bulb Glass */}
         <div style={{
-          width: 'clamp(30px, 6vw, 40px)',
-          height: 'clamp(30px, 6vw, 40px)',
+          width: isMobile ? '25px' : 'clamp(30px, 6vw, 40px)',
+          height: isMobile ? '25px' : 'clamp(30px, 6vw, 40px)',
           background: 'radial-gradient(circle, #fff9c4, #fff176)',
           borderRadius: '50% 50% 50% 50% / 60% 60% 40% 40%',
-          border: `clamp(1px, 0.3vw, 2px) solid #fbc02d`,
+          border: `${isMobile ? '1px' : 'clamp(1px, 0.3vw, 2px)'} solid #fbc02d`,
           position: 'relative',
           animation: 'lightFlicker 3s ease-in-out infinite'
         }}>
@@ -345,18 +365,18 @@ const SolarEnergyFlow = () => {
             top: '50%',
             left: '50%',
             transform: 'translate(-50%, -50%)',
-            width: 'clamp(15px, 3vw, 20px)',
-            height: 'clamp(15px, 3vw, 20px)',
+            width: isMobile ? '10px' : 'clamp(15px, 3vw, 20px)',
+            height: isMobile ? '10px' : 'clamp(15px, 3vw, 20px)',
             background: 'none',
-            border: `clamp(0.5px, 0.2vw, 1px) solid #f57f17`,
+            border: `${isMobile ? '0.5px' : 'clamp(0.5px, 0.2vw, 1px)'} solid #f57f17`,
             borderRadius: '50%'
           }} />
         </div>
         
         {/* Bulb Base */}
         <div style={{
-          width: 'clamp(22px, 4.5vw, 30px)',
-          height: 'clamp(15px, 3vw, 20px)',
+          width: isMobile ? '18px' : 'clamp(22px, 4.5vw, 30px)',
+          height: isMobile ? '12px' : 'clamp(15px, 3vw, 20px)',
           background: 'linear-gradient(145deg, #666, #999)',
           borderRadius: '0 0 clamp(6px, 1vw, 8px) clamp(6px, 1vw, 8px)',
           position: 'relative'
@@ -366,16 +386,16 @@ const SolarEnergyFlow = () => {
               key={i}
               style={{
                 width: '100%',
-                height: 'clamp(1px, 0.3vw, 2px)',
+                height: isMobile ? '1px' : 'clamp(1px, 0.3vw, 2px)',
                 background: '#444',
-                marginTop: 'clamp(1px, 0.3vw, 2px)'
+                marginTop: isMobile ? '1px' : 'clamp(1px, 0.3vw, 2px)'
               }}
             />
           ))}
         </div>
 
-        {/* Light Rays */}
-        {[...Array(6)].map((_, i) => (
+        {/* Light Rays - Simplified on mobile */}
+        {!isMobile && [...Array(6)].map((_, i) => (
           <div
             key={i}
             style={{
@@ -394,8 +414,8 @@ const SolarEnergyFlow = () => {
         ))}
       </div>
 
-      {/* Energy Flow Particles */}
-      {[...Array(6)].map((_, i) => (
+      {/* Energy Flow Particles - Removed on mobile */}
+      {!isMobile && [...Array(6)].map((_, i) => (
         <div
           key={i}
           style={{
@@ -1283,13 +1303,14 @@ export default function Home() {
           radial-gradient(circle at 80% 20%, rgba(247, 147, 30, 0.08) 0%, transparent 50%),
           radial-gradient(circle at 40% 80%, rgba(255, 152, 0, 0.08) 0%, transparent 50%),
           linear-gradient(135deg, #f8faff 0%, #fff3e0 25%, #ffe0b2 50%, #ffcc80 75%, #ffb74d 100%)
-        `
+        `,
+        overflowX: 'hidden' // Prevent horizontal overflow
       }}>
 
         {/* Enhanced Hero Section with Solar Animation */}
         <section
           style={{
-            minHeight: 'clamp(400px, 85vh, 800px)', // Adjusted for mobile
+            minHeight: 'clamp(400px, 85vh, 800px)',
             background: heroSection?.background_color || 
               `linear-gradient(135deg, 
                 rgba(255, 107, 53, 0.95) 0%, 
@@ -1302,7 +1323,7 @@ export default function Home() {
             alignItems: 'center',
             justifyContent: 'center',
             padding: 'var(--section-padding) 0',
-            margin: 'clamp(10px, 2vw, 20px)', // Reduced margin for mobile
+            margin: 'clamp(10px, 2vw, 20px)',
             borderRadius: 'clamp(20px, 4vw, 30px)',
             textAlign: 'center',
             position: 'relative',
@@ -1336,7 +1357,7 @@ export default function Home() {
           <div className="universal-container" style={{ position: 'relative', zIndex: 2 }}>
             <div className="hero-content">
               
-              {/* Solar Animation - Now first on mobile via CSS order */}
+              {/* Solar Animation */}
               <div className="hero-animation">
                 <SolarEnergyFlow />
               </div>
@@ -1344,7 +1365,7 @@ export default function Home() {
               {/* Text Content */}
               <div className="hero-text">
                 <h1 style={{ 
-                  fontSize: 'clamp(1.8rem, 6vw, 3.5rem)', // Responsive font
+                  fontSize: 'clamp(1.8rem, 6vw, 3.5rem)',
                   fontWeight: 'bold', 
                   marginBottom: 'clamp(15px, 3vw, 20px)',
                   textShadow: '3px 3px 6px rgba(0,0,0,0.3)',
@@ -1380,7 +1401,7 @@ export default function Home() {
                   gap: 'clamp(12px, 2.5vw, 18px)', 
                   flexWrap: 'wrap',
                   justifyContent: 'center',
-                  flexDirection: window.innerWidth <= 640 ? 'column' : 'row' // Stack buttons vertically on mobile
+                  flexDirection: window.innerWidth <= 640 ? 'column' : 'row'
                 }}>
                   <button
                     onClick={() => window.location.href = '/quotation'}
@@ -1416,7 +1437,7 @@ export default function Home() {
                       cursor: 'pointer',
                       transition: 'all 0.4s ease',
                       textTransform: 'uppercase',
-                      letterSpacing: '0.8px',
+                      letterSpicing: '0.8px',
                       minWidth: 'clamp(160px, 32vw, 200px)'
                     }}
                   >
@@ -1934,7 +1955,9 @@ export default function Home() {
               </div>
             </div>
           </section>
-        )}
+        )
+      }
+
 
         {/* Enhanced Footer */}
         <Footer />
@@ -1946,22 +1969,6 @@ export default function Home() {
         {/* Enhanced animations and styles */}
         <style>
           {`
-            /* Helper function for clamp calculations */
-            @supports not (width: clamp(1px, 1vw, 1px)) {
-              :root {
-                --fallback-padding: 20px;
-                --fallback-font: 16px;
-              }
-              
-              .universal-container {
-                padding: 0 var(--fallback-padding);
-              }
-              
-              .hero-content {
-                font-size: var(--fallback-font);
-              }
-            }
-
             @keyframes gradientShift {
               0% { background-position: 0% 50%; }
               50% { background-position: 100% 50%; }
@@ -1984,7 +1991,6 @@ export default function Home() {
               50% { transform: scale(1.05); opacity: 1; }
             }
 
-            /* Enhanced Solar Animation Keyframes */
             @keyframes sunPulse {
               0%, 100% { 
                 transform: scale(1); 
@@ -2111,7 +2117,6 @@ export default function Home() {
               }
             }
 
-            /* Enhanced popup animations */
             @keyframes fadeIn {
               0% { opacity: 0; backdrop-filter: blur(0px); }
               100% { opacity: 1; backdrop-filter: blur(8px); }
@@ -2151,7 +2156,6 @@ export default function Home() {
               }
             }
 
-            /* Responsive Design Enhancements */
             @media (max-width: 480px) {
               .hero-content {
                 padding: clamp(20px, 5vw, 30px) 0;
@@ -2398,51 +2402,6 @@ export default function Home() {
               );
               background-size: 200% 100%;
               animation: shimmer 1.5s infinite;
-            }
-
-            /* Container query support for modern browsers */
-            @supports (container-type: inline-size) {
-              .universal-container {
-                container-type: inline-size;
-              }
-              
-              @container (max-width: 600px) {
-                .hero-content {
-                  flex-direction: column;
-                }
-              }
-            }
-
-            /* CSS Grid support fallback */
-            @supports not (display: grid) {
-              .grid-auto,
-              .grid-stats,
-              .grid-reviews,
-              .grid-features {
-                display: flex;
-                flex-wrap: wrap;
-                gap: 20px;
-              }
-              
-              .grid-auto > *,
-              .grid-stats > *,
-              .grid-reviews > *,
-              .grid-features > * {
-                flex: 1 1 300px;
-                min-width: 280px;
-              }
-            }
-
-            /* Flexbox gap fallback for older browsers */
-            @supports not (gap: 20px) {
-              .hero-content > * {
-                margin-right: 20px;
-                margin-bottom: 20px;
-              }
-              
-              .hero-content > *:last-child {
-                margin-right: 0;
-              }
             }
           `}
         </style>
