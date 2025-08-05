@@ -40,7 +40,7 @@ export default function Navbar() {
         className="professional-navbar"
       >
         {/* Logo and Tagline Section */}
-        <div className="logo-container" style={{
+        <div style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -48,32 +48,30 @@ export default function Navbar() {
           borderBottom: "2px solid rgba(255, 255, 255, 0.15)",
           background: "linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)"
         }}>
-          <div className="logo-wrapper" style={{
+          <div style={{
             display: "flex",
             alignItems: "center",
-            gap: "12px",
-            flexDirection: "row"
+            gap: "12px"
           }}>
             <img
               src={logo}
               alt="Syed Solar Energy Logo"
-              className="logo-img"
               style={{
-                height: "clamp(40px, 5vw, 50px)",
-                width: "clamp(40px, 5vw, 50px)",
+                height: 50,
+                width: 50,
                 objectFit: "contain",
                 borderRadius: "12px",
                 boxShadow: "0 4px 15px rgba(255, 255, 255, 0.3)",
                 background: "#fff",
-                padding: "clamp(4px, 0.5vw, 6px)",
+                padding: "6px",
                 border: "2px solid rgba(255, 255, 255, 0.3)"
               }}
             />
-            <div className="logo-text" style={{ textAlign: "center" }}>
-              <h1 className="company-name" style={{
+            <div style={{ textAlign: "center" }}>
+              <h1 style={{
                 color: "#fff",
                 fontWeight: 900,
-                fontSize: "clamp(18px, 3.5vw, 24px)",
+                fontSize: "24px",
                 letterSpacing: "1px",
                 fontFamily: "Poppins, Arial, sans-serif",
                 textShadow: "0 2px 4px rgba(0,0,0,0.2)",
@@ -82,12 +80,12 @@ export default function Navbar() {
               }}>
                 Syed Solar Energy
               </h1>
-              <p className="company-tagline" style={{
+              <p style={{
                 color: "#fffbe9",
                 fontWeight: 500,
-                fontSize: "clamp(10px, 1.8vw, 13px)",
+                fontSize: "13px",
                 fontFamily: "Noto Nastaliq Urdu, 'Jameel Noori Nastaleeq', serif",
-                margin: "clamp(2px, 0.5vw, 3px) 0 0 0",
+                margin: "3px 0 0 0",
                 textShadow: "0 1px 3px rgba(0,0,0,0.2)",
                 opacity: 0.95,
                 letterSpacing: "0.5px"
@@ -97,34 +95,32 @@ export default function Navbar() {
             </div>
           </div>
         </div>
-        
         {/* Navigation Tabs Section */}
-        <div className="tabs-container" style={{
+        <div style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          padding: "clamp(8px, 1.5vw, 10px) clamp(10px, 1.5vw, 15px)",
-          gap: "clamp(3px, 1vw, 5px)",
+          padding: "10px 15px",
+          gap: "5px",
           flexWrap: "wrap",
           maxWidth: "100%"
         }}>
           {/* Navigation Links */}
-          <div className="nav-links" style={{
+          <div style={{
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            gap: "clamp(3px, 1vw, 4px)",
+            gap: "4px",
             flexWrap: "wrap",
             flex: 1,
             maxWidth: isLoggedIn ? "calc(100% - 100px)" : "100%"
           }}>
-            {links.map((link) => {
+            {links.map((link, index) => {
               const isActive = location.pathname === link.to;
               return (
                 <Link
                   key={link.to}
                   to={link.to}
-                  className={`professional-tab ${isActive ? "active-tab" : ""}`}
                   style={{
                     color: isActive ? "#ff6b35" : "#fff",
                     fontWeight: isActive ? 800 : 600,
@@ -132,8 +128,8 @@ export default function Navbar() {
                     display: "inline-flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    padding: "clamp(6px, 1.2vw, 10px) clamp(8px, 1.5vw, 14px)",
-                    fontSize: "clamp(10px, 1.8vw, 13px)",
+                    padding: "10px 14px",
+                    fontSize: "13px",
                     letterSpacing: "0.3px",
                     borderRadius: "10px",
                     background: isActive 
@@ -155,7 +151,9 @@ export default function Navbar() {
                     position: "relative",
                     overflow: "hidden",
                     transform: isActive ? "translateY(-2px)" : "none",
+                    animationDelay: `${index * 0.05}s`
                   }}
+                  className="professional-tab"
                 >
                   <span style={{ position: "relative", zIndex: 1 }}>
                     {link.label}
@@ -164,20 +162,18 @@ export default function Navbar() {
               );
             })}
           </div>
-          
           {/* Logout Button */}
           {isLoggedIn && (
             <button
               onClick={logout}
-              className="professional-logout"
               style={{
                 color: "#fff",
                 background: "linear-gradient(135deg, #f44336 0%, #d32f2f 100%)",
                 border: "2px solid rgba(255,255,255,0.3)",
                 borderRadius: "10px",
-                padding: "clamp(6px, 1.2vw, 10px) clamp(10px, 1.8vw, 18px)",
+                padding: "10px 18px",
                 fontWeight: 700,
-                fontSize: "clamp(10px, 1.8vw, 13px)",
+                fontSize: "13px",
                 boxShadow: "0 5px 15px rgba(244, 67, 54, 0.4), 0 3px 8px rgba(0,0,0,0.2)",
                 cursor: "pointer",
                 letterSpacing: "0.3px",
@@ -185,18 +181,17 @@ export default function Navbar() {
                 textShadow: "0 1px 3px rgba(0,0,0,0.3)",
                 whiteSpace: "nowrap",
                 position: "relative",
-                overflow: "hidden",
-                flexShrink: 0
+                overflow: "hidden"
               }}
+              className="professional-logout"
             >
               <span style={{ position: "relative", zIndex: 1 }}>Logout</span>
             </button>
           )}
         </div>
       </nav>
-      
       {/* Professional Styles */}
-      <style jsx global>{`
+      <style jsx>{`
         * {
           box-sizing: border-box;
           margin: 0;
@@ -283,54 +278,74 @@ export default function Navbar() {
         }
         
         /* Responsive Design */
+        @media (max-width: 1200px) {
+          .professional-tab {
+            padding: 8px 10px !important;
+            font-size: 12px !important;
+          }
+        }
+        
+        @media (max-width: 992px) {
+          .professional-navbar h1 {
+            font-size: 22px !important;
+          }
+          
+          .professional-navbar p {
+            font-size: 11px !important;
+          }
+        }
+        
         @media (max-width: 768px) {
-          .logo-wrapper {
-            flex-direction: column !important;
-            gap: 8px !important;
+          .professional-navbar > div:first-child {
+            padding: 12px 0 8px 0 !important;
           }
           
-          .logo-text {
-            padding: 0 10px;
+          .professional-navbar > div:last-child {
+            padding: 8px 12px !important;
+            gap: 3px !important;
           }
           
-          .nav-links {
-            max-width: 100% !important;
+          .professional-navbar h1 {
+            font-size: 20px !important;
+          }
+          
+          .professional-navbar p {
+            font-size: 10px !important;
+          }
+          
+          .professional-tab {
+            padding: 5px 7px !important;
+            font-size: 10px !important;
+          }
+          
+          .professional-logout {
+            padding: 5px 10px !important;
+            font-size: 10px !important;
           }
         }
         
         @media (max-width: 576px) {
-          .tabs-container {
-            flex-direction: column;
-            align-items: stretch;
+          .professional-navbar img {
+            height: 40px !important;
+            width: 40px !important;
           }
           
-          .nav-links {
-            flex-direction: column;
-            gap: 6px !important;
+          .professional-navbar h1 {
+            font-size: 18px !important;
+          }
+          
+          .professional-navbar p {
+            font-size: 9px !important;
           }
           
           .professional-tab {
-            width: 100%;
-            text-align: center;
+            padding: 4px 5px !important;
+            font-size: 9px !important;
           }
           
           .professional-logout {
-            width: 100%;
-            margin-top: 8px;
-          }
-        }
-        
-        @media (max-width: 480px) {
-          .logo-container {
-            padding: 10px 0 8px 0 !important;
-          }
-          
-          .company-name {
-            font-size: clamp(16px, 5vw, 18px) !important;
-          }
-          
-          .company-tagline {
-            font-size: clamp(9px, 2.5vw, 10px) !important;
+            padding: 4px 8px !important;
+            font-size: 9px !important;
           }
         }
         
