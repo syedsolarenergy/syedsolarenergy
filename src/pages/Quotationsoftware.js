@@ -34,6 +34,7 @@ const QuotationForm = () => {
   const [currentQuotation, setCurrentQuotation] = useState(null);
   const [isSavingToDatabase, setIsSavingToDatabase] = useState(false);
   const [deletingQuotationId, setDeletingQuotationId] = useState(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   
   // Ref for PDF generation
   const quotationRef = useRef();
@@ -212,10 +213,6 @@ const QuotationForm = () => {
 
   // Delete quotation from both localStorage and Supabase
   async function deleteQuotation(quotationId) {
-    if (!confirm("Are you sure you want to delete this quotation? This action cannot be undone.")) {
-      return;
-    }
-
     try {
       setDeletingQuotationId(quotationId);
 
@@ -239,6 +236,7 @@ const QuotationForm = () => {
       localStorage.setItem("quotations", JSON.stringify(updatedQuotations));
 
       alert("✅ Quotation deleted successfully!");
+      setConfirmDeleteId(null);
 
     } catch (err) {
       console.error("Unexpected error deleting quotation:", err);
@@ -247,6 +245,15 @@ const QuotationForm = () => {
       setDeletingQuotationId(null);
     }
   }
+
+  // Handle delete confirmation
+  const handleDeleteClick = (quotationId) => {
+    setConfirmDeleteId(quotationId);
+  };
+
+  const cancelDelete = () => {
+    setConfirmDeleteId(null);
+  };
 
   // Load quotations on component mount
   useEffect(() => {
@@ -791,7 +798,7 @@ const QuotationForm = () => {
                   🖨️ Print
                 </button>
                 <button
-                  onClick={() => deleteQuotation(quotation.id)}
+                  onClick={() => handleDeleteClick(quotation.id)}
                   disabled={deletingQuotationId === quotation.id}
                   style={{
                     ...styles.deleteButton,
@@ -802,6 +809,33 @@ const QuotationForm = () => {
                   {deletingQuotationId === quotation.id ? '⏳' : '🗑️'} Delete
                 </button>
               </div>
+              
+              {/* Delete Confirmation Modal */}
+              {confirmDeleteId === quotation.id && (
+                <div style={styles.confirmModal}>
+                  <div style={styles.confirmContent}>
+                    <h4 style={{ color: '#d32f2f', margin: '0 0 10px 0' }}>⚠️ Confirm Delete</h4>
+                    <p style={{ margin: '0 0 15px 0' }}>
+                      Are you sure you want to delete this quotation? This action cannot be undone.
+                    </p>
+                    <div style={styles.confirmButtons}>
+                      <button
+                        onClick={cancelDelete}
+                        style={styles.cancelButton}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={() => deleteQuotation(quotation.id)}
+                        style={styles.confirmDeleteButton}
+                        disabled={deletingQuotationId === quotation.id}
+                      >
+                        {deletingQuotationId === quotation.id ? 'Deleting...' : 'Delete'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -1834,6 +1868,7 @@ const styles = {
     border: '2px solid #FFE0CC',
     boxShadow: '0 8px 25px rgba(0,0,0,0.1)',
     transition: 'all 0.3s ease',
+    position: 'relative', // Added for modal positioning
   },
   quotationHeader: {
     display: 'flex',
@@ -1925,5 +1960,53 @@ const styles = {
     fontSize: '0.85rem',
     fontWeight: '600',
   },
+  // Confirmation Modal Styles
+  confirmModal: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: 'rgba(0,0,0,0.5)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: '15px',
+  },
+  confirmContent: {
+    background: 'white',
+    padding: '20px',
+    borderRadius: '12px',
+    boxShadow: '0 10px 30px rgba(0,0,0,0.3)',
+    textAlign: 'center',
+    maxWidth: '300px',
+    width: '90%',
+  },
+  confirmButtons: {
+    display: 'flex',
+    gap: '10px',
+    justifyContent: 'center',
+  },
+  cancelButton: {
+    background: '#9e9e9e',
+    color: 'white',
+    border: 'none',
+    borderRadius: '6px',
+    padding: '8px 16px',
+    cursor: 'pointer',
+    fontSize: '0.85rem',
+    fontWeight: '600',
+  },
+  confirmDeleteButton: {
+    background: '#f44336',
+    color: 'white',
+    border: 'none',
+    borderRadius: '6px',
+    padding: '8px 16px',
+    cursor: 'pointer',
+    fontSize: '0.85rem',
+    fontWeight: '600',
+  },
 };
+
 export default QuotationForm;
