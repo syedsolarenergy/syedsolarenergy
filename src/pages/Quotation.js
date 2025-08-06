@@ -32,6 +32,7 @@ export default function Quotation() {
   const [customer, setCustomer] = useState({ name: "", contact: "", email: "", address: "" });
   const [showPreview, setShowPreview] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   
   // Pricing data from Supabase
   const [panelPrices, setPanelPrices] = useState({});
@@ -40,6 +41,16 @@ export default function Quotation() {
   const [batteryPrices, setBatteryPrices] = useState({});
   const [standPrices, setStandPrices] = useState({});
   const [charges, setCharges] = useState({});
+
+  // Handle window resize for responsiveness
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Fetch pricing data from Supabase
   useEffect(() => {
@@ -603,10 +614,11 @@ JazakAllah! 🤝`
     return (
       <div ref={pdfRef} style={{
         background: "#fff", 
-        width: 595, 
-        minHeight: 842, 
-        padding: "30px", 
-        margin: "20px auto",
+        width: "100%", 
+        maxWidth: "595px", 
+        minHeight: "842px", 
+        padding: "20px", 
+        margin: "0 auto",
         borderRadius: 12, 
         boxShadow: "0 10px 40px rgba(255, 152, 0, 0.15)", 
         fontFamily: "'Segoe UI', 'Roboto', sans-serif", 
@@ -616,13 +628,13 @@ JazakAllah! 🤝`
         {/* Enhanced Header */}
         <div style={{ 
           background: "linear-gradient(135deg, #ff9800 0%, #ff6600 100%)",
-          margin: "-30px -30px 25px -30px",
-          padding: "25px 30px",
+          margin: "-20px -20px 20px -20px",
+          padding: "20px",
           borderRadius: "12px 12px 0 0",
           color: "white"
         }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div>
+          <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ marginBottom: isMobile ? 15 : 0 }}>
               <img 
                 src={logo} 
                 alt="Syed Solar Logo" 
@@ -635,7 +647,7 @@ JazakAllah! 🤝`
                 📍 Office #23, Mustafa Plaza, Ring Road, Peshawar
               </div>
             </div>
-            <div style={{ textAlign: "right" }}>
+            <div style={{ textAlign: isMobile ? "center" : "right" }}>
               <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>
                 {sysLabel} Quotation
               </div>
@@ -653,14 +665,14 @@ JazakAllah! 🤝`
         <div style={{
           background: "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)",
           borderRadius: 8,
-          padding: "15px 20px",
+          padding: "15px",
           marginBottom: 20,
           border: "1px solid #dee2e6"
         }}>
           <div style={{ fontSize: 16, fontWeight: 700, color: "#495057", marginBottom: 10 }}>
             👤 Customer Information
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", fontSize: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "10px", fontSize: 14 }}>
             <div><b>Name:</b> {customer.name || "-"}</div>
             <div><b>Contact:</b> {customer.contact || "-"}</div>
             <div><b>Email:</b> {customer.email || "-"}</div>
@@ -672,7 +684,7 @@ JazakAllah! 🤝`
         <div style={{
           background: "linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%)",
           borderRadius: 10,
-          padding: "20px",
+          padding: "15px",
           marginBottom: 20,
           border: "2px solid #ffcc02"
         }}>
@@ -692,10 +704,10 @@ JazakAllah! 🤝`
             <tbody>
               {/* Solar Panels */}
               <tr style={{ backgroundColor: "#f8f9fa" }}>
-                <td style={{ padding: "12px 15px", fontWeight: 600, borderBottom: "1px solid #dee2e6" }}>
+                <td style={{ padding: "12px", fontWeight: 600, borderBottom: "1px solid #dee2e6" }}>
                   🔆 Solar Panels:
                 </td>
-                <td style={{ padding: "12px 15px", borderBottom: "1px solid #dee2e6" }}>
+                <td style={{ padding: "12px", borderBottom: "1px solid #dee2e6" }}>
                   <div><b>{(systemType === "auto" ? previewConfig.panelQty : panelQty)} panels</b> × {systemType === "auto" ? previewConfig.panelBrand : panelBrand} ({systemType === "auto" ? previewConfig.panelWatt : panelWatt}W)</div>
                   <div style={{ fontSize: 13, color: "#666", marginTop: 4 }}>
                     Unit Price: Rs. {(data.panelUnitPrice || 0).toLocaleString()} | 
@@ -709,10 +721,10 @@ JazakAllah! 🤝`
               
               {/* Inverter */}
               <tr style={{ backgroundColor: "white" }}>
-                <td style={{ padding: "12px 15px", fontWeight: 600, borderBottom: "1px solid #dee2e6" }}>
+                <td style={{ padding: "12px", fontWeight: 600, borderBottom: "1px solid #dee2e6" }}>
                   🔄 {sysType === "daytime" ? "Daytime" : "Hybrid"} Inverter:
                 </td>
-                <td style={{ padding: "12px 15px", borderBottom: "1px solid #dee2e6" }}>
+                <td style={{ padding: "12px", borderBottom: "1px solid #dee2e6" }}>
                   <div><b>{systemType === "auto" ? previewConfig.inverterQty : inverterQty} unit(s)</b> × {data.selectedInverter?.brand || ""} {data.selectedInverter?.capacity || ""}</div>
                   <div style={{ fontSize: 13, color: "#666", marginTop: 4 }}>
                     Model: {data.selectedInverter?.model || ""} | Unit Price: Rs. {(data.selectedInverter?.price || 0).toLocaleString()}
@@ -726,10 +738,10 @@ JazakAllah! 🤝`
               {/* Battery (for hybrid only) */}
               {sysType === "hybrid" && (
                 <tr style={{ backgroundColor: "#f8f9fa" }}>
-                  <td style={{ padding: "12px 15px", fontWeight: 600, borderBottom: "1px solid #dee2e6" }}>
+                  <td style={{ padding: "12px", fontWeight: 600, borderBottom: "1px solid #dee2e6" }}>
                     🔋 Batteries:
                   </td>
-                  <td style={{ padding: "12px 15px", borderBottom: "1px solid #dee2e6" }}>
+                  <td style={{ padding: "12px", borderBottom: "1px solid #dee2e6" }}>
                     <div><b>{(systemType === "auto" ? previewConfig.batteryQty : batteryQty)} units</b> × {data.selectedBattery?.model || ""}</div>
                     <div style={{ fontSize: 13, color: "#666", marginTop: 4 }}>
                       Type: {data.selectedBattery?.type || ""} | Voltage: {data.selectedBattery?.voltage || ""} | 
@@ -747,10 +759,10 @@ JazakAllah! 🤝`
               
               {/* Mounting Structure */}
               <tr style={{ backgroundColor: "white" }}>
-                <td style={{ padding: "12px 15px", fontWeight: 600, borderBottom: "1px solid #dee2e6" }}>
+                <td style={{ padding: "12px", fontWeight: 600, borderBottom: "1px solid #dee2e6" }}>
                   🔧 Mounting Structure:
                 </td>
-                <td style={{ padding: "12px 15px", borderBottom: "1px solid #dee2e6" }}>
+                <td style={{ padding: "12px", borderBottom: "1px solid #dee2e6" }}>
                   <div><b>{data.standQty} sets</b> × {systemType === "auto" ? previewConfig.standType : standType}</div>
                   <div style={{ fontSize: 13, color: "#666", marginTop: 4 }}>
                     Unit Price: Rs. {(data.standUnit || 0).toLocaleString()}
@@ -763,11 +775,11 @@ JazakAllah! 🤝`
               
               {/* Service Charges */}
               <tr style={{ backgroundColor: "#f8f9fa" }}>
-                <td style={{ padding: "12px 15px", fontWeight: 600, borderBottom: "1px solid #dee2e6" }}>
+                <td style={{ padding: "12px", fontWeight: 600, borderBottom: "1px solid #dee2e6" }}>
                   🛠️ Installation & Services:
                 </td>
-                <td style={{ padding: "12px 15px", borderBottom: "1px solid #dee2e6" }}>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", fontSize: 13 }}>
+                <td style={{ padding: "12px", borderBottom: "1px solid #dee2e6" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit, minmax(150px, 1fr))", gap: "8px", fontSize: 13 }}>
                     <div>Safety Materials: Rs. {data.safety.toLocaleString()}</div>
                     <div>Transportation: Rs. {data.transport.toLocaleString()}</div>
                     <div>Installation: Rs. {data.install.toLocaleString()}</div>
@@ -795,7 +807,7 @@ JazakAllah! 🤝`
         {/* Enhanced Terms & Payment */}
         <div style={{
           background: "linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%)",
-          padding: "18px",
+          padding: "15px",
           borderRadius: 10,
           marginBottom: 20,
           border: "2px solid #4caf50"
@@ -803,7 +815,7 @@ JazakAllah! 🤝`
           <div style={{ fontSize: 16, fontWeight: 700, color: "#2e7d32", marginBottom: 12 }}>
             💳 Payment Terms & Conditions
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "15px", fontSize: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "15px", fontSize: 14 }}>
             <div>
               <b>Payment Schedule:</b>
               <ul style={{ marginTop: 8, paddingLeft: 20, lineHeight: 1.6 }}>
@@ -830,7 +842,7 @@ JazakAllah! 🤝`
           color: "#fff",
           fontWeight: 600,
           textAlign: "center",
-          padding: "15px 20px",
+          padding: "15px",
           borderRadius: 8,
           fontSize: 13,
           marginTop: 15
@@ -861,7 +873,7 @@ JazakAllah! 🤝`
         <div style={{
           background: "linear-gradient(135deg, #ff9800 0%, #ff6600 100%)",
           color: "white",
-          padding: isSmallScreen ? "15px" : "25px",
+          padding: isMobile ? "15px" : "25px",
           borderRadius: 16,
           textAlign: "center",
           marginBottom: 20,
@@ -869,19 +881,19 @@ JazakAllah! 🤝`
         }}>
           <h1 style={{ 
             margin: "0 0 10px 0", 
-            fontSize: isSmallScreen ? "24px" : "32px", 
+            fontSize: isMobile ? "24px" : "32px", 
             fontWeight: 900 
           }}>
             ⚡ Solar Quotation Generator
           </h1>
-          <p style={{ margin: 0, fontSize: isSmallScreen ? "14px" : "16px", opacity: 0.9 }}>
+          <p style={{ margin: 0, fontSize: isMobile ? "14px" : "16px", opacity: 0.9 }}>
             Get instant pricing for your solar energy system
           </p>
         </div>
 
         <div style={{ 
           display: "grid", 
-          gridTemplateColumns: showPreview && !isSmallScreen ? "1fr 1fr" : "1fr", 
+          gridTemplateColumns: showPreview && !isMobile ? "1fr 1fr" : "1fr", 
           gap: "20px"
         }}>
           {/* Form Section */}
@@ -889,7 +901,7 @@ JazakAllah! 🤝`
             background: "#fff", 
             borderRadius: 16, 
             boxShadow: "0 8px 32px rgba(255, 152, 0, 0.1)", 
-            padding: isSmallScreen ? "15px" : "25px",
+            padding: isMobile ? "15px" : "25px",
             overflow: "hidden"
           }}>
             <h2 style={{ 
@@ -897,7 +909,7 @@ JazakAllah! 🤝`
               textAlign: "center", 
               fontWeight: 900, 
               marginBottom: 25, 
-              fontSize: isSmallScreen ? "20px" : "24px"
+              fontSize: isMobile ? "20px" : "24px"
             }}>
               📋 System Configuration
             </h2>
@@ -945,7 +957,7 @@ JazakAllah! 🤝`
             {systemType === "auto" && (
               <div style={sectionBox}>
                 <h3 style={sectionTitle}>🤖 Auto Configuration</h3>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 15 }}>
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 15 }}>
                   <div>
                     <label style={labelStyle}>System Type</label>
                     <select value={autoType} onChange={e => setAutoType(e.target.value)} style={inputStyle}>
@@ -981,7 +993,7 @@ JazakAllah! 🤝`
             {/* Customer Information */}
             <div style={sectionBox}>
               <h3 style={sectionTitle}>👤 Customer Information</h3>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 15 }}>
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 15 }}>
                 <div>
                   <label style={labelStyle}>Full Name *</label>
                   <input 
@@ -1036,7 +1048,7 @@ JazakAllah! 🤝`
               <div style={sectionBox}>
                 <h3 style={sectionTitle}>🌞 Daytime System Configuration</h3>
                 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 15, marginBottom: 15 }}>
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 15, marginBottom: 15 }}>
                   <div>
                     <label style={labelStyle}>Panel Brand</label>
                     <select value={panelBrand} onChange={handlePanelBrandChange} style={inputStyle}>
@@ -1074,7 +1086,7 @@ JazakAllah! 🤝`
                   </div>
                 )}
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 15, marginBottom: 15 }}>
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 15, marginBottom: 15 }}>
                   <div>
                     <label style={labelStyle}>Daytime Inverter</label>
                     <select value={dayInverter} onChange={e => setDayInverter(e.target.value)} style={inputStyle}>
@@ -1116,7 +1128,7 @@ JazakAllah! 🤝`
                 {/* Service Charges */}
                 <div style={chargesBox}>
                   <h4>📋 Service Charges</h4>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit, minmax(150px, 1fr))", gap: 10 }}>
                     <div>Safety: Rs. {safetyCharges.daytime.toLocaleString()}</div>
                     <div>Transport: Rs. {transportCharges.toLocaleString()}</div>
                     <div>Installation: Rs. {installCharges.daytime.toLocaleString()}</div>
@@ -1138,7 +1150,7 @@ JazakAllah! 🤝`
                 <h3 style={sectionTitle}>🔋 Hybrid System Configuration</h3>
                 
                 {/* Panel Configuration */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 15, marginBottom: 15 }}>
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 15, marginBottom: 15 }}>
                   <div>
                     <label style={labelStyle}>Panel Brand</label>
                     <select value={panelBrand} onChange={handlePanelBrandChange} style={inputStyle}>
@@ -1177,7 +1189,7 @@ JazakAllah! 🤝`
                 )}
 
                 {/* Inverter Configuration */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 15, marginBottom: 15 }}>
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 15, marginBottom: 15 }}>
                   <div>
                     <label style={labelStyle}>Inverter Brand</label>
                     <select 
@@ -1227,7 +1239,7 @@ JazakAllah! 🤝`
                 </div>
 
                 {/* Battery Configuration */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 15, marginBottom: 15 }}>
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 15, marginBottom: 15 }}>
                   <div>
                     <label style={labelStyle}>Battery Type</label>
                     <select value={batteryType} onChange={handleBatteryType} style={inputStyle}>
@@ -1294,7 +1306,7 @@ JazakAllah! 🤝`
                 {/* Service Charges */}
                 <div style={chargesBox}>
                   <h4>📋 Service Charges</h4>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit, minmax(150px, 1fr))", gap: 10 }}>
                     <div>Safety: Rs. {(panelQty <= 16 ? safetyCharges.hybrid : safetyCharges.hybridHigh).toLocaleString()}</div>
                     <div>Transport: Rs. {transportCharges.toLocaleString()}</div>
                     <div>Installation: Rs. {installCharges.hybrid.toLocaleString()}</div>
@@ -1373,11 +1385,9 @@ JazakAllah! 🤝`
                 border: "2px dashed #ff9800", 
                 borderRadius: 12,
                 padding: "10px",
-                maxHeight: isSmallScreen ? "60vh" : "70vh"
+                maxHeight: isMobile ? "60vh" : "70vh"
               }}>
-                <div style={{ minWidth: "550px" }}>
-                  {renderQuotationPreview()}
-                </div>
+                {renderQuotationPreview()}
               </div>
             </div>
           )}
