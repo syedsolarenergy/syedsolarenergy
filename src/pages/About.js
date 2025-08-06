@@ -82,46 +82,43 @@ const cssVariables = `
   .timeline-item {
     display: flex;
     align-items: flex-start;
-    marginBottom: clamp(20px, 4vw, 40px);
-    gap: clamp(15px, 3vw, 25px);
+    marginBottom: clamp(30px, 6vw, 50px);
+    gap: clamp(20px, 4vw, 30px);
+    position: relative;
   }
 
-  .timeline-icon {
-    width: var(--timeline-icon-size);
-    height: var(--timeline-icon-size);
-    background: linear-gradient(135deg, #FF6B35 0%, #F7931E 50%, #FF9800 100%);
-    borderRadius: 50%;
+  .timeline-year {
+    minWidth: clamp(80px, 15vw, 120px);
+    background: linear-gradient(135deg, #FF6B35, #F7931E);
+    color: white;
+    padding: clamp(12px, 2.5vw, 16px) clamp(16px, 3vw, 20px);
+    borderRadius: var(--border-radius);
+    textAlign: center;
+    fontWeight: bold;
+    fontSize: clamp(16px, 3vw, 20px);
+    boxShadow: 0 8px 24px rgba(255, 107, 53, 0.3);
+    flexShrink: 0;
     display: flex;
     alignItems: center;
     justifyContent: center;
-    fontSize: clamp(20px, 4.5vw, 28px);
-    boxShadow: 0 12px 32px rgba(255, 107, 53, 0.4), 0 0 0 3px rgba(255, 255, 255, 0.9), 0 0 0 6px rgba(255, 107, 53, 0.2);
-    flexShrink: 0;
     position: relative;
     overflow: hidden;
   }
 
-  .timeline-icon::before {
+  .timeline-year::before {
     content: '';
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.3) 0%, transparent 60%);
-    borderRadius: 50%;
+    background: linear-gradient(45deg, transparent, rgba(255,255,255,0.2), transparent);
+    transform: translateX(-100%);
+    transition: transform 0.6s ease;
   }
 
-  .timeline-icon::after {
-    content: '';
-    position: absolute;
-    top: 2px;
-    left: 2px;
-    right: 2px;
-    bottom: 2px;
-    background: linear-gradient(145deg, rgba(255, 255, 255, 0.1), transparent);
-    borderRadius: 50%;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+  .timeline-item:hover .timeline-year::before {
+    transform: translateX(100%);
   }
 
   .timeline-content {
@@ -131,6 +128,20 @@ const cssVariables = `
     borderRadius: var(--border-radius);
     boxShadow: 0 4px 16px rgba(255, 107, 53, 0.1);
     border: 1px solid rgba(255, 107, 53, 0.1);
+    position: relative;
+  }
+
+  .timeline-content::before {
+    content: '';
+    position: absolute;
+    left: clamp(-15px, -3vw, -20px);
+    top: clamp(20px, 4vw, 30px);
+    width: 0;
+    height: 0;
+    borderTop: clamp(8px, 1.5vw, 12px) solid transparent;
+    borderBottom: clamp(8px, 1.5vw, 12px) solid transparent;
+    borderRight: clamp(12px, 2.5vw, 16px) solid #ffffff;
+    filter: drop-shadow(-2px 0 2px rgba(255, 107, 53, 0.1));
   }
 
   /* Mobile Optimizations */
@@ -217,37 +228,22 @@ const Card3D = ({ children, className = "", style = {} }) => (
   </div>
 );
 
-// Enhanced Timeline Component
-const TimelineItem = ({ year, title, description, icon, delay = 0 }) => (
+// Enhanced Timeline Component - Clean and Modern
+const TimelineItem = ({ year, title, description, delay = 0 }) => (
   <div className="timeline-item" style={{
     animation: `fadeInLeft 0.8s ease-out ${delay}s both`
   }}>
-    <div className="timeline-icon" style={{
-      animation: 'pulse 3s ease-in-out infinite, float 6s ease-in-out infinite'
+    <div className="timeline-year" style={{
+      animation: 'pulse 3s ease-in-out infinite'
     }}>
-      <span style={{
-        position: 'relative',
-        zIndex: 2,
-        filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))',
-        transform: 'scale(1.1)'
-      }}>
-        {icon}
-      </span>
+      {year}
     </div>
     <div className="timeline-content">
-      <div style={{
-        color: '#FF6B35',
-        fontWeight: 'bold',
-        fontSize: 'clamp(14px, 2.5vw, 16px)',
-        marginBottom: 'clamp(6px, 1.5vw, 8px)'
-      }}>
-        {year}
-      </div>
       <h4 style={{
-        color: '#333',
-        fontSize: 'clamp(16px, 3vw, 20px)',
+        color: '#FF6B35',
+        fontSize: 'clamp(18px, 3.5vw, 24px)',
         fontWeight: 'bold',
-        marginBottom: 'clamp(8px, 2vw, 12px)',
+        marginBottom: 'clamp(12px, 2.5vw, 16px)',
         margin: 0
       }}>
         {title}
@@ -526,31 +522,31 @@ export default function About() {
                 year="1998"
                 title="Humble Beginnings"
                 description="Started our journey with home appliance repairs, building trust in our community one customer at a time."
-
+                delay={0.2}
               />
               <TimelineItem
                 year="2005"
                 title="Expanding Horizons"
                 description="Grew into transformer repairs and electrical solutions, establishing ourselves as electrical experts."
-
+                delay={0.4}
               />
               <TimelineItem
                 year="2012"
                 title="UPS Systems Era"
                 description="Ventured into UPS system development and servicing, providing backup power solutions."
-
+                delay={0.6}
               />
               <TimelineItem
                 year="2018"
                 title="Solar Revolution"
                 description="Embraced the future with solar energy solutions, becoming pioneers in renewable energy."
-
+                delay={0.8}
               />
               <TimelineItem
                 year="2024"
                 title="Industry Leaders"
                 description="Today we stand as Pakistan's trusted solar energy provider, serving homes, businesses, and industries."
-
+                delay={1.0}
               />
             </div>
           </div>
@@ -1006,7 +1002,7 @@ export default function About() {
                 🚀 Get Free Quote
               </button>
               <button
-                onClick={() => window.open('https://wa.me/923075596695?text=Hi! I would like to learn more about Syed Solar Energy and your services.', '_blank')}
+                onClick={() => window.open('https://wa.me/923075506695?text=Hi! I would like to learn more about Syed Solar Energy and your services.', '_blank')}
                 style={{
                   background: 'transparent',
                   color: 'white',
