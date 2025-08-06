@@ -25,7 +25,7 @@ const cssVariables = `
     --container-max: min(1400px, 95vw);
     --grid-gap: clamp(16px, 4vw, 40px);
     --card-min-width: min(280px, 90vw);
-    --timeline-icon-size: clamp(45px, 8vw, 60px);
+    --timeline-icon-size: clamp(70px, 12vw, 90px);
     --leadership-card-width: min(350px, 100%);
     --values-card-min: min(160px, 100%);
   }
@@ -89,14 +89,39 @@ const cssVariables = `
   .timeline-icon {
     width: var(--timeline-icon-size);
     height: var(--timeline-icon-size);
-    background: linear-gradient(135deg, #FF6B35, #F7931E);
+    background: linear-gradient(135deg, #FF6B35 0%, #F7931E 50%, #FF9800 100%);
     borderRadius: 50%;
     display: flex;
     alignItems: center;
     justifyContent: center;
-    fontSize: clamp(16px, 3.5vw, 22px);
-    boxShadow: 0 8px 24px rgba(255, 107, 53, 0.3);
+    fontSize: clamp(20px, 4.5vw, 28px);
+    boxShadow: 0 12px 32px rgba(255, 107, 53, 0.4), 0 0 0 3px rgba(255, 255, 255, 0.9), 0 0 0 6px rgba(255, 107, 53, 0.2);
     flexShrink: 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .timeline-icon::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.3) 0%, transparent 60%);
+    borderRadius: 50%;
+  }
+
+  .timeline-icon::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    right: 2px;
+    bottom: 2px;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.1), transparent);
+    borderRadius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.2);
   }
 
   .timeline-content {
@@ -113,7 +138,7 @@ const cssVariables = `
     :root {
       --card-min-width: 100%;
       --grid-gap: clamp(12px, 4vw, 20px);
-      --timeline-icon-size: clamp(40px, 7vw, 50px);
+      --timeline-icon-size: clamp(60px, 10vw, 75px);
       --leadership-card-width: 100%;
       --values-card-min: 100%;
     }
@@ -198,9 +223,16 @@ const TimelineItem = ({ year, title, description, icon, delay = 0 }) => (
     animation: `fadeInLeft 0.8s ease-out ${delay}s both`
   }}>
     <div className="timeline-icon" style={{
-      animation: 'pulse 3s ease-in-out infinite'
+      animation: 'pulse 3s ease-in-out infinite, float 6s ease-in-out infinite'
     }}>
-      {icon}
+      <span style={{
+        position: 'relative',
+        zIndex: 2,
+        filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))',
+        transform: 'scale(1.1)'
+      }}>
+        {icon}
+      </span>
     </div>
     <div className="timeline-content">
       <div style={{
