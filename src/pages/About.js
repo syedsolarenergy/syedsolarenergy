@@ -526,36 +526,31 @@ export default function About() {
                 year="1998"
                 title="Humble Beginnings"
                 description="Started our journey with home appliance repairs, building trust in our community one customer at a time."
-                icon="🔧"
-                delay={0.2}
+
               />
               <TimelineItem
                 year="2005"
                 title="Expanding Horizons"
                 description="Grew into transformer repairs and electrical solutions, establishing ourselves as electrical experts."
-                icon="⚡"
-                delay={0.4}
+
               />
               <TimelineItem
                 year="2012"
                 title="UPS Systems Era"
                 description="Ventured into UPS system development and servicing, providing backup power solutions."
-                icon="🔋"
-                delay={0.6}
+
               />
               <TimelineItem
                 year="2018"
                 title="Solar Revolution"
                 description="Embraced the future with solar energy solutions, becoming pioneers in renewable energy."
-                icon="☀️"
-                delay={0.8}
+
               />
               <TimelineItem
                 year="2024"
                 title="Industry Leaders"
                 description="Today we stand as Pakistan's trusted solar energy provider, serving homes, businesses, and industries."
-                icon="🏆"
-                delay={1.0}
+
               />
             </div>
           </div>
@@ -1011,7 +1006,7 @@ export default function About() {
                 🚀 Get Free Quote
               </button>
               <button
-                onClick={() => window.open('https://wa.me/923075506695?text=Hi! I would like to learn more about Syed Solar Energy and your services.', '_blank')}
+                onClick={() => window.open('https://wa.me/923075596695?text=Hi! I would like to learn more about Syed Solar Energy and your services.', '_blank')}
                 style={{
                   background: 'transparent',
                   color: 'white',
