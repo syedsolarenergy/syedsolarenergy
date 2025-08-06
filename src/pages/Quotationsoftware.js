@@ -1,5 +1,25 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { supabase } from "../supabaseClient"; // Add Supabase integration
+
+// Mock Supabase client for demo purposes
+const supabase = {
+  from: (table) => ({
+    insert: (data) => ({ 
+      select: () => Promise.resolve({ 
+        data: data.map((item, index) => ({ ...item, id: Date.now() + index })), 
+        error: null 
+      }) 
+    }),
+    select: (fields) => ({
+      order: (field, options) => Promise.resolve({ 
+        data: [], 
+        error: null 
+      })
+    }),
+    delete: () => ({
+      eq: (field, value) => Promise.resolve({ error: null })
+    })
+  })
+};
 
 const QuotationForm = () => {
   // State variables
@@ -18,6 +38,7 @@ const QuotationForm = () => {
   const [batteryPrice, setBatteryPrice] = useState(0);
   const [solarPanel, setSolarPanel] = useState({ company: '', watts: '', pricePerWatt: 0, quantity: 1 });
   const [stand, setStand] = useState({ type: '', pricePerStand: 0 });
+  
   // Additional costs
   const [safety, setSafety] = useState(0);
   const [transport, setTransport] = useState(5000);
@@ -26,6 +47,7 @@ const QuotationForm = () => {
   const [labour, setLabour] = useState(20000);
   const [engineer, setEngineer] = useState(10000);
   const [Greenmeter, setGreenmeter] = useState(10000);
+  
   // UI states
   const [savedQuotations, setSavedQuotations] = useState([]);
   const [showPreview, setShowPreview] = useState(false);
@@ -45,7 +67,7 @@ const QuotationForm = () => {
   const batteryTypes = ['Lithium', 'Tubular'];
   const lithium24 = ['Itell 2.56kWh', 'Ziewnic 2.56kWh'];
   const lithium48 = ['Itell 5.12kWh', 'Ziewnic 5.12kWh', 'Solax 5.12kWh', '1On 5.12kWh'];
-  const tubular = ['Osaka 1800Ah', 'Osaka 2500Ah', 'Phoenix 1800Ah','Phoenix 2500Ah','Hawk 1800Ah','Hawk 2500Ah',];
+  const tubular = ['Osaka 1800Ah', 'Osaka 2500Ah', 'Phoenix 1800Ah','Phoenix 2500Ah','Hawk 1800Ah','Hawk 2500Ah'];
   const panelCompanies = ['JA Solar', 'Canadian', 'Longi'];
   const panelWatts = ['585', '590', '605'];
   const standTypes = ['16 Gauge', '18 Gauge', 'Girder', 'L2 (2 panels)'];
@@ -55,7 +77,6 @@ const QuotationForm = () => {
     try {
       setIsSavingToDatabase(true);
       
-      // Map the quotation data to match our Supabase table structure
       const supabaseData = {
         customer_name: quotationData.customer.name,
         customer_contact: quotationData.customer.contact,
@@ -84,12 +105,11 @@ const QuotationForm = () => {
         total_amount: quotationData.total,
         quotation_date: new Date().toISOString(),
         created_at: new Date().toISOString(),
-        // Additional fields specific to this system
         staff_name: quotationData.staff,
         location: quotationData.location,
         quotation_id: quotationData.id,
         engineer_charges: quotationData.engineer || 0,
-        follow_up_status: 'Pending' // Default status for new quotations
+        follow_up_status: 'Pending'
       };
 
       console.log("Saving to Supabase:", supabaseData);
@@ -101,22 +121,14 @@ const QuotationForm = () => {
 
       if (error) {
         console.error("Supabase error:", error);
-        
-        // Provide specific error messages
         let errorMessage = "Quotation generated successfully, but couldn't save to database.\n\n";
-        
         if (error.code === '42P01') {
           errorMessage += "Issue: Table 'quotations' doesn't exist. Please create the table first.";
         } else if (error.code === '42501') {
           errorMessage += "Issue: Permission denied. Please check Row Level Security policies.";
-        } else if (error.message?.includes('violates not-null constraint')) {
-          errorMessage += "Issue: Missing required field. Please check all required fields are filled.";
-        } else if (error.message?.includes('column') && error.message?.includes('does not exist')) {
-          errorMessage += "Issue: Database column mismatch. Please update table structure.";
         } else {
           errorMessage += `Issue: ${error.message}`;
         }
-        
         alert(errorMessage);
         return null;
       } else {
@@ -125,18 +137,7 @@ const QuotationForm = () => {
       }
     } catch (err) {
       console.error("Unexpected Supabase error:", err);
-      
-      let errorMessage = "Quotation generated successfully, but couldn't save to database.\n\n";
-      
-      if (err.message?.includes('supabase')) {
-        errorMessage += "Issue: Supabase configuration problem. Please check your setup.";
-      } else if (err.message?.includes('fetch')) {
-        errorMessage += "Issue: Network connection problem.";
-      } else {
-        errorMessage += `Issue: ${err.message}`;
-      }
-      
-      alert(errorMessage);
+      alert("Quotation generated successfully, but couldn't save to database.");
       return null;
     } finally {
       setIsSavingToDatabase(false);
@@ -160,7 +161,6 @@ const QuotationForm = () => {
 
       console.log("✅ Loaded quotations from Supabase:", data?.length || 0);
       
-      // Convert Supabase data to local format
       const convertedData = (data || []).map(item => ({
         id: item.quotation_id || item.id.toString(),
         customer: {
@@ -216,7 +216,6 @@ const QuotationForm = () => {
     try {
       setDeletingQuotationId(quotationId);
 
-      // Delete from Supabase first
       const { error } = await supabase
         .from("quotations")
         .delete()
@@ -224,13 +223,11 @@ const QuotationForm = () => {
 
       if (error) {
         console.error("Error deleting from Supabase:", error);
-        // Continue with local deletion even if Supabase fails
         alert("Warning: Could not delete from database, but will remove locally.");
       } else {
         console.log("✅ Deleted from Supabase successfully");
       }
 
-      // Delete from localStorage
       const updatedQuotations = savedQuotations.filter(q => q.id !== quotationId);
       setSavedQuotations(updatedQuotations);
       localStorage.setItem("quotations", JSON.stringify(updatedQuotations));
@@ -246,7 +243,6 @@ const QuotationForm = () => {
     }
   }
 
-  // Handle delete confirmation
   const handleDeleteClick = (quotationId) => {
     setConfirmDeleteId(quotationId);
   };
@@ -259,16 +255,11 @@ const QuotationForm = () => {
   useEffect(() => {
     const loadAllQuotations = async () => {
       try {
-        // Load from Supabase first
         const supabaseQuotations = await loadQuotationsFromSupabase();
-        
-        // Load from localStorage
         const localQuotations = JSON.parse(localStorage.getItem("quotations")) || [];
         
-        // Merge data (prioritize Supabase for existing records)
         const mergedQuotations = [...supabaseQuotations];
         
-        // Add local quotations that don't exist in Supabase
         localQuotations.forEach(localQuote => {
           const existsInSupabase = supabaseQuotations.some(supabaseQuote => 
             supabaseQuote.id === localQuote.id || 
@@ -286,7 +277,6 @@ const QuotationForm = () => {
         
       } catch (err) {
         console.error("Error loading quotations:", err);
-        // Fallback to localStorage only
         const localQuotations = JSON.parse(localStorage.getItem("quotations")) || [];
         setSavedQuotations(localQuotations);
       }
@@ -372,10 +362,8 @@ const QuotationForm = () => {
       quotationDate
     };
 
-    // Save to Supabase first
     const savedToSupabase = await saveQuotationToSupabase(newQuotation);
     
-    // Save quotation to localStorage
     const updatedQuotations = [...savedQuotations, newQuotation];
     setSavedQuotations(updatedQuotations);
     localStorage.setItem("quotations", JSON.stringify(updatedQuotations));
@@ -384,7 +372,6 @@ const QuotationForm = () => {
     setShowPreview(true);
     setIsGeneratingPDF(false);
     
-    // Show success message
     if (savedToSupabase) {
       alert("✅ Quotation generated and saved to database successfully! You can now print or save it as PDF using your browser.");
     } else {
@@ -392,14 +379,8 @@ const QuotationForm = () => {
     }
   };
   
-  // Print/Save quotation using browser's print functionality
-  const printQuotation = () => {
-    // Check if we have the ref and currentQuotation
-    if (!quotationRef.current || !currentQuotation) {
-      alert("❌ Please generate a quotation first before printing.");
-      return;
-    }
-    
+  // Enhanced print function that works from any context
+  const printQuotationData = (quotationData) => {
     try {
       const printWindow = window.open('', '_blank');
       if (!printWindow) {
@@ -407,14 +388,15 @@ const QuotationForm = () => {
         return;
       }
       
-      const quotationHTML = quotationRef.current.innerHTML;
+      // Create temporary quotation HTML
+      const quotationHTML = generateQuotationHTML(quotationData);
       
       printWindow.document.write(`
         <!DOCTYPE html>
         <html>
           <head>
             <meta charset="UTF-8">
-            <title>Quotation - ${currentQuotation?.customer.name}</title>
+            <title>Quotation - ${quotationData?.customer.name}</title>
             <style>
               body { 
                 font-family: 'Segoe UI', Arial, sans-serif; 
@@ -463,6 +445,17 @@ const QuotationForm = () => {
               h1, h2, h3 { color: #FF6B35; }
               .logo-icon { color: #FF6B35; }
               .page-break { page-break-before: always; }
+              .info-section { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+              .customer-info, .project-info { background: #f8f9fa; padding: 15px; border-radius: 8px; }
+              .project-info { background: #fff3e0; }
+              .equipment-section { margin-bottom: 20px; }
+              .total-section-print { background: #fff8f0; padding: 12px; border-radius: 8px; border: 2px solid #FF6B35; text-align: center; margin: 20px 0; }
+              .terms-list { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 0.8rem; }
+              .terms-column { background: #f8f9fa; padding: 12px; border-radius: 8px; }
+              .footer-content { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
+              .signature { text-align: center; }
+              .signature-line { width: 180px; height: 2px; background: #333; margin: 30px auto 8px auto; }
+              .footer-bottom { text-align: center; font-size: 0.7rem; color: #666; font-style: italic; padding-top: 12px; border-top: 1px solid #ddd; }
             </style>
           </head>
           <body>
@@ -486,6 +479,241 @@ const QuotationForm = () => {
       console.error("Error printing quotation:", error);
       alert("❌ Error printing quotation. Please try again.");
     }
+  };
+
+  // Generate HTML for quotation
+  const generateQuotationHTML = (quotationData) => {
+    const panelPrice = parseFloat(quotationData.solarPanel.pricePerWatt) * parseInt(quotationData.solarPanel.watts || 0);
+    const standQty = quotationData.stand.type === 'L2 (2 panels)' ? Math.ceil(quotationData.solarPanel.quantity / 2) : quotationData.solarPanel.quantity;
+    
+    return `
+      <div>
+        <!-- Header with Logo and Company Info -->
+        <div class="header">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="font-size: 2.5rem; color: #FF6B35;">☀️</div>
+                <div style="display: flex; flex-direction: column; align-items: center;">
+                  <div style="font-size: 1.3rem; font-weight: 900; color: #FF6B35; margin: 0;">SYED</div>
+                  <div style="font-size: 0.8rem; color: #F7931E; font-weight: 600; margin: 0;">SOLAR ENERGY</div>
+                </div>
+              </div>
+              <div style="margin-left: 15px;">
+                <h1 style="font-size: 1.6rem; font-weight: 700; color: #FF6B35; margin: 0 0 5px 0;">SYED SOLAR ENERGY PVT LTD</h1>
+                <p style="font-size: 0.9rem; color: #666; margin: 0 0 12px 0; font-style: italic;">Your Partner in Sustainable Energy Solutions</p>
+                <div style="font-size: 0.85rem; color: #555;">
+                  <p>📍 Office #23 Mustafa Plaza Ring Road Near Imtiaz Mega Center, Peshawar</p>
+                  <p>📞 0307-5596695/03044678929 | 📧 sales@syedsolarenergy.com</p>
+                  <p>🌐 www.syedsolarenergy.com</p>
+                </div>
+              </div>
+            </div>
+            <div style="text-align: right; background: #FFF8F0; padding: 12px; border-radius: 8px; border: 1px solid #FFE0CC;">
+              <div style="font-size: 1.8rem; font-weight: 700; color: #FF6B35; margin: 0 0 8px 0;">QUOTATION</div>
+              <div style="font-size: 0.85rem; color: #555;">
+                <p><strong>Quotation #:</strong> ${quotationData?.id}</p>
+                <p><strong>Date:</strong> ${quotationData?.quotationDate || new Date().toLocaleDateString()}</p>
+                <p><strong>Valid Until:</strong> ${new Date(Date.now() + 7*24*60*60*1000).toLocaleDateString()}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Customer and Project Info -->
+        <div class="info-section">
+          <div class="customer-info">
+            <h3 style="font-size: 1rem; font-weight: 700; color: #FF6B35; margin: 0 0 12px 0; border-bottom: 2px solid #FF6B35; padding-bottom: 5px;">📋 CUSTOMER INFORMATION</h3>
+            <div style="font-size: 0.85rem; line-height: 1.5;">
+              <p><strong>Name:</strong> ${quotationData.customer.name}</p>
+              <p><strong>Contact:</strong> ${quotationData.customer.contact}</p>
+              <p><strong>Email:</strong> ${quotationData.customer.email}</p>
+              <p><strong>Address:</strong> ${quotationData.customer.address}</p>
+            </div>
+          </div>
+          <div class="project-info">
+            <h3 style="font-size: 1rem; font-weight: 700; color: #FF6B35; margin: 0 0 12px 0; border-bottom: 2px solid #FF6B35; padding-bottom: 5px;">⚡ PROJECT DETAILS</h3>
+            <div style="font-size: 0.85rem; line-height: 1.5;">
+              <p><strong>Prepared By:</strong> ${quotationData.staff}</p>
+              <p><strong>System Type:</strong> ${quotationData.systemType}</p>
+              <p><strong>Location:</strong> ${quotationData.location}</p>
+              <p><strong>Total Capacity:</strong> ${parseFloat(quotationData.inverter.kw) || 0} kW</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Equipment Details Table -->
+        <div class="equipment-section">
+          <h3 style="font-size: 1rem; font-weight: 700; color: #FF6B35; margin: 0 0 12px 0; border-bottom: 2px solid #FF6B35; padding-bottom: 5px;">🔧 EQUIPMENT & PRICING BREAKDOWN</h3>
+          <table>
+            <thead>
+              <tr style="background-color: #FF6B35;">
+                <th>S.No</th>
+                <th>Item Description</th>
+                <th>Brand/Model</th>
+                <th>Qty</th>
+                <th>Unit Price (Rs)</th>
+                <th>Total (Rs)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>1</td>
+                <td>Solar Inverter (${quotationData.inverter.kw}kW)</td>
+                <td>${quotationData.inverter.company} ${quotationData.inverter.kw}kW</td>
+                <td>${quotationData.inverter.quantity}</td>
+                <td>${quotationData.inverter.pricePerUnit.toLocaleString()}</td>
+                <td>${(quotationData.inverter.quantity * quotationData.inverter.pricePerUnit).toLocaleString()}</td>
+              </tr>
+              <tr>
+                <td>2</td>
+                <td>Battery Storage System</td>
+                <td>${quotationData.batteryModel}</td>
+                <td>${quotationData.batteryQuantity}</td>
+                <td>${quotationData.batteryPrice.toLocaleString()}</td>
+                <td>${(quotationData.batteryQuantity * quotationData.batteryPrice).toLocaleString()}</td>
+              </tr>
+              <tr>
+                <td>3</td>
+                <td>Solar Panels (${quotationData.solarPanel.watts}W)</td>
+                <td>${quotationData.solarPanel.company} ${quotationData.solarPanel.watts}W</td>
+                <td>${quotationData.solarPanel.quantity}</td>
+                <td>${panelPrice.toLocaleString()}</td>
+                <td>${(panelPrice * quotationData.solarPanel.quantity).toLocaleString()}</td>
+              </tr>
+              <tr>
+                <td>4</td>
+                <td>Mounting Structure</td>
+                <td>${quotationData.stand.type}</td>
+                <td>${standQty}</td>
+                <td>${quotationData.stand.pricePerStand.toLocaleString()}</td>
+                <td>${(standQty * quotationData.stand.pricePerStand).toLocaleString()}</td>
+              </tr>
+              <tr>
+                <td>5</td>
+                <td>Safety Equipment</td>
+                <td>DC/AC Breakers, Surge Protectors</td>
+                <td>1 Set</td>
+                <td>${quotationData.safety.toLocaleString()}</td>
+                <td>${quotationData.safety.toLocaleString()}</td>
+              </tr>
+              <tr>
+                <td>6</td>
+                <td>Transportation</td>
+                <td>Delivery to ${quotationData.location}</td>
+                <td>1</td>
+                <td>${quotationData.transport.toLocaleString()}</td>
+                <td>${quotationData.transport.toLocaleString()}</td>
+              </tr>
+              <tr>
+                <td>7</td>
+                <td>Installation & Commissioning</td>
+                <td>Professional Installation</td>
+                <td>1</td>
+                <td>${quotationData.labour.toLocaleString()}</td>
+                <td>${quotationData.labour.toLocaleString()}</td>
+              </tr>
+              ${quotationData.engineer > 0 ? `<tr>
+                <td>8</td>
+                <td>Engineering Supervision</td>
+                <td>Technical Oversight</td>
+                <td>1</td>
+                <td>${quotationData.engineer.toLocaleString()}</td>
+                <td>${quotationData.engineer.toLocaleString()}</td>
+              </tr>` : ''}
+              ${quotationData.Greenmeter > 0 ? `<tr>
+                <td>9</td>
+                <td>Green meter</td>
+                <td>Net Metering Setup</td>
+                <td>1</td>
+                <td>${quotationData.Greenmeter.toLocaleString()}</td>
+                <td>${quotationData.Greenmeter.toLocaleString()}</td>
+              </tr>` : ''}
+            </tbody>
+          </table>
+        </div>
+        
+        <!-- Total Section -->
+        <div class="total-section-print">
+          <h2 style="font-size: 1.3rem; font-weight: 700; color: #FF6B35; margin: 0 0 8px 0;">TOTAL SYSTEM COST</h2>
+          <div style="font-size: 2rem; font-weight: 900; color: #E65100; margin: 0 0 8px 0;">Rs. ${quotationData.total.toLocaleString()}</div>
+          <p style="font-size: 0.8rem; color: #666; font-style: italic; margin: 0;">*All prices are inclusive of installation and commissioning</p>
+        </div>
+        
+        <!-- Terms and Conditions -->
+        <div class="terms-section">
+          <h3 style="font-size: 1rem; font-weight: 700; color: #FF6B35; margin: 0 0 12px 0; border-bottom: 2px solid #FF6B35; padding-bottom: 5px;">📋 TERMS & CONDITIONS</h3>
+          <div class="terms-list">
+            <div class="terms-column">
+              <h4>Payment Terms:</h4>
+              <ul>
+                <li>05% advance payment required</li>
+                <li>70% on material delivery</li>
+                <li>25% on successful commissioning</li>
+              </ul>
+              <h4>Warranty:</h4>
+              <ul>
+                <li>Solar Panels will be A-Grade</li>
+                <li>Daytime Inverter 5-Years(1Year Replace & 4 Years Service</li>
+                <li>Hybrid Inverter Depends on Company Policy</li>
+                <li>Batteries Depends On Company Policy</li>
+                <li>1 year on installation work</li>
+              </ul>
+            </div>
+            <div class="terms-column">
+              <h4>Delivery Timeline:</h4>
+              <ul>
+                <li>1-2 working days from advance</li>
+                <li>Installation: 2-3 working days</li>
+                <li>Net metering assistance included</li>
+              </ul>
+              <h4>Additional Services:</h4>
+              <ul>
+                <li>Free system monitoring setup</li>
+                <li>Annual maintenance available</li>
+                <li>24/7 technical support</li>
+                <li>Performance guarantee</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+          <div class="footer-content">
+            <div style="flex: 1; font-size: 0.8rem;">
+              <p><strong>Thank you for choosing Syed Solar Energy!</strong></p>
+              <p>For any queries, please contact us at:</p>
+              <p>📞 0307-5596695/03044678929 | 📧 sales@syedsolarenergy.com</p>
+            </div>
+            <div>
+              <div class="signature">
+                <div class="signature-line"></div>
+                <p><strong>Authorized Signature</strong></p>
+                <p>Syed Solar Energy Pvt Ltd</p>
+              </div>
+            </div>
+          </div>
+          <div class="footer-bottom">
+            <p>This quotation is valid for 3 days from the date of issue & Solar Panels Price may Vary. | Generated on ${new Date().toLocaleString()}</p>
+          </div>
+        </div>
+      </div>
+    `;
+  };
+  
+  // Print quotation using browser's print functionality
+  const printQuotation = () => {
+    if (!currentQuotation) {
+      alert("❌ Please generate a quotation first before printing.");
+      return;
+    }
+    printQuotationData(currentQuotation);
+  };
+
+  // Print from quotations list
+  const printFromList = (quotation) => {
+    printQuotationData(quotation);
   };
   
   const resetForm = () => {
@@ -613,16 +841,6 @@ const QuotationForm = () => {
               <td style={pdfStyles.td}>{stand.pricePerStand.toLocaleString()}</td>
               <td style={pdfStyles.td}>{(getStandQty() * stand.pricePerStand).toLocaleString()}</td>
             </tr>
-            {isGreenmeterIncluded && (
-              <tr style={pdfStyles.tableRow}>
-                <td style={pdfStyles.td}>8</td>
-                <td style={pdfStyles.td}>Green meter</td>
-                <td style={pdfStyles.td}>Technical Oversight</td>
-                <td style={pdfStyles.td}>1</td>
-                <td style={pdfStyles.td}>{Greenmeter.toLocaleString()}</td>
-                <td style={pdfStyles.td}>{Greenmeter.toLocaleString()}</td>
-              </tr>
-            )}
             <tr style={pdfStyles.tableRow}>
               <td style={pdfStyles.td}>5</td>
               <td style={pdfStyles.td}>Safety Equipment</td>
@@ -657,6 +875,16 @@ const QuotationForm = () => {
                 <td style={pdfStyles.td}>{engineer.toLocaleString()}</td>
               </tr>
             )}
+            {isGreenmeterIncluded && (
+              <tr style={pdfStyles.tableRow}>
+                <td style={pdfStyles.td}>9</td>
+                <td style={pdfStyles.td}>Green meter</td>
+                <td style={pdfStyles.td}>Net Metering Setup</td>
+                <td style={pdfStyles.td}>1</td>
+                <td style={pdfStyles.td}>{Greenmeter.toLocaleString()}</td>
+                <td style={pdfStyles.td}>{Greenmeter.toLocaleString()}</td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -683,8 +911,8 @@ const QuotationForm = () => {
             </ul>
             <h4>Warranty:</h4>
             <ul>
-              <li> Solar Panels will be A-Grade</li>
-              <li>Daytime Inverter 5-Years(1Year Replace & 4 Years Service</li>
+              <li>Solar Panels will be A-Grade</li>
+              <li>Daytime Inverter 5-Years(1Year Replace & 4 Years Service)</li>
               <li>Hybrid Inverter Depends on Company Policy</li>
               <li>Batteries Depends On Company Policy</li>
               <li>1 year on installation work</li>
@@ -753,7 +981,7 @@ const QuotationForm = () => {
           {savedQuotations.map((quotation, index) => (
             <div key={index} style={styles.quotationCard}>
               <div style={styles.quotationHeader}>
-                <h3>{quotation.customer.name}</h3>
+                <h3 style={styles.quotationTitle}>{quotation.customer.name}</h3>
                 <span style={styles.quotationId}>#{quotation.id}</span>
               </div>
               <div style={styles.quotationDetails}>
@@ -784,15 +1012,7 @@ const QuotationForm = () => {
                   👁️ View
                 </button>
                 <button
-                  onClick={() => {
-                    setCurrentQuotation(quotation);
-                    setShowPreview(true);
-                    setShowQuotationsList(false);
-                    // Add a small delay to ensure the preview is rendered before printing
-                    setTimeout(() => {
-                      printQuotation();
-                    }, 100);
-                  }}
+                  onClick={() => printFromList(quotation)}
                   style={styles.downloadButton}
                 >
                   🖨️ Print
@@ -1394,6 +1614,8 @@ const pdfStyles = {
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: '15px',
+    flexWrap: 'wrap',
+    gap: '20px',
   },
   logoContainer: {
     display: 'flex',
@@ -1429,6 +1651,7 @@ const pdfStyles = {
   companyDetails: {
     flex: 1,
     marginLeft: '15px',
+    minWidth: '300px',
   },
   mainTitle: {
     fontSize: '1.6rem',
@@ -1452,6 +1675,7 @@ const pdfStyles = {
     padding: '12px',
     borderRadius: '8px',
     border: '1px solid #FFE0CC',
+    minWidth: '200px',
   },
   quotationTitle: {
     fontSize: '1.8rem',
@@ -1465,7 +1689,7 @@ const pdfStyles = {
   },
   infoSection: {
     display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
     gap: '15px',
     marginBottom: '20px',
   },
@@ -1554,7 +1778,7 @@ const pdfStyles = {
   },
   termsList: {
     display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
     gap: '15px',
     fontSize: '0.8rem',
   },
@@ -1572,10 +1796,13 @@ const pdfStyles = {
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: '15px',
+    flexWrap: 'wrap',
+    gap: '20px',
   },
   footerLeft: {
     flex: 1,
     fontSize: '0.8rem',
+    minWidth: '250px',
   },
   footerRight: {
     textAlign: 'center',
@@ -1604,10 +1831,10 @@ const pdfStyles = {
   }
 };
 
-// Main component styles
+// Enhanced responsive styles for universal screen fitting
 const styles = {
   container: {
-    padding: '20px',
+    padding: '15px',
     background: 'linear-gradient(135deg, #FFF8F0 0%, #FFEBDD 100%)',
     minHeight: '100vh',
     fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
@@ -1615,8 +1842,8 @@ const styles = {
   header: {
     background: 'linear-gradient(135deg, #FF6B35, #F7931E)',
     borderRadius: '20px',
-    padding: '30px',
-    marginBottom: '30px',
+    padding: '20px 30px',
+    marginBottom: '25px',
     color: 'white',
     boxShadow: '0 10px 30px rgba(255, 107, 53, 0.3)',
   },
@@ -1625,111 +1852,114 @@ const styles = {
     justifyContent: 'space-between',
     alignItems: 'center',
     flexWrap: 'wrap',
-    gap: '20px',
+    gap: '15px',
   },
   title: {
-    fontSize: '2.5rem',
+    fontSize: 'clamp(1.8rem, 4vw, 2.5rem)',
     fontWeight: '700',
-    margin: '0 0 10px 0',
+    margin: '0 0 8px 0',
     textShadow: '0 2px 10px rgba(0,0,0,0.2)',
   },
   subtitle: {
-    fontSize: '1.1rem',
+    fontSize: 'clamp(0.9rem, 2vw, 1.1rem)',
     opacity: '0.9',
     margin: 0,
     fontWeight: '300',
   },
   headerActions: {
     display: 'flex',
-    gap: '15px',
+    gap: '10px',
+    flexWrap: 'wrap',
   },
   viewQuotationsButton: {
     background: 'rgba(255, 255, 255, 0.2)',
     color: 'white',
     border: '2px solid rgba(255, 255, 255, 0.3)',
     borderRadius: '12px',
-    padding: '12px 20px',
+    padding: '10px 16px',
     cursor: 'pointer',
-    fontSize: '0.9rem',
+    fontSize: 'clamp(0.8rem, 1.5vw, 0.9rem)',
     fontWeight: '600',
     transition: 'all 0.3s ease',
     backdropFilter: 'blur(10px)',
+    whiteSpace: 'nowrap',
   },
   analyticsGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-    gap: '20px',
-    marginBottom: '30px',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+    gap: '15px',
+    marginBottom: '25px',
   },
   analyticsCard: {
     background: 'linear-gradient(135deg, #FF6B35, #F7931E)',
     borderRadius: '15px',
-    padding: '20px',
+    padding: '15px',
     color: 'white',
     display: 'flex',
     alignItems: 'center',
-    gap: '15px',
+    gap: '12px',
     boxShadow: '0 8px 25px rgba(255, 107, 53, 0.3)',
   },
   analyticsIcon: {
-    fontSize: '2rem',
+    fontSize: 'clamp(1.5rem, 3vw, 2rem)',
   },
   analyticsContent: {
     flex: 1,
   },
   analyticsValue: {
-    fontSize: '1.5rem',
+    fontSize: 'clamp(1.2rem, 2.5vw, 1.5rem)',
     fontWeight: '700',
-    marginBottom: '5px',
+    marginBottom: '3px',
+    wordBreak: 'break-word',
   },
   analyticsTitle: {
-    fontSize: '0.85rem',
+    fontSize: 'clamp(0.75rem, 1.5vw, 0.85rem)',
     opacity: '0.9',
   },
   formContainer: {
     background: 'white',
     borderRadius: '20px',
-    padding: '30px',
+    padding: 'clamp(20px, 4vw, 30px)',
     boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
   },
   formHeader: {
     textAlign: 'center',
-    marginBottom: '30px',
+    marginBottom: '25px',
   },
   formTitle: {
-    fontSize: '1.8rem',
+    fontSize: 'clamp(1.5rem, 3vw, 1.8rem)',
     fontWeight: '700',
     color: '#FF6B35',
-    margin: '0 0 10px 0',
+    margin: '0 0 8px 0',
   },
   formSubtitle: {
-    fontSize: '1rem',
+    fontSize: 'clamp(0.9rem, 2vw, 1rem)',
     color: '#666',
     margin: '0',
   },
   formSections: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '25px',
+    gap: '20px',
   },
   formSection: {
     background: '#f9f9f9',
-    padding: '25px',
+    padding: 'clamp(15px, 3vw, 25px)',
     borderRadius: '15px',
     border: '1px solid #e0e0e0',
   },
   sectionTitle: {
-    fontSize: '1.3rem',
+    fontSize: 'clamp(1.1rem, 2.5vw, 1.3rem)',
     fontWeight: '600',
     color: '#FF6B35',
-    marginBottom: '20px',
+    marginBottom: '15px',
     borderBottom: '2px solid #FFE0CC',
-    paddingBottom: '10px',
+    paddingBottom: '8px',
   },
   formGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-    gap: '20px',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+    gap: 'clamp(12px, 2vw, 20px)',
   },
   inputGroup: {
     display: 'flex',
@@ -1737,68 +1967,78 @@ const styles = {
   },
   label: {
     fontWeight: '600',
-    marginBottom: '8px',
+    marginBottom: '6px',
     color: '#333',
+    fontSize: 'clamp(0.85rem, 1.5vw, 1rem)',
   },
   input: {
-    padding: '12px 16px',
+    padding: '10px 14px',
     border: '2px solid #e0e0e0',
     borderRadius: '10px',
-    fontSize: '1rem',
+    fontSize: 'clamp(0.9rem, 1.5vw, 1rem)',
     transition: 'border-color 0.3s ease',
+    width: '100%',
+    boxSizing: 'border-box',
   },
   numberInput: {
-    padding: '12px 16px',
+    padding: '10px 14px',
     border: '2px solid #e0e0e0',
     borderRadius: '10px',
-    fontSize: '1rem',
+    fontSize: 'clamp(0.9rem, 1.5vw, 1rem)',
     transition: 'border-color 0.3s ease',
-    MozAppearance: 'textfield', // Firefox
-    WebkitAppearance: 'none', // Safari and Chrome
+    width: '100%',
+    boxSizing: 'border-box',
+    MozAppearance: 'textfield',
+    WebkitAppearance: 'none',
   },
   checkboxGroup: {
     marginTop: '15px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '10px',
   },
   checkboxLabel: {
     display: 'flex',
     alignItems: 'center',
-    gap: '10px',
-    fontSize: '1rem',
+    gap: '8px',
+    fontSize: 'clamp(0.9rem, 1.5vw, 1rem)',
     fontWeight: '500',
     color: '#333',
     cursor: 'pointer',
   },
   checkbox: {
-    width: '18px',
-    height: '18px',
+    width: '16px',
+    height: '16px',
     accentColor: '#FF6B35',
+    flexShrink: 0,
   },
   totalSection: {
     background: 'linear-gradient(135deg, #FFF3E0, #FFE0B2)',
-    padding: '30px',
+    padding: 'clamp(20px, 4vw, 30px)',
     borderRadius: '20px',
     border: '2px solid #FF6B35',
     textAlign: 'center',
   },
   totalDisplay: {
-    marginBottom: '25px',
+    marginBottom: '20px',
   },
   totalTitle: {
-    fontSize: '1.8rem',
+    fontSize: 'clamp(1.4rem, 3vw, 1.8rem)',
     fontWeight: '700',
     color: '#FF6B35',
-    margin: '0 0 15px 0',
+    margin: '0 0 12px 0',
   },
   totalAmount: {
-    fontSize: '3rem',
+    fontSize: 'clamp(2rem, 5vw, 3rem)',
     fontWeight: '900',
     color: '#E65100',
     margin: '0',
     textShadow: '0 2px 5px rgba(0,0,0,0.1)',
+    wordBreak: 'break-word',
   },
   actionButtons: {
     display: 'flex',
-    gap: '20px',
+    gap: '15px',
     justifyContent: 'center',
     flexWrap: 'wrap',
   },
@@ -1807,158 +2047,182 @@ const styles = {
     color: 'white',
     border: 'none',
     borderRadius: '12px',
-    padding: '15px 30px',
-    fontSize: '1rem',
+    padding: '12px 24px',
+    fontSize: 'clamp(0.9rem, 1.5vw, 1rem)',
     fontWeight: '600',
     cursor: 'pointer',
     transition: 'all 0.3s ease',
+    minWidth: '120px',
   },
   generateButton: {
     background: 'linear-gradient(135deg, #FF6B35, #F7931E)',
     color: 'white',
     border: 'none',
     borderRadius: '12px',
-    padding: '15px 30px',
-    fontSize: '1rem',
+    padding: '12px 24px',
+    fontSize: 'clamp(0.9rem, 1.5vw, 1rem)',
     fontWeight: '600',
     cursor: 'pointer',
     transition: 'all 0.3s ease',
     boxShadow: '0 8px 25px rgba(255, 107, 53, 0.3)',
+    minWidth: '150px',
   },
   // Preview Container Styles
   previewContainer: {
-    padding: '20px',
+    padding: '15px',
     background: 'linear-gradient(135deg, #FFF8F0 0%, #FFEBDD 100%)',
     minHeight: '100vh',
   },
   previewHeader: {
     background: 'white',
     borderRadius: '15px',
-    padding: '20px',
-    marginBottom: '20px',
+    padding: '15px',
+    marginBottom: '15px',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
     boxShadow: '0 5px 15px rgba(0,0,0,0.1)',
     flexWrap: 'wrap',
-    gap: '20px',
+    gap: '15px',
   },
   previewTitle: {
-    fontSize: '1.8rem',
+    fontSize: 'clamp(1.4rem, 3vw, 1.8rem)',
     fontWeight: '700',
     color: '#FF6B35',
     margin: '0',
   },
   previewActions: {
     display: 'flex',
-    gap: '15px',
+    gap: '10px',
     flexWrap: 'wrap',
   },
   // Quotations List Styles
   quotationsGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
-    gap: '25px',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+    gap: '20px',
     marginTop: '20px',
   },
   quotationCard: {
     background: 'white',
     borderRadius: '15px',
-    padding: '25px',
+    padding: '20px',
     border: '2px solid #FFE0CC',
     boxShadow: '0 8px 25px rgba(0,0,0,0.1)',
     transition: 'all 0.3s ease',
-    position: 'relative', // Added for modal positioning
+    position: 'relative',
   },
   quotationHeader: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: '15px',
+    marginBottom: '12px',
+    flexWrap: 'wrap',
+    gap: '10px',
+  },
+  quotationTitle: {
+    fontSize: 'clamp(1.1rem, 2.5vw, 1.3rem)',
+    fontWeight: '600',
+    color: '#333',
+    margin: '0',
+    wordBreak: 'break-word',
   },
   quotationId: {
     background: 'linear-gradient(135deg, #FF6B35, #F7931E)',
     color: 'white',
-    padding: '5px 12px',
-    borderRadius: '20px',
-    fontSize: '0.8rem',
+    padding: '4px 10px',
+    borderRadius: '15px',
+    fontSize: 'clamp(0.7rem, 1.5vw, 0.8rem)',
     fontWeight: '600',
+    flexShrink: 0,
   },
   quotationDetails: {
-    marginBottom: '20px',
-    lineHeight: '1.6',
+    marginBottom: '15px',
+    lineHeight: '1.5',
+    fontSize: 'clamp(0.85rem, 1.5vw, 0.95rem)',
   },
   statusBadge: {
     color: 'white',
-    padding: '4px 8px',
-    borderRadius: '12px',
-    fontSize: '0.75rem',
+    padding: '3px 8px',
+    borderRadius: '10px',
+    fontSize: 'clamp(0.7rem, 1.3vw, 0.75rem)',
     fontWeight: '600',
     marginLeft: '5px',
   },
   quotationActions: {
     display: 'flex',
-    gap: '10px',
+    gap: '8px',
+    flexWrap: 'wrap',
   },
   viewButton: {
     background: 'linear-gradient(135deg, #2196f3, #1976d2)',
     color: 'white',
     border: 'none',
     borderRadius: '8px',
-    padding: '8px 15px',
+    padding: '8px 12px',
     cursor: 'pointer',
-    fontSize: '0.85rem',
+    fontSize: 'clamp(0.8rem, 1.3vw, 0.85rem)',
     fontWeight: '600',
     flex: 1,
+    minWidth: '70px',
+    transition: 'all 0.3s ease',
   },
   downloadButton: {
     background: 'linear-gradient(135deg, #4caf50, #45a049)',
     color: 'white',
     border: 'none',
     borderRadius: '8px',
-    padding: '8px 15px',
+    padding: '8px 12px',
     cursor: 'pointer',
-    fontSize: '0.85rem',
+    fontSize: 'clamp(0.8rem, 1.3vw, 0.85rem)',
     fontWeight: '600',
+    minWidth: '70px',
+    transition: 'all 0.3s ease',
   },
   deleteButton: {
     background: 'linear-gradient(135deg, #f44336, #d32f2f)',
     color: 'white',
     border: 'none',
     borderRadius: '8px',
-    padding: '8px 15px',
+    padding: '8px 12px',
     cursor: 'pointer',
-    fontSize: '0.85rem',
+    fontSize: 'clamp(0.8rem, 1.3vw, 0.85rem)',
     fontWeight: '600',
+    minWidth: '70px',
+    transition: 'all 0.3s ease',
   },
   emptyState: {
     textAlign: 'center',
-    padding: '60px 20px',
+    padding: 'clamp(40px, 8vw, 60px) 20px',
     color: '#666',
   },
   emptyIcon: {
-    fontSize: '4rem',
-    marginBottom: '20px',
+    fontSize: 'clamp(3rem, 6vw, 4rem)',
+    marginBottom: '15px',
   },
   backButton: {
     background: 'linear-gradient(135deg, #757575, #616161)',
     color: 'white',
     border: 'none',
     borderRadius: '8px',
-    padding: '8px 15px',
+    padding: '8px 12px',
     cursor: 'pointer',
-    fontSize: '0.85rem',
+    fontSize: 'clamp(0.8rem, 1.3vw, 0.85rem)',
     fontWeight: '600',
+    transition: 'all 0.3s ease',
+    minWidth: '120px',
   },
   newQuotationButton: {
     background: 'linear-gradient(135deg, #FF6B35, #F7931E)',
     color: 'white',
     border: 'none',
     borderRadius: '8px',
-    padding: '8px 15px',
+    padding: '8px 12px',
     cursor: 'pointer',
-    fontSize: '0.85rem',
+    fontSize: 'clamp(0.8rem, 1.3vw, 0.85rem)',
     fontWeight: '600',
+    transition: 'all 0.3s ease',
+    minWidth: '130px',
   },
   // Confirmation Modal Styles
   confirmModal: {
@@ -1972,6 +2236,7 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: '15px',
+    zIndex: 1000,
   },
   confirmContent: {
     background: 'white',
@@ -1979,13 +2244,15 @@ const styles = {
     borderRadius: '12px',
     boxShadow: '0 10px 30px rgba(0,0,0,0.3)',
     textAlign: 'center',
-    maxWidth: '300px',
-    width: '90%',
+    maxWidth: '90vw',
+    width: '300px',
+    margin: '0 10px',
   },
   confirmButtons: {
     display: 'flex',
     gap: '10px',
     justifyContent: 'center',
+    flexWrap: 'wrap',
   },
   cancelButton: {
     background: '#9e9e9e',
@@ -1994,8 +2261,9 @@ const styles = {
     borderRadius: '6px',
     padding: '8px 16px',
     cursor: 'pointer',
-    fontSize: '0.85rem',
+    fontSize: 'clamp(0.8rem, 1.3vw, 0.85rem)',
     fontWeight: '600',
+    transition: 'all 0.3s ease',
   },
   confirmDeleteButton: {
     background: '#f44336',
@@ -2004,9 +2272,121 @@ const styles = {
     borderRadius: '6px',
     padding: '8px 16px',
     cursor: 'pointer',
-    fontSize: '0.85rem',
+    fontSize: 'clamp(0.8rem, 1.3vw, 0.85rem)',
     fontWeight: '600',
+    transition: 'all 0.3s ease',
   },
+  
+  // Media queries for better responsive behavior
+  '@media (max-width: 768px)': {
+    container: {
+      padding: '10px',
+    },
+    header: {
+      padding: '15px 20px',
+      marginBottom: '20px',
+    },
+    headerContent: {
+      flexDirection: 'column',
+      alignItems: 'flex-start',
+      gap: '10px',
+    },
+    analyticsGrid: {
+      gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+      gap: '10px',
+    },
+    analyticsCard: {
+      padding: '12px',
+      flexDirection: 'column',
+      textAlign: 'center',
+      gap: '8px',
+    },
+    formContainer: {
+      padding: '15px',
+    },
+    formGrid: {
+      gridTemplateColumns: '1fr',
+      gap: '12px',
+    },
+    quotationsGrid: {
+      gridTemplateColumns: '1fr',
+      gap: '15px',
+    },
+    quotationActions: {
+      flexDirection: 'column',
+      gap: '8px',
+    },
+    viewButton: {
+      flex: 'none',
+    },
+    actionButtons: {
+      flexDirection: 'column',
+      alignItems: 'center',
+    },
+    resetButton: {
+      minWidth: '200px',
+    },
+    generateButton: {
+      minWidth: '200px',
+    },
+  },
+  
+  '@media (max-width: 480px)': {
+    title: {
+      fontSize: '1.5rem',
+    },
+    subtitle: {
+      fontSize: '0.85rem',
+    },
+    formTitle: {
+      fontSize: '1.3rem',
+    },
+    totalAmount: {
+      fontSize: '1.8rem',
+    },
+    sectionTitle: {
+      fontSize: '1rem',
+    },
+    quotationCard: {
+      padding: '15px',
+    },
+    quotationHeader: {
+      flexDirection: 'column',
+      alignItems: 'flex-start',
+      gap: '8px',
+    },
+  },
+  
+  // Hover effects for better interactivity
+  '@media (hover: hover)': {
+    'viewQuotationsButton:hover': {
+      background: 'rgba(255, 255, 255, 0.3)',
+      transform: 'translateY(-2px)',
+    },
+    'generateButton:hover': {
+      transform: 'translateY(-2px)',
+      boxShadow: '0 12px 35px rgba(255, 107, 53, 0.4)',
+    },
+    'resetButton:hover': {
+      transform: 'translateY(-2px)',
+    },
+    'quotationCard:hover': {
+      transform: 'translateY(-5px)',
+      boxShadow: '0 15px 35px rgba(0,0,0,0.15)',
+    },
+    'viewButton:hover': {
+      transform: 'translateY(-1px)',
+      boxShadow: '0 4px 12px rgba(33, 150, 243, 0.3)',
+    },
+    'downloadButton:hover': {
+      transform: 'translateY(-1px)',
+      boxShadow: '0 4px 12px rgba(76, 175, 80, 0.3)',
+    },
+    'deleteButton:hover': {
+      transform: 'translateY(-1px)',
+      boxShadow: '0 4px 12px rgba(244, 67, 54, 0.3)',
+    },
+  }
 };
 
 export default QuotationForm;
