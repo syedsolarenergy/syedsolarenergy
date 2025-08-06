@@ -112,8 +112,6 @@ const QuotationForm = () => {
         follow_up_status: 'pending'
       };
 
-      console.log("Saving to Supabase:", supabaseData);
-
       const { data, error } = await supabase
         .from("quotations")
         .insert([supabaseData])
@@ -121,23 +119,12 @@ const QuotationForm = () => {
 
       if (error) {
         console.error("Supabase error:", error);
-        let errorMessage = "Quotation generated successfully, but couldn't save to database.\n\n";
-        if (error.code === '42P01') {
-          errorMessage += "Issue: Table 'quotations' doesn't exist. Please create the table first.";
-        } else if (error.code === '42501') {
-          errorMessage += "Issue: Permission denied. Please check Row Level Security policies.";
-        } else {
-          errorMessage += `Issue: ${error.message}`;
-        }
-        alert(errorMessage);
         return null;
       } else {
-        console.log("✅ Quotation saved to Supabase successfully:", data);
         return data[0];
       }
     } catch (err) {
       console.error("Unexpected Supabase error:", err);
-      alert("Quotation generated successfully, but couldn't save to database.");
       return null;
     } finally {
       setIsSavingToDatabase(false);
@@ -147,8 +134,6 @@ const QuotationForm = () => {
   // Load quotations from Supabase
   async function loadQuotationsFromSupabase() {
     try {
-      console.log("Loading quotations from Supabase...");
-      
       const { data, error } = await supabase
         .from("quotations")
         .select("*")
@@ -158,8 +143,6 @@ const QuotationForm = () => {
         console.error("Error loading from Supabase:", error);
         return [];
       }
-
-      console.log("✅ Loaded quotations from Supabase:", data?.length || 0);
       
       const convertedData = (data || []).map(item => ({
         id: item.quotation_id || item.id.toString(),
@@ -223,9 +206,6 @@ const QuotationForm = () => {
 
       if (error) {
         console.error("Error deleting from Supabase:", error);
-        alert("Warning: Could not delete from database, but will remove locally.");
-      } else {
-        console.log("✅ Deleted from Supabase successfully");
       }
 
       const updatedQuotations = savedQuotations.filter(q => q.id !== quotationId);
@@ -258,18 +238,17 @@ const QuotationForm = () => {
         const supabaseQuotations = await loadQuotationsFromSupabase();
         const localQuotations = JSON.parse(localStorage.getItem("quotations")) || [];
         
-        // Merge Supabase and local quotations
+        // Create a map for faster lookup
+        const supabaseMap = new Map();
+        supabaseQuotations.forEach(q => {
+          supabaseMap.set(q.id, q);
+        });
+        
+        // Merge quotations, prioritizing Supabase data
         const mergedQuotations = [...supabaseQuotations];
         
-        // Add local quotations that don't exist in Supabase
         localQuotations.forEach(localQuote => {
-          const existsInSupabase = supabaseQuotations.some(supabaseQuote => 
-            supabaseQuote.id === localQuote.id || 
-            (supabaseQuote.customer.name === localQuote.customer.name && 
-             supabaseQuote.customer.contact === localQuote.customer.contact)
-          );
-          
-          if (!existsInSupabase) {
+          if (!supabaseMap.has(localQuote.id)) {
             mergedQuotations.push(localQuote);
           }
         });
@@ -371,13 +350,12 @@ const QuotationForm = () => {
     localStorage.setItem("quotations", JSON.stringify(updatedQuotations));
     
     setCurrentQuotation(newQuotation);
-    setShowPreview(true);
     setIsGeneratingPDF(false);
     
     if (savedToSupabase) {
-      alert("✅ Quotation generated and saved to database successfully! You can now print or save it as PDF using your browser.");
+      alert("✅ Quotation generated and saved to database successfully!");
     } else {
-      alert("✅ Quotation generated successfully! You can now print or save it as PDF using your browser.\n\nNote: Quotation was saved locally but couldn't sync to database.");
+      alert("✅ Quotation generated successfully! (Saved locally)");
     }
   };
   
@@ -483,7 +461,7 @@ const QuotationForm = () => {
     }
   };
 
-  // Generate HTML for quotation (optimized)
+  // Generate HTML for quotation
   const generateQuotationHTML = (quotationData) => {
     const panelPrice = parseFloat(quotationData.solarPanel.pricePerWatt) * parseInt(quotationData.solarPanel.watts || 0);
     const standQty = quotationData.stand.type === 'L2 (2 panels)' ? Math.ceil(quotationData.solarPanel.quantity / 2) : quotationData.solarPanel.quantity;
@@ -495,8 +473,7 @@ const QuotationForm = () => {
           <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
             <div style="display: flex; align-items: center; gap: 10px;">
               <div style="display: flex; align-items: center; gap: 8px;">
-                <img src="logo.png" alt="Syed Solar Energy Logo" style="width: 60px; height: 60px; object-fit: contain;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                <div style="font-size: 2.5rem; color: #FF6B35; display: none;">☀️</div>
+                <div style="font-size: 2.5rem; color: #FF6B35;">☀️</div>
                 <div style="display: flex; flex-direction: column; align-items: center;">
                   <div style="font-size: 1.3rem; font-weight: 900; color: #FF6B35; margin: 0;">SYED</div>
                   <div style="font-size: 0.8rem; color: #F7931E; font-weight: 600; margin: 0;">SOLAR ENERGY</div>
@@ -740,236 +717,46 @@ const QuotationForm = () => {
     setCurrentQuotation(null);
   };
   
-  // Quotation Preview Component for PDF generation
-  const QuotationPreview = React.memo(({ quotation }) => {
+  // Simple Quotation Preview Component
+  const QuotationPreview = ({ quotation }) => {
     if (!quotation) return null;
     
-    const panelPrice = parseFloat(quotation.solarPanel.pricePerWatt) * parseInt(quotation.solarPanel.watts || 0);
-    const standQty = quotation.stand.type === 'L2 (2 panels)' ? 
-      Math.ceil(quotation.solarPanel.quantity / 2) : 
-      quotation.solarPanel.quantity;
-    
     return (
-      <div style={pdfStyles.container}>
-        {/* Header with Logo and Company Info */}
-        <div style={pdfStyles.header}>
-          <div style={pdfStyles.logoSection}>
-            <div style={pdfStyles.logoContainer}>
-              <div style={pdfStyles.logo}>
-                <div style={pdfStyles.logoIcon}>☀️</div>
-                <div style={pdfStyles.logoText}>
-                  <div style={pdfStyles.companyName}>SYED</div>
-                  <div style={pdfStyles.solarText}>SOLAR ENERGY</div>
-                </div>
-              </div>
-            </div>
-            <div style={pdfStyles.companyDetails}>
-              <h1 style={pdfStyles.mainTitle}>SYED SOLAR ENERGY PVT LTD</h1>
-              <p style={pdfStyles.tagline}>Your Partner in Sustainable Energy Solutions</p>
-              <div style={pdfStyles.contactInfo}>
-                <p>📍 Office #23 Mustafa Plaza Ring Road Near Imtiaz Mega Center, Peshawar</p>
-                <p>📞 0307-5596695/03044678929 | 📧 sales@syedsolarenergy.com</p>
-                <p>🌐 www.syedsolarenergy.com</p>
-              </div>
-            </div>
-          </div>
-          <div style={pdfStyles.quotationInfo}>
-            <div style={pdfStyles.quotationTitle}>QUOTATION</div>
-            <div style={pdfStyles.quotationDetails}>
-              <p><strong>Quotation #:</strong> {quotation?.id}</p>
-              <p><strong>Date:</strong> {quotation?.quotationDate || new Date().toLocaleDateString()}</p>
-              <p><strong>Valid Until:</strong> {new Date(Date.now() + 7*24*60*60*1000).toLocaleDateString()}</p>
-            </div>
-          </div>
+      <div style={previewStyles.container}>
+        <div style={previewStyles.header}>
+          <h2 style={previewStyles.title}>Quotation Preview</h2>
+          <div style={previewStyles.id}>#{quotation.id}</div>
         </div>
         
-        {/* Customer and Project Info */}
-        <div style={pdfStyles.infoSection}>
-          <div style={pdfStyles.customerInfo}>
-            <h3 style={pdfStyles.sectionTitle}>📋 CUSTOMER INFORMATION</h3>
-            <div style={pdfStyles.infoCard}>
-              <p><strong>Name:</strong> {quotation.customer.name}</p>
-              <p><strong>Contact:</strong> {quotation.customer.contact}</p>
-              <p><strong>Email:</strong> {quotation.customer.email}</p>
-              <p><strong>Address:</strong> {quotation.customer.address}</p>
-            </div>
-          </div>
-          <div style={pdfStyles.projectInfo}>
-            <h3 style={pdfStyles.sectionTitle}>⚡ PROJECT DETAILS</h3>
-            <div style={pdfStyles.infoCard}>
-              <p><strong>Prepared By:</strong> {quotation.staff}</p>
-              <p><strong>System Type:</strong> {quotation.systemType}</p>
-              <p><strong>Location:</strong> {quotation.location}</p>
-              <p><strong>Total Capacity:</strong> {(parseFloat(quotation.inverter.kw) || 0)} kW</p>
-            </div>
-          </div>
+        <div style={previewStyles.section}>
+          <h3 style={previewStyles.sectionTitle}>Customer Information</h3>
+          <p><strong>Name:</strong> {quotation.customer.name}</p>
+          <p><strong>Contact:</strong> {quotation.customer.contact}</p>
+          <p><strong>Email:</strong> {quotation.customer.email || '-'}</p>
+          <p><strong>Address:</strong> {quotation.customer.address}</p>
         </div>
         
-        {/* Equipment Details Table */}
-        <div style={pdfStyles.equipmentSection}>
-          <h3 style={pdfStyles.sectionTitle}>🔧 EQUIPMENT & PRICING BREAKDOWN</h3>
-          <table style={pdfStyles.table}>
-            <thead>
-              <tr style={pdfStyles.tableHeader}>
-                <th style={pdfStyles.th}>S.No</th>
-                <th style={pdfStyles.th}>Item Description</th>
-                <th style={pdfStyles.th}>Brand/Model</th>
-                <th style={pdfStyles.th}>Qty</th>
-                <th style={pdfStyles.th}>Unit Price (Rs)</th>
-                <th style={pdfStyles.th}>Total (Rs)</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr style={pdfStyles.tableRow}>
-                <td style={pdfStyles.td}>1</td>
-                <td style={pdfStyles.td}>Solar Inverter ({quotation.inverter.kw}kW)</td>
-                <td style={pdfStyles.td}>{quotation.inverter.company} {quotation.inverter.kw}kW</td>
-                <td style={pdfStyles.td}>{quotation.inverter.quantity}</td>
-                <td style={pdfStyles.td}>{quotation.inverter.pricePerUnit.toLocaleString()}</td>
-                <td style={pdfStyles.td}>{(quotation.inverter.quantity * quotation.inverter.pricePerUnit).toLocaleString()}</td>
-              </tr>
-              <tr style={pdfStyles.tableRow}>
-                <td style={pdfStyles.td}>2</td>
-                <td style={pdfStyles.td}>Battery Storage System</td>
-                <td style={pdfStyles.td}>{quotation.batteryModel}</td>
-                <td style={pdfStyles.td}>{quotation.batteryQuantity}</td>
-                <td style={pdfStyles.td}>{quotation.batteryPrice.toLocaleString()}</td>
-                <td style={pdfStyles.td}>{(quotation.batteryQuantity * quotation.batteryPrice).toLocaleString()}</td>
-              </tr>
-              <tr style={pdfStyles.tableRow}>
-                <td style={pdfStyles.td}>3</td>
-                <td style={pdfStyles.td}>Solar Panels ({quotation.solarPanel.watts}W)</td>
-                <td style={pdfStyles.td}>{quotation.solarPanel.company} {quotation.solarPanel.watts}W</td>
-                <td style={pdfStyles.td}>{quotation.solarPanel.quantity}</td>
-                <td style={pdfStyles.td}>{panelPrice.toLocaleString()}</td>
-                <td style={pdfStyles.td}>{(panelPrice * quotation.solarPanel.quantity).toLocaleString()}</td>
-              </tr>
-              <tr style={pdfStyles.tableRow}>
-                <td style={pdfStyles.td}>4</td>
-                <td style={pdfStyles.td}>Mounting Structure</td>
-                <td style={pdfStyles.td}>{quotation.stand.type}</td>
-                <td style={pdfStyles.td}>{standQty}</td>
-                <td style={pdfStyles.td}>{quotation.stand.pricePerStand.toLocaleString()}</td>
-                <td style={pdfStyles.td}>{(standQty * quotation.stand.pricePerStand).toLocaleString()}</td>
-              </tr>
-              <tr style={pdfStyles.tableRow}>
-                <td style={pdfStyles.td}>5</td>
-                <td style={pdfStyles.td}>Safety Equipment</td>
-                <td style={pdfStyles.td}>DC/AC Breakers, Surge Protectors</td>
-                <td style={pdfStyles.td}>1 Set</td>
-                <td style={pdfStyles.td}>{quotation.safety.toLocaleString()}</td>
-                <td style={pdfStyles.td}>{quotation.safety.toLocaleString()}</td>
-              </tr>
-              <tr style={pdfStyles.tableRow}>
-                <td style={pdfStyles.td}>6</td>
-                <td style={pdfStyles.td}>Transportation</td>
-                <td style={pdfStyles.td}>Delivery to {quotation.location}</td>
-                <td style={pdfStyles.td}>1</td>
-                <td style={pdfStyles.td}>{quotation.transport.toLocaleString()}</td>
-                <td style={pdfStyles.td}>{quotation.transport.toLocaleString()}</td>
-              </tr>
-              <tr style={pdfStyles.tableRow}>
-                <td style={pdfStyles.td}>7</td>
-                <td style={pdfStyles.td}>Installation & Commissioning</td>
-                <td style={pdfStyles.td}>Professional Installation</td>
-                <td style={pdfStyles.td}>1</td>
-                <td style={pdfStyles.td}>{quotation.labour.toLocaleString()}</td>
-                <td style={pdfStyles.td}>{quotation.labour.toLocaleString()}</td>
-              </tr>
-              {quotation.engineer > 0 && (
-                <tr style={pdfStyles.tableRow}>
-                  <td style={pdfStyles.td}>8</td>
-                  <td style={pdfStyles.td}>Engineering Supervision</td>
-                  <td style={pdfStyles.td}>Technical Oversight</td>
-                  <td style={pdfStyles.td}>1</td>
-                  <td style={pdfStyles.td}>{quotation.engineer.toLocaleString()}</td>
-                  <td style={pdfStyles.td}>{quotation.engineer.toLocaleString()}</td>
-                </tr>
-              )}
-              {quotation.Greenmeter > 0 && (
-                <tr style={pdfStyles.tableRow}>
-                  <td style={pdfStyles.td}>9</td>
-                  <td style={pdfStyles.td}>Green meter</td>
-                  <td style={pdfStyles.td}>Net Metering Setup</td>
-                  <td style={pdfStyles.td}>1</td>
-                  <td style={pdfStyles.td}>{quotation.Greenmeter.toLocaleString()}</td>
-                  <td style={pdfStyles.td}>{quotation.Greenmeter.toLocaleString()}</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+        <div style={previewStyles.section}>
+          <h3 style={previewStyles.sectionTitle}>System Details</h3>
+          <p><strong>Type:</strong> {quotation.systemType}</p>
+          <p><strong>Location:</strong> {quotation.location}</p>
+          <p><strong>Staff:</strong> {quotation.staff}</p>
         </div>
         
-        {/* Total Section */}
-        <div style={pdfStyles.totalSection}>
-          <div style={pdfStyles.totalBox}>
-            <h2 style={pdfStyles.totalTitle}>TOTAL SYSTEM COST</h2>
-            <div style={pdfStyles.totalAmount}>Rs. {quotation.total.toLocaleString()}</div>
-            <p style={pdfStyles.totalNote}>*All prices are inclusive of installation and commissioning</p>
-          </div>
+        <div style={previewStyles.section}>
+          <h3 style={previewStyles.sectionTitle}>Equipment Summary</h3>
+          <p><strong>Inverter:</strong> {quotation.inverter.company} {quotation.inverter.kw}kW</p>
+          <p><strong>Battery:</strong> {quotation.batteryModel || 'None'}</p>
+          <p><strong>Solar Panels:</strong> {quotation.solarPanel.company} {quotation.solarPanel.watts}W</p>
         </div>
         
-        {/* Terms and Conditions */}
-        <div style={pdfStyles.termsSection}>
-          <h3 style={pdfStyles.sectionTitle}>📋 TERMS & CONDITIONS</h3>
-          <div style={pdfStyles.termsList}>
-            <div style={pdfStyles.termsColumn}>
-              <h4>Payment Terms:</h4>
-              <ul>
-                <li>05% advance payment required</li>
-                <li>70% on material delivery</li>
-                <li>25% on successful commissioning</li>
-              </ul>
-              <h4>Warranty:</h4>
-              <ul>
-                <li>Solar Panels will be A-Grade</li>
-                <li>Daytime Inverter 5-Years(1Year Replace & 4 Years Service)</li>
-                <li>Hybrid Inverter Depends on Company Policy</li>
-                <li>Batteries Depends On Company Policy</li>
-                <li>1 year on installation work</li>
-              </ul>
-            </div>
-            <div style={pdfStyles.termsColumn}>
-              <h4>Delivery Timeline:</h4>
-              <ul>
-                <li>1-2 working days from advance</li>
-                <li>Installation: 2-3 working days</li>
-                <li>Net metering assistance included</li>
-              </ul>
-              <h4>Additional Services:</h4>
-              <ul>
-                <li>Free system monitoring setup</li>
-                <li>Annual maintenance available</li>
-                <li>24/7 technical support</li>
-                <li>Performance guarantee</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-        
-        {/* Footer */}
-        <div style={pdfStyles.footer}>
-          <div style={pdfStyles.footerContent}>
-            <div style={pdfStyles.footerLeft}>
-              <p><strong>Thank you for choosing Syed Solar Energy!</strong></p>
-              <p>For any queries, please contact us at:</p>
-              <p>📞 0307-5596695/03044678929 | 📧 sales@syedsolarenergy.com</p>
-            </div>
-            <div style={pdfStyles.footerRight}>
-              <div style={pdfStyles.signature}>
-                <div style={pdfStyles.signatureLine}></div>
-                <p><strong>Authorized Signature</strong></p>
-                <p>Syed Solar Energy Pvt Ltd</p>
-              </div>
-            </div>
-          </div>
-          <div style={pdfStyles.footerBottom}>
-            <p>This quotation is valid for 3 days from the date of issue & Solar Panels Price may Vary. | Generated on {new Date().toLocaleString()}</p>
-          </div>
+        <div style={previewStyles.totalSection}>
+          <h2 style={previewStyles.totalTitle}>Total Cost</h2>
+          <div style={previewStyles.totalAmount}>Rs. {quotation.total.toLocaleString()}</div>
         </div>
       </div>
     );
-  });
+  };
   
   // Main component render
   if (showQuotationsList) {
@@ -1017,7 +804,6 @@ const QuotationForm = () => {
                   onClick={() => {
                     setCurrentQuotation(quotation);
                     setShowPreview(true);
-                    setShowQuotationsList(false);
                   }}
                   style={styles.viewButton}
                 >
@@ -1092,7 +878,7 @@ const QuotationForm = () => {
               onClick={() => setShowPreview(false)}
               style={styles.backButton}
             >
-              ← Back to Form
+              ← Back to List
             </button>
             <button
               onClick={() => printQuotation()}
@@ -1110,9 +896,7 @@ const QuotationForm = () => {
           </div>
         </div>
         
-        <div ref={quotationRef}>
-          <QuotationPreview quotation={currentQuotation} />
-        </div>
+        <QuotationPreview quotation={currentQuotation} />
       </div>
     );
   }
@@ -1605,242 +1389,70 @@ const QuotationForm = () => {
   );
 };
 
-// PDF Styles for the quotation preview
-const pdfStyles = {
+// Preview styles
+const previewStyles = {
   container: {
-    fontFamily: "'Segoe UI', Arial, sans-serif",
-    maxWidth: '800px',
-    margin: '0 auto',
-    padding: '15px',
-    lineHeight: '1.3',
-    color: '#333',
     backgroundColor: 'white',
+    borderRadius: '12px',
+    padding: '20px',
+    margin: '20px auto',
+    maxWidth: '800px',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+    fontFamily: "'Segoe UI', Arial, sans-serif",
   },
   header: {
-    borderBottom: '3px solid #FF6B35',
-    paddingBottom: '15px',
-    marginBottom: '20px',
-  },
-  logoSection: {
     display: 'flex',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: '15px',
-    flexWrap: 'wrap',
-    gap: '20px',
-  },
-  logoContainer: {
-    display: 'flex',
     alignItems: 'center',
-    gap: '10px',
+    marginBottom: '20px',
+    paddingBottom: '15px',
+    borderBottom: '2px solid #FF6B35',
   },
-  logo: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-  },
-  logoIcon: {
-    fontSize: '2.5rem',
-    color: '#FF6B35',
-  },
-  logoText: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-  },
-  companyName: {
-    fontSize: '1.3rem',
-    fontWeight: '900',
-    color: '#FF6B35',
-    margin: '0',
-  },
-  solarText: {
-    fontSize: '0.8rem',
-    color: '#F7931E',
-    fontWeight: '600',
-    margin: '0',
-  },
-  companyDetails: {
-    flex: 1,
-    marginLeft: '15px',
-    minWidth: '300px',
-  },
-  mainTitle: {
-    fontSize: '1.6rem',
-    fontWeight: '700',
-    color: '#FF6B35',
-    margin: '0 0 5px 0',
-  },
-  tagline: {
-    fontSize: '0.9rem',
-    color: '#666',
-    margin: '0 0 12px 0',
-    fontStyle: 'italic',
-  },
-  contactInfo: {
-    fontSize: '0.85rem',
-    color: '#555',
-  },
-  quotationInfo: {
-    textAlign: 'right',
-    backgroundColor: '#FFF8F0',
-    padding: '12px',
-    borderRadius: '8px',
-    border: '1px solid #FFE0CC',
-    minWidth: '200px',
-  },
-  quotationTitle: {
+  title: {
     fontSize: '1.8rem',
     fontWeight: '700',
     color: '#FF6B35',
-    margin: '0 0 8px 0',
+    margin: 0,
   },
-  quotationDetails: {
-    fontSize: '0.85rem',
-    color: '#555',
+  id: {
+    backgroundColor: '#FF6B35',
+    color: 'white',
+    padding: '5px 10px',
+    borderRadius: '15px',
+    fontWeight: '600',
   },
-  infoSection: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-    gap: '15px',
-    marginBottom: '20px',
-  },
-  customerInfo: {
-    backgroundColor: '#F8F9FA',
+  section: {
+    marginBottom: '25px',
     padding: '15px',
+    backgroundColor: '#f8f9fa',
     borderRadius: '8px',
-    border: '1px solid #E9ECEF',
-  },
-  projectInfo: {
-    backgroundColor: '#FFF3E0',
-    padding: '15px',
-    borderRadius: '8px',
-    border: '1px solid #FFE0B2',
   },
   sectionTitle: {
-    fontSize: '1rem',
-    fontWeight: '700',
+    fontSize: '1.2rem',
+    fontWeight: '600',
     color: '#FF6B35',
     margin: '0 0 12px 0',
-    borderBottom: '2px solid #FF6B35',
-    paddingBottom: '5px',
-  },
-  infoCard: {
-    fontSize: '0.85rem',
-    lineHeight: '1.5',
-  },
-  equipmentSection: {
-    marginBottom: '20px',
-  },
-  table: {
-    width: '100%',
-    borderCollapse: 'collapse',
-    marginTop: '10px',
-    fontSize: '10px',
-  },
-  tableHeader: {
-    backgroundColor: '#FF6B35',
-  },
-  th: {
-    padding: '6px',
-    textAlign: 'left',
-    color: 'white',
-    fontWeight: 'bold',
-    border: '1px solid #FF6B35',
-  },
-  tableRow: {
-    borderBottom: '1px solid #ddd',
-  },
-  td: {
-    padding: '5px',
-    border: '1px solid #ddd',
-    fontSize: '10px',
   },
   totalSection: {
     backgroundColor: '#FFF8F0',
-    padding: '12px',
+    padding: '20px',
     borderRadius: '8px',
     border: '2px solid #FF6B35',
     textAlign: 'center',
-    marginBottom: '20px',
-  },
-  totalBox: {
-    display: 'inline-block',
+    marginTop: '20px',
   },
   totalTitle: {
-    fontSize: '1.3rem',
+    fontSize: '1.4rem',
     fontWeight: '700',
     color: '#FF6B35',
     margin: '0 0 8px 0',
   },
   totalAmount: {
-    fontSize: '2rem',
+    fontSize: '2.2rem',
     fontWeight: '900',
     color: '#E65100',
-    margin: '0 0 8px 0',
+    margin: 0,
   },
-  totalNote: {
-    fontSize: '0.8rem',
-    color: '#666',
-    fontStyle: 'italic',
-    margin: '0',
-  },
-  termsSection: {
-    marginBottom: '15px',
-  },
-  termsList: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-    gap: '15px',
-    fontSize: '0.8rem',
-  },
-  termsColumn: {
-    backgroundColor: '#F8F9FA',
-    padding: '12px',
-    borderRadius: '8px',
-  },
-  footer: {
-    borderTop: '2px solid #FF6B35',
-    paddingTop: '15px',
-  },
-  footerContent: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: '15px',
-    flexWrap: 'wrap',
-    gap: '20px',
-  },
-  footerLeft: {
-    flex: 1,
-    fontSize: '0.8rem',
-    minWidth: '250px',
-  },
-  footerRight: {
-    textAlign: 'center',
-  },
-  signature: {
-    textAlign: 'center',
-  },
-  signatureLine: {
-    width: '180px',
-    height: '2px',
-    backgroundColor: '#333',
-    margin: '30px auto 8px auto',
-  },
-  footerBottom: {
-    textAlign: 'center',
-    fontSize: '0.7rem',
-    color: '#666',
-    fontStyle: 'italic',
-    paddingTop: '12px',
-    borderTop: '1px solid #ddd',
-  },
-  pageBreak: {
-    pageBreakBefore: 'always',
-    height: '0',
-    margin: '0',
-  }
 };
 
 // Enhanced responsive styles for universal screen fitting
