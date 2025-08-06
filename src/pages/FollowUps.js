@@ -1051,5 +1051,4 @@ const inputStyle = {
     borderColor: "#FF9800"
   }
 };
-
 export default FollowUps;

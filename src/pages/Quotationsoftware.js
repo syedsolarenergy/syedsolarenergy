@@ -1926,5 +1926,4 @@ const styles = {
     fontWeight: '600',
   },
 };
-
 export default QuotationForm;
