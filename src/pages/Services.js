@@ -566,26 +566,7 @@ export default function Services() {
             overflow: 'visible',
             animation: 'fadeInUp 0.8s ease-out'
           }}>
-            {/* Decorative element */}
-            <div style={{
-              position: 'absolute',
-              top: 'clamp(-20px, -3vw, -25px)',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              width: 'clamp(50px, 8vw, 60px)',
-              height: 'clamp(50px, 8vw, 60px)',
-              background: 'linear-gradient(45deg, #FF6B35, #F7931E)',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 'clamp(20px, 4vw, 24px)',
-              boxShadow: '0 8px 24px rgba(255, 107, 53, 0.3)',
-              animation: 'bounce 2s ease-in-out infinite'
-            }}>
-              🔧
-            </div>
-
+        
             <h1 style={{
               background: 'linear-gradient(45deg, #FF6B35, #F7931E)',
               WebkitBackgroundClip: 'text',
@@ -654,32 +635,12 @@ export default function Services() {
 <Card3D style={{
   maxWidth: 'min(600px, 95vw)',
   margin: '0 auto clamp(30px, 5vw, 40px) auto',
-  padding: 'clamp(60px, 8vw, 70px) var(--card-padding) clamp(40px, 6vw, 50px)', // extra top padding
+  padding: "clamp(40px, 6vw, 50px) var(--card-padding)",
   textAlign: 'center',
   position: 'relative',
   overflow: 'visible',      // allow icon overflow
   animation: 'fadeInUp 0.8s ease-out 0.6s both'
 }}>
-  {/* Form header decoration */}
-  <div style={{
-    position: 'absolute',
-    top: 'clamp(-25px, -4vw, -30px)',  // lift icon up a bit
-    left: '50%',
-    transform: 'translateX(-50%)',
-    width: 'clamp(50px, 8vw, 60px)',
-    height: 'clamp(50px, 8vw, 60px)',
-    background: 'linear-gradient(45deg, #e65100, #ff9800)',
-    borderRadius: '50%',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: 'clamp(20px, 4vw, 24px)',
-    boxShadow: '0 8px 24px rgba(230, 81, 0, 0.3)',
-    animation: 'pulse 3s ease-in-out infinite',
-    zIndex: 1                      // ensure it sits above the card
-  }}>
-    
-  </div>
 
             <h3 style={{
               background: 'linear-gradient(45deg, #e65100, #ff9800)',
