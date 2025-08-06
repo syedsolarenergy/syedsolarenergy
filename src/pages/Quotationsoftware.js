@@ -22,61 +22,6 @@ const supabase = {
 };
 
 const QuotationForm = () => {
-  // Hide only top-level navbar elements, not sidebar navigation
-  React.useEffect(() => {
-    // More specific navbar selectors to avoid hiding sidebar
-    const navbarSelectors = [
-      'header nav',
-      '.top-navbar',
-      '.main-navbar',
-      '.app-navbar',
-      '.site-header',
-      '.header-navigation',
-      '[data-navbar="true"]',
-      '.navbar-fixed-top',
-      '.navbar-static-top'
-    ];
-    
-    const hiddenElements = [];
-    
-    navbarSelectors.forEach(selector => {
-      const elements = document.querySelectorAll(selector);
-      elements.forEach(element => {
-        // Only hide if it's not part of our quotation component AND not a sidebar
-        if (!element.closest('[data-quotation-app]') && 
-            !element.closest('aside') && 
-            !element.closest('.sidebar') &&
-            !element.closest('[class*="sidebar"]') &&
-            !element.closest('.professional-sidebar')) {
-          const originalDisplay = element.style.display;
-          element.style.display = 'none';
-          hiddenElements.push({ element, originalDisplay });
-        }
-      });
-    });
-    
-    // Hide common header elements that might contain navbar
-    const headerElements = document.querySelectorAll('header');
-    headerElements.forEach(header => {
-      // Only hide headers that are likely top navigation, not sidebar headers
-      if (!header.closest('[data-quotation-app]') && 
-          !header.closest('aside') && 
-          !header.closest('.sidebar') &&
-          header.getBoundingClientRect().top < 100) { // Only top headers
-        const originalDisplay = header.style.display;
-        header.style.display = 'none';
-        hiddenElements.push({ element: header, originalDisplay });
-      }
-    });
-    
-    // Cleanup function to restore navbar when component unmounts
-    return () => {
-      hiddenElements.forEach(({ element, originalDisplay }) => {
-        element.style.display = originalDisplay;
-      });
-    };
-  }, []);
-
   // State variables
   const [customer, setCustomer] = useState({ name: '', contact: '', email: '', address: '' });
   const [staffList] = useState(['Engr. Zubair', 'Engr. Aqib', 'Ahmed Khan', 'Ali Hassan']);
@@ -313,8 +258,10 @@ const QuotationForm = () => {
         const supabaseQuotations = await loadQuotationsFromSupabase();
         const localQuotations = JSON.parse(localStorage.getItem("quotations")) || [];
         
+        // Merge Supabase and local quotations
         const mergedQuotations = [...supabaseQuotations];
         
+        // Add local quotations that don't exist in Supabase
         localQuotations.forEach(localQuote => {
           const existsInSupabase = supabaseQuotations.some(supabaseQuote => 
             supabaseQuote.id === localQuote.id || 
@@ -434,7 +381,7 @@ const QuotationForm = () => {
     }
   };
   
-  // Enhanced print function that works from any context
+  // Enhanced print function with performance improvements
   const printQuotationData = (quotationData) => {
     try {
       const printWindow = window.open('', '_blank');
@@ -536,7 +483,7 @@ const QuotationForm = () => {
     }
   };
 
-  // Generate HTML for quotation
+  // Generate HTML for quotation (optimized)
   const generateQuotationHTML = (quotationData) => {
     const panelPrice = parseFloat(quotationData.solarPanel.pricePerWatt) * parseInt(quotationData.solarPanel.watts || 0);
     const standQty = quotationData.stand.type === 'L2 (2 panels)' ? Math.ceil(quotationData.solarPanel.quantity / 2) : quotationData.solarPanel.quantity;
@@ -794,240 +741,235 @@ const QuotationForm = () => {
   };
   
   // Quotation Preview Component for PDF generation
-  const QuotationPreview = () => (
-    <div style={pdfStyles.container}>
-      {/* Header with Logo and Company Info */}
-      <div style={pdfStyles.header}>
-        <div style={pdfStyles.logoSection}>
-          <div style={pdfStyles.logoContainer}>
-            <div style={pdfStyles.logo}>
-              <img 
-                src="logo.png" 
-                alt="Syed Solar Energy Logo" 
-                style={{
-                  width: '60px',
-                  height: '60px',
-                  objectFit: 'contain',
-                  marginRight: '8px'
-                }}
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                  e.target.nextElementSibling.style.display = 'block';
-                }}
-              />
-              <div style={{...pdfStyles.logoIcon, display: 'none'}}>☀️</div>
-              <div style={pdfStyles.logoText}>
-                <div style={pdfStyles.companyName}>SYED</div>
-                <div style={pdfStyles.solarText}>SOLAR ENERGY</div>
+  const QuotationPreview = React.memo(({ quotation }) => {
+    if (!quotation) return null;
+    
+    const panelPrice = parseFloat(quotation.solarPanel.pricePerWatt) * parseInt(quotation.solarPanel.watts || 0);
+    const standQty = quotation.stand.type === 'L2 (2 panels)' ? 
+      Math.ceil(quotation.solarPanel.quantity / 2) : 
+      quotation.solarPanel.quantity;
+    
+    return (
+      <div style={pdfStyles.container}>
+        {/* Header with Logo and Company Info */}
+        <div style={pdfStyles.header}>
+          <div style={pdfStyles.logoSection}>
+            <div style={pdfStyles.logoContainer}>
+              <div style={pdfStyles.logo}>
+                <div style={pdfStyles.logoIcon}>☀️</div>
+                <div style={pdfStyles.logoText}>
+                  <div style={pdfStyles.companyName}>SYED</div>
+                  <div style={pdfStyles.solarText}>SOLAR ENERGY</div>
+                </div>
+              </div>
+            </div>
+            <div style={pdfStyles.companyDetails}>
+              <h1 style={pdfStyles.mainTitle}>SYED SOLAR ENERGY PVT LTD</h1>
+              <p style={pdfStyles.tagline}>Your Partner in Sustainable Energy Solutions</p>
+              <div style={pdfStyles.contactInfo}>
+                <p>📍 Office #23 Mustafa Plaza Ring Road Near Imtiaz Mega Center, Peshawar</p>
+                <p>📞 0307-5596695/03044678929 | 📧 sales@syedsolarenergy.com</p>
+                <p>🌐 www.syedsolarenergy.com</p>
               </div>
             </div>
           </div>
-          <div style={pdfStyles.companyDetails}>
-            <h1 style={pdfStyles.mainTitle}>SYED SOLAR ENERGY PVT LTD</h1>
-            <p style={pdfStyles.tagline}>Your Partner in Sustainable Energy Solutions</p>
-            <div style={pdfStyles.contactInfo}>
-              <p>📍 Office #23 Mustafa Plaza Ring Road Near Imtiaz Mega Center, Peshawar</p>
+          <div style={pdfStyles.quotationInfo}>
+            <div style={pdfStyles.quotationTitle}>QUOTATION</div>
+            <div style={pdfStyles.quotationDetails}>
+              <p><strong>Quotation #:</strong> {quotation?.id}</p>
+              <p><strong>Date:</strong> {quotation?.quotationDate || new Date().toLocaleDateString()}</p>
+              <p><strong>Valid Until:</strong> {new Date(Date.now() + 7*24*60*60*1000).toLocaleDateString()}</p>
+            </div>
+          </div>
+        </div>
+        
+        {/* Customer and Project Info */}
+        <div style={pdfStyles.infoSection}>
+          <div style={pdfStyles.customerInfo}>
+            <h3 style={pdfStyles.sectionTitle}>📋 CUSTOMER INFORMATION</h3>
+            <div style={pdfStyles.infoCard}>
+              <p><strong>Name:</strong> {quotation.customer.name}</p>
+              <p><strong>Contact:</strong> {quotation.customer.contact}</p>
+              <p><strong>Email:</strong> {quotation.customer.email}</p>
+              <p><strong>Address:</strong> {quotation.customer.address}</p>
+            </div>
+          </div>
+          <div style={pdfStyles.projectInfo}>
+            <h3 style={pdfStyles.sectionTitle}>⚡ PROJECT DETAILS</h3>
+            <div style={pdfStyles.infoCard}>
+              <p><strong>Prepared By:</strong> {quotation.staff}</p>
+              <p><strong>System Type:</strong> {quotation.systemType}</p>
+              <p><strong>Location:</strong> {quotation.location}</p>
+              <p><strong>Total Capacity:</strong> {(parseFloat(quotation.inverter.kw) || 0)} kW</p>
+            </div>
+          </div>
+        </div>
+        
+        {/* Equipment Details Table */}
+        <div style={pdfStyles.equipmentSection}>
+          <h3 style={pdfStyles.sectionTitle}>🔧 EQUIPMENT & PRICING BREAKDOWN</h3>
+          <table style={pdfStyles.table}>
+            <thead>
+              <tr style={pdfStyles.tableHeader}>
+                <th style={pdfStyles.th}>S.No</th>
+                <th style={pdfStyles.th}>Item Description</th>
+                <th style={pdfStyles.th}>Brand/Model</th>
+                <th style={pdfStyles.th}>Qty</th>
+                <th style={pdfStyles.th}>Unit Price (Rs)</th>
+                <th style={pdfStyles.th}>Total (Rs)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style={pdfStyles.tableRow}>
+                <td style={pdfStyles.td}>1</td>
+                <td style={pdfStyles.td}>Solar Inverter ({quotation.inverter.kw}kW)</td>
+                <td style={pdfStyles.td}>{quotation.inverter.company} {quotation.inverter.kw}kW</td>
+                <td style={pdfStyles.td}>{quotation.inverter.quantity}</td>
+                <td style={pdfStyles.td}>{quotation.inverter.pricePerUnit.toLocaleString()}</td>
+                <td style={pdfStyles.td}>{(quotation.inverter.quantity * quotation.inverter.pricePerUnit).toLocaleString()}</td>
+              </tr>
+              <tr style={pdfStyles.tableRow}>
+                <td style={pdfStyles.td}>2</td>
+                <td style={pdfStyles.td}>Battery Storage System</td>
+                <td style={pdfStyles.td}>{quotation.batteryModel}</td>
+                <td style={pdfStyles.td}>{quotation.batteryQuantity}</td>
+                <td style={pdfStyles.td}>{quotation.batteryPrice.toLocaleString()}</td>
+                <td style={pdfStyles.td}>{(quotation.batteryQuantity * quotation.batteryPrice).toLocaleString()}</td>
+              </tr>
+              <tr style={pdfStyles.tableRow}>
+                <td style={pdfStyles.td}>3</td>
+                <td style={pdfStyles.td}>Solar Panels ({quotation.solarPanel.watts}W)</td>
+                <td style={pdfStyles.td}>{quotation.solarPanel.company} {quotation.solarPanel.watts}W</td>
+                <td style={pdfStyles.td}>{quotation.solarPanel.quantity}</td>
+                <td style={pdfStyles.td}>{panelPrice.toLocaleString()}</td>
+                <td style={pdfStyles.td}>{(panelPrice * quotation.solarPanel.quantity).toLocaleString()}</td>
+              </tr>
+              <tr style={pdfStyles.tableRow}>
+                <td style={pdfStyles.td}>4</td>
+                <td style={pdfStyles.td}>Mounting Structure</td>
+                <td style={pdfStyles.td}>{quotation.stand.type}</td>
+                <td style={pdfStyles.td}>{standQty}</td>
+                <td style={pdfStyles.td}>{quotation.stand.pricePerStand.toLocaleString()}</td>
+                <td style={pdfStyles.td}>{(standQty * quotation.stand.pricePerStand).toLocaleString()}</td>
+              </tr>
+              <tr style={pdfStyles.tableRow}>
+                <td style={pdfStyles.td}>5</td>
+                <td style={pdfStyles.td}>Safety Equipment</td>
+                <td style={pdfStyles.td}>DC/AC Breakers, Surge Protectors</td>
+                <td style={pdfStyles.td}>1 Set</td>
+                <td style={pdfStyles.td}>{quotation.safety.toLocaleString()}</td>
+                <td style={pdfStyles.td}>{quotation.safety.toLocaleString()}</td>
+              </tr>
+              <tr style={pdfStyles.tableRow}>
+                <td style={pdfStyles.td}>6</td>
+                <td style={pdfStyles.td}>Transportation</td>
+                <td style={pdfStyles.td}>Delivery to {quotation.location}</td>
+                <td style={pdfStyles.td}>1</td>
+                <td style={pdfStyles.td}>{quotation.transport.toLocaleString()}</td>
+                <td style={pdfStyles.td}>{quotation.transport.toLocaleString()}</td>
+              </tr>
+              <tr style={pdfStyles.tableRow}>
+                <td style={pdfStyles.td}>7</td>
+                <td style={pdfStyles.td}>Installation & Commissioning</td>
+                <td style={pdfStyles.td}>Professional Installation</td>
+                <td style={pdfStyles.td}>1</td>
+                <td style={pdfStyles.td}>{quotation.labour.toLocaleString()}</td>
+                <td style={pdfStyles.td}>{quotation.labour.toLocaleString()}</td>
+              </tr>
+              {quotation.engineer > 0 && (
+                <tr style={pdfStyles.tableRow}>
+                  <td style={pdfStyles.td}>8</td>
+                  <td style={pdfStyles.td}>Engineering Supervision</td>
+                  <td style={pdfStyles.td}>Technical Oversight</td>
+                  <td style={pdfStyles.td}>1</td>
+                  <td style={pdfStyles.td}>{quotation.engineer.toLocaleString()}</td>
+                  <td style={pdfStyles.td}>{quotation.engineer.toLocaleString()}</td>
+                </tr>
+              )}
+              {quotation.Greenmeter > 0 && (
+                <tr style={pdfStyles.tableRow}>
+                  <td style={pdfStyles.td}>9</td>
+                  <td style={pdfStyles.td}>Green meter</td>
+                  <td style={pdfStyles.td}>Net Metering Setup</td>
+                  <td style={pdfStyles.td}>1</td>
+                  <td style={pdfStyles.td}>{quotation.Greenmeter.toLocaleString()}</td>
+                  <td style={pdfStyles.td}>{quotation.Greenmeter.toLocaleString()}</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+        
+        {/* Total Section */}
+        <div style={pdfStyles.totalSection}>
+          <div style={pdfStyles.totalBox}>
+            <h2 style={pdfStyles.totalTitle}>TOTAL SYSTEM COST</h2>
+            <div style={pdfStyles.totalAmount}>Rs. {quotation.total.toLocaleString()}</div>
+            <p style={pdfStyles.totalNote}>*All prices are inclusive of installation and commissioning</p>
+          </div>
+        </div>
+        
+        {/* Terms and Conditions */}
+        <div style={pdfStyles.termsSection}>
+          <h3 style={pdfStyles.sectionTitle}>📋 TERMS & CONDITIONS</h3>
+          <div style={pdfStyles.termsList}>
+            <div style={pdfStyles.termsColumn}>
+              <h4>Payment Terms:</h4>
+              <ul>
+                <li>05% advance payment required</li>
+                <li>70% on material delivery</li>
+                <li>25% on successful commissioning</li>
+              </ul>
+              <h4>Warranty:</h4>
+              <ul>
+                <li>Solar Panels will be A-Grade</li>
+                <li>Daytime Inverter 5-Years(1Year Replace & 4 Years Service)</li>
+                <li>Hybrid Inverter Depends on Company Policy</li>
+                <li>Batteries Depends On Company Policy</li>
+                <li>1 year on installation work</li>
+              </ul>
+            </div>
+            <div style={pdfStyles.termsColumn}>
+              <h4>Delivery Timeline:</h4>
+              <ul>
+                <li>1-2 working days from advance</li>
+                <li>Installation: 2-3 working days</li>
+                <li>Net metering assistance included</li>
+              </ul>
+              <h4>Additional Services:</h4>
+              <ul>
+                <li>Free system monitoring setup</li>
+                <li>Annual maintenance available</li>
+                <li>24/7 technical support</li>
+                <li>Performance guarantee</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        
+        {/* Footer */}
+        <div style={pdfStyles.footer}>
+          <div style={pdfStyles.footerContent}>
+            <div style={pdfStyles.footerLeft}>
+              <p><strong>Thank you for choosing Syed Solar Energy!</strong></p>
+              <p>For any queries, please contact us at:</p>
               <p>📞 0307-5596695/03044678929 | 📧 sales@syedsolarenergy.com</p>
-              <p>🌐 www.syedsolarenergy.com</p>
+            </div>
+            <div style={pdfStyles.footerRight}>
+              <div style={pdfStyles.signature}>
+                <div style={pdfStyles.signatureLine}></div>
+                <p><strong>Authorized Signature</strong></p>
+                <p>Syed Solar Energy Pvt Ltd</p>
+              </div>
             </div>
           </div>
-        </div>
-        <div style={pdfStyles.quotationInfo}>
-          <div style={pdfStyles.quotationTitle}>QUOTATION</div>
-          <div style={pdfStyles.quotationDetails}>
-            <p><strong>Quotation #:</strong> {currentQuotation?.id}</p>
-            <p><strong>Date:</strong> {quotationDate}</p>
-            <p><strong>Valid Until:</strong> {new Date(Date.now() + 7*24*60*60*1000).toLocaleDateString()}</p>
+          <div style={pdfStyles.footerBottom}>
+            <p>This quotation is valid for 3 days from the date of issue & Solar Panels Price may Vary. | Generated on {new Date().toLocaleString()}</p>
           </div>
         </div>
       </div>
-      
-      {/* Customer and Project Info */}
-      <div style={pdfStyles.infoSection}>
-        <div style={pdfStyles.customerInfo}>
-          <h3 style={pdfStyles.sectionTitle}>📋 CUSTOMER INFORMATION</h3>
-          <div style={pdfStyles.infoCard}>
-            <p><strong>Name:</strong> {customer.name}</p>
-            <p><strong>Contact:</strong> {customer.contact}</p>
-            <p><strong>Email:</strong> {customer.email}</p>
-            <p><strong>Address:</strong> {customer.address}</p>
-          </div>
-        </div>
-        <div style={pdfStyles.projectInfo}>
-          <h3 style={pdfStyles.sectionTitle}>⚡ PROJECT DETAILS</h3>
-          <div style={pdfStyles.infoCard}>
-            <p><strong>Prepared By:</strong> {staffName}</p>
-            <p><strong>System Type:</strong> {systemType}</p>
-            <p><strong>Location:</strong> {location}</p>
-            <p><strong>Total Capacity:</strong> {(parseFloat(inverter.kw) || 0)} kW</p>
-          </div>
-        </div>
-      </div>
-      
-      {/* Equipment Details Table */}
-      <div style={pdfStyles.equipmentSection}>
-        <h3 style={pdfStyles.sectionTitle}>🔧 EQUIPMENT & PRICING BREAKDOWN</h3>
-        <table style={pdfStyles.table}>
-          <thead>
-            <tr style={pdfStyles.tableHeader}>
-              <th style={pdfStyles.th}>S.No</th>
-              <th style={pdfStyles.th}>Item Description</th>
-              <th style={pdfStyles.th}>Brand/Model</th>
-              <th style={pdfStyles.th}>Qty</th>
-              <th style={pdfStyles.th}>Unit Price (Rs)</th>
-              <th style={pdfStyles.th}>Total (Rs)</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr style={pdfStyles.tableRow}>
-              <td style={pdfStyles.td}>1</td>
-              <td style={pdfStyles.td}>Solar Inverter ({inverter.kw}kW)</td>
-              <td style={pdfStyles.td}>{inverter.company} {inverter.kw}kW</td>
-              <td style={pdfStyles.td}>{inverter.quantity}</td>
-              <td style={pdfStyles.td}>{inverter.pricePerUnit.toLocaleString()}</td>
-              <td style={pdfStyles.td}>{(inverter.quantity * inverter.pricePerUnit).toLocaleString()}</td>
-            </tr>
-            <tr style={pdfStyles.tableRow}>
-              <td style={pdfStyles.td}>2</td>
-              <td style={pdfStyles.td}>Battery Storage System</td>
-              <td style={pdfStyles.td}>{batteryModel}</td>
-              <td style={pdfStyles.td}>{batteryQuantity}</td>
-              <td style={pdfStyles.td}>{batteryPrice.toLocaleString()}</td>
-              <td style={pdfStyles.td}>{(batteryQuantity * batteryPrice).toLocaleString()}</td>
-            </tr>
-            <tr style={pdfStyles.tableRow}>
-              <td style={pdfStyles.td}>3</td>
-              <td style={pdfStyles.td}>Solar Panels ({solarPanel.watts}W)</td>
-              <td style={pdfStyles.td}>{solarPanel.company} {solarPanel.watts}W</td>
-              <td style={pdfStyles.td}>{solarPanel.quantity}</td>
-              <td style={pdfStyles.td}>{getPanelPrice().toLocaleString()}</td>
-              <td style={pdfStyles.td}>{(getPanelPrice() * solarPanel.quantity).toLocaleString()}</td>
-            </tr>
-            <tr style={pdfStyles.tableRow}>
-              <td style={pdfStyles.td}>4</td>
-              <td style={pdfStyles.td}>Mounting Structure</td>
-              <td style={pdfStyles.td}>{stand.type}</td>
-              <td style={pdfStyles.td}>{getStandQty()}</td>
-              <td style={pdfStyles.td}>{stand.pricePerStand.toLocaleString()}</td>
-              <td style={pdfStyles.td}>{(getStandQty() * stand.pricePerStand).toLocaleString()}</td>
-            </tr>
-            <tr style={pdfStyles.tableRow}>
-              <td style={pdfStyles.td}>5</td>
-              <td style={pdfStyles.td}>Safety Equipment</td>
-              <td style={pdfStyles.td}>DC/AC Breakers, Surge Protectors</td>
-              <td style={pdfStyles.td}>1 Set</td>
-              <td style={pdfStyles.td}>{safety.toLocaleString()}</td>
-              <td style={pdfStyles.td}>{safety.toLocaleString()}</td>
-            </tr>
-            <tr style={pdfStyles.tableRow}>
-              <td style={pdfStyles.td}>6</td>
-              <td style={pdfStyles.td}>Transportation</td>
-              <td style={pdfStyles.td}>Delivery to {location}</td>
-              <td style={pdfStyles.td}>1</td>
-              <td style={pdfStyles.td}>{transport.toLocaleString()}</td>
-              <td style={pdfStyles.td}>{transport.toLocaleString()}</td>
-            </tr>
-            <tr style={pdfStyles.tableRow}>
-              <td style={pdfStyles.td}>7</td>
-              <td style={pdfStyles.td}>Installation & Commissioning</td>
-              <td style={pdfStyles.td}>Professional Installation</td>
-              <td style={pdfStyles.td}>1</td>
-              <td style={pdfStyles.td}>{labour.toLocaleString()}</td>
-              <td style={pdfStyles.td}>{labour.toLocaleString()}</td>
-            </tr>
-            {isEngineerIncluded && (
-              <tr style={pdfStyles.tableRow}>
-                <td style={pdfStyles.td}>8</td>
-                <td style={pdfStyles.td}>Engineering Supervision</td>
-                <td style={pdfStyles.td}>Technical Oversight</td>
-                <td style={pdfStyles.td}>1</td>
-                <td style={pdfStyles.td}>{engineer.toLocaleString()}</td>
-                <td style={pdfStyles.td}>{engineer.toLocaleString()}</td>
-              </tr>
-            )}
-            {isGreenmeterIncluded && (
-              <tr style={pdfStyles.tableRow}>
-                <td style={pdfStyles.td}>9</td>
-                <td style={pdfStyles.td}>Green meter</td>
-                <td style={pdfStyles.td}>Net Metering Setup</td>
-                <td style={pdfStyles.td}>1</td>
-                <td style={pdfStyles.td}>{Greenmeter.toLocaleString()}</td>
-                <td style={pdfStyles.td}>{Greenmeter.toLocaleString()}</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-      
-      {/* Total Section */}
-      <div style={pdfStyles.totalSection}>
-        <div style={pdfStyles.totalBox}>
-          <h2 style={pdfStyles.totalTitle}>TOTAL SYSTEM COST</h2>
-          <div style={pdfStyles.totalAmount}>Rs. {getTotal().toLocaleString()}</div>
-          <p style={pdfStyles.totalNote}>*All prices are inclusive of installation and commissioning</p>
-        </div>
-      </div>
-      
-      {/* Terms and Conditions */}
-      <div style={pdfStyles.termsSection}>
-        <h3 style={pdfStyles.sectionTitle}>📋 TERMS & CONDITIONS</h3>
-        <div style={pdfStyles.termsList}>
-          <div style={pdfStyles.termsColumn}>
-            <h4>Payment Terms:</h4>
-            <ul>
-              <li>05% advance payment required</li>
-              <li>70% on material delivery</li>
-              <li>25% on successful commissioning</li>
-            </ul>
-            <h4>Warranty:</h4>
-            <ul>
-              <li>Solar Panels will be A-Grade</li>
-              <li>Daytime Inverter 5-Years(1Year Replace & 4 Years Service)</li>
-              <li>Hybrid Inverter Depends on Company Policy</li>
-              <li>Batteries Depends On Company Policy</li>
-              <li>1 year on installation work</li>
-            </ul>
-          </div>
-          <div style={pdfStyles.termsColumn}>
-            <h4>Delivery Timeline:</h4>
-            <ul>
-              <li>1-2 working days from advance</li>
-              <li>Installation: 2-3 working days</li>
-              <li>Net metering assistance included</li>
-            </ul>
-            <h4>Additional Services:</h4>
-            <ul>
-              <li>Free system monitoring setup</li>
-              <li>Annual maintenance available</li>
-              <li>24/7 technical support</li>
-              <li>Performance guarantee</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-      
-      {/* Footer */}
-      <div style={pdfStyles.footer}>
-        <div style={pdfStyles.footerContent}>
-          <div style={pdfStyles.footerLeft}>
-            <p><strong>Thank you for choosing Syed Solar Energy!</strong></p>
-            <p>For any queries, please contact us at:</p>
-            <p>📞 0307-5596695/03044678929 | 📧 sales@syedsolarenergy.com</p>
-          </div>
-          <div style={pdfStyles.footerRight}>
-            <div style={pdfStyles.signature}>
-              <div style={pdfStyles.signatureLine}></div>
-              <p><strong>Authorized Signature</strong></p>
-              <p>Syed Solar Energy Pvt Ltd</p>
-            </div>
-          </div>
-        </div>
-        <div style={pdfStyles.footerBottom}>
-          <p>This quotation is valid for 3 days from the date of issue & Solar Panels Price may Vary. | Generated on {new Date().toLocaleString()}</p>
-        </div>
-      </div>
-    </div>
-  );
+    );
+  });
   
   // Main component render
   if (showQuotationsList) {
@@ -1169,7 +1111,7 @@ const QuotationForm = () => {
         </div>
         
         <div ref={quotationRef}>
-          <QuotationPreview />
+          <QuotationPreview quotation={currentQuotation} />
         </div>
       </div>
     );
@@ -1222,7 +1164,7 @@ const QuotationForm = () => {
           <div style={styles.analyticsIcon}>📞</div>
           <div style={styles.analyticsContent}>
             <div style={styles.analyticsValue}>
-              {savedQuotations.filter(q => ['pending', 'contacted'].includes(q.followUpStatus || 'Pending')).length}
+              {savedQuotations.filter(q => ['pending', 'contacted'].includes(q.followUpStatus?.toLowerCase() || 'pending')).length}
             </div>
             <div style={styles.analyticsTitle}>Needs Follow-up</div>
           </div>
