@@ -1216,107 +1216,134 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Enhanced Customer Reviews */}
-        <section style={{ 
-          padding: 'var(--section-padding) 0', 
-          background: `
-            linear-gradient(135deg, rgba(255, 107, 53, 0.06) 0%, rgba(247, 147, 30, 0.06) 50%, rgba(255, 152, 0, 0.06) 100%),
-            url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="waves" width="100" height="20" patternUnits="userSpaceOnUse"><path d="M0 10 Q25 0 50 10 T100 10 V20 H0 Z" fill="rgba(255,107,53,0.05)"/></pattern></defs><rect width="100" height="100" fill="url(%23waves)"/></svg>')
-          `,
-          position: 'relative'
-        }}>
-          <div className="universal-container" style={{ position: 'relative', zIndex: 2 }}>
-            <SectionHeader 
-              title="What Our Customers Say" 
-              subtitle="Real experiences from our valued clients across Pakistan" 
-            />
-            
-            <div className="grid-reviews">
-              {reviews.map(review => (
-                <Card3D key={review.id}>
-                  <div style={{ padding: 'var(--card-padding)' }}>
-                    <div style={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      marginBottom: 'clamp(16px, 3vw, 20px)',
-                      flexWrap: 'wrap',
-                      gap: 'clamp(12px, 2vw, 15px)'
-                    }}>
-                      {review.avatar_url ? (
-                        <img 
-                          src={review.avatar_url} 
-                          alt={review.name}
-                          style={{
-                            width: 'clamp(50px, 10vw, 60px)',
-                            height: 'clamp(50px, 10vw, 60px)',
-                            borderRadius: '50%',
-                            objectFit: 'cover',
-                            border: '3px solid #FF6B35',
-                            flexShrink: 0
-                          }}
-                        />
-                      ) : (
-                        <div style={{
-                          width: 'clamp(50px, 10vw, 60px)',
-                          height: 'clamp(50px, 10vw, 60px)',
-                          borderRadius: '50%',
-                          background: 'linear-gradient(45deg, #FF6B35, #F7931E)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: 'white',
-                          fontWeight: 'bold',
-                          fontSize: 'clamp(1.2rem, 3vw, 1.5rem)'
-                        }}>
-                          {review.name.charAt(0)}
-                        </div>
-                      )}
-                      <div style={{ flex: 1, minWidth: 'min(150px, 100%)' }}>
-                        <h4 style={{ 
-                          margin: 0, 
-                          color: '#FF6B35', 
-                          fontSize: 'clamp(16px, 3vw, 20px)',
-                          fontWeight: 'bold'
-                        }}>
-                          {review.name}
-                        </h4>
-                        {review.designation && (
-                          <p style={{ 
-                            margin: 0, 
-                            color: '#666', 
-                            fontSize: 'clamp(12px, 2.5vw, 14px)',
-                            fontWeight: '500'
-                          }}>
-                            {review.designation}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    <p style={{ 
-                      color: '#333', 
-                      lineHeight: '1.7', 
-                      marginBottom: 'clamp(16px, 3vw, 20px)',
-                      fontSize: 'var(--text-base)',
-                      fontStyle: 'italic',
-                      minHeight: 'clamp(100px, 15vw, 120px)'
-                    }}>
-                      "{review.review}"
-                    </p>
-                    <div style={{ 
-                      display: 'flex', 
-                      color: '#FFD700', 
-                      fontSize: 'clamp(16px, 3vw, 20px)',
-                      filter: 'drop-shadow(1px 1px 1px rgba(0,0,0,0.1))',
-                      justifyContent: 'center'
-                    }}>
-                      {"★".repeat(review.stars)}{"☆".repeat(5 - review.stars)}
-                    </div>
+{/* Enhanced Customer Reviews */}
+<section style={{
+  padding: 'var(--section-padding) 0',
+  background: `
+    linear-gradient(135deg, rgba(255, 107, 53, 0.06) 0%, rgba(247, 147, 30, 0.06) 50%, rgba(255, 152, 0, 0.06) 100%),
+    url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="waves" width="100" height="20" patternUnits="userSpaceOnUse"><path d="M0 10 Q25 0 50 10 T100 10 V20 H0 Z" fill="rgba(255,107,53,0.05)"/></pattern></defs><rect width="100" height="100" fill="url(%23waves)"/></svg>')
+  `,
+  position: 'relative'
+}}>
+  <div className="universal-container" style={{ position: 'relative', zIndex: 2 }}>
+    <SectionHeader
+      title="What Our Customers Say"
+      subtitle="Real experiences from our valued clients across Pakistan"
+    />
+
+    <div className="grid-reviews">
+      {reviews.map(review => (
+        <Card3D key={review.id} style={{ padding: 'var(--card-padding)' }}>
+          <div style={{ textAlign: 'center', padding: 'var(--card-padding)' }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              marginBottom: 'clamp(12px, 2.5vw, 16px)',
+              gap: 'clamp(8px, 2vw, 12px)'
+            }}>
+              {review.avatar_url
+                ? <img
+                    src={review.avatar_url}
+                    alt={review.name}
+                    style={{
+                      width: 'clamp(40px, 8vw, 50px)',
+                      height: 'clamp(40px, 8vw, 50px)',
+                      borderRadius: '50%',
+                      objectFit: 'cover',
+                      border: '2px solid #FF6B35'
+                    }}
+                  />
+                : <div style={{
+                    width: 'clamp(40px, 8vw, 50px)',
+                    height: 'clamp(40px, 8vw, 50px)',
+                    borderRadius: '50%',
+                    background: 'linear-gradient(45deg, #FF6B35, #F7931E)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'white',
+                    fontWeight: 'bold',
+                    fontSize: 'clamp(1rem, 3vw, 1.2rem)'
+                  }}>
+                    {review.name.charAt(0)}
                   </div>
-                </Card3D>
-              ))}
+              }
+              <div style={{ flex: 1, textAlign: 'left' }}>
+                <h4 style={{
+                  margin: 0,
+                  color: '#FF6B35',
+                  fontSize: 'clamp(16px, 3vw, 18px)',
+                  fontWeight: 'bold'
+                }}>
+                  {review.name}
+                </h4>
+                {review.designation && (
+                  <p style={{
+                    margin: 0,
+                    color: '#666',
+                    fontSize: 'clamp(12px, 2vw, 14px)'
+                  }}>
+                    {review.designation}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <p style={{
+              color: '#333',
+              fontSize: 'clamp(0.85rem, 2.2vw, 1rem)',
+              lineHeight: 1.6,
+              marginBottom: 'clamp(12px, 3vw, 16px)',
+              minHeight: 'clamp(80px, 12vw, 100px)'
+            }}>
+              "{review.review}"
+            </p>
+
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center',
+              color: '#FFD700',
+              fontSize: 'clamp(14px, 3vw, 18px)'
+            }}>
+              {"★".repeat(review.stars)}{"☆".repeat(5 - review.stars)}
             </div>
           </div>
-        </section>
+        </Card3D>
+      ))}
+    </div>
+  </div>
+
+  {/* Add these responsive tweaks */}
+  <style>
+    {`
+    .grid-reviews {
+      display: grid;
+      gap: var(--grid-gap);
+      grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+    }
+    @media (max-width: 768px) {
+      .grid-reviews {
+        grid-template-columns: 1fr;
+      }
+    }
+    @media (min-width: 769px) and (max-width: 1024px) {
+      .grid-reviews {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    @media (max-width: 480px) {
+      .grid-reviews h4 {
+        font-size: clamp(14px, 3.5vw, 16px);
+      }
+      .grid-reviews p {
+        font-size: clamp(0.75rem, 2.5vw, 0.9rem);
+        min-height: clamp(60px, 10vw, 80px);
+      }
+    }
+    `}
+  </style>
+</section>
+
 
         {/* Dynamic Sections */}
         {renderSection(events, "Latest Events", eventsMode, event => (
