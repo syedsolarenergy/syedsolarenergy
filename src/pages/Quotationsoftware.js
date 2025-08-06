@@ -22,6 +22,42 @@ const supabase = {
 };
 
 const QuotationForm = () => {
+  // Hide any external navbar when component mounts
+  React.useEffect(() => {
+    // Hide common navbar selectors
+    const navbarSelectors = [
+      'nav',
+      '.navbar',
+      '.nav-bar',
+      '.navigation',
+      '.header-nav',
+      '.top-nav',
+      '.main-nav',
+      '[role="navigation"]'
+    ];
+    
+    const hiddenElements = [];
+    
+    navbarSelectors.forEach(selector => {
+      const elements = document.querySelectorAll(selector);
+      elements.forEach(element => {
+        // Only hide if it's not part of our quotation component
+        if (!element.closest('[data-quotation-app]')) {
+          const originalDisplay = element.style.display;
+          element.style.display = 'none';
+          hiddenElements.push({ element, originalDisplay });
+        }
+      });
+    });
+    
+    // Cleanup function to restore navbar when component unmounts
+    return () => {
+      hiddenElements.forEach(({ element, originalDisplay }) => {
+        element.style.display = originalDisplay;
+      });
+    };
+  }, []);
+
   // State variables
   const [customer, setCustomer] = useState({ name: '', contact: '', email: '', address: '' });
   const [staffList] = useState(['Engr. Zubair', 'Engr. Aqib', 'Ahmed Khan', 'Ali Hassan']);
@@ -746,7 +782,21 @@ const QuotationForm = () => {
         <div style={pdfStyles.logoSection}>
           <div style={pdfStyles.logoContainer}>
             <div style={pdfStyles.logo}>
-              <div style={pdfStyles.logoIcon}>☀️</div>
+              <img 
+                src="logo.png" 
+                alt="Syed Solar Energy Logo" 
+                style={{
+                  width: '60px',
+                  height: '60px',
+                  objectFit: 'contain',
+                  marginRight: '8px'
+                }}
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  e.target.nextElementSibling.style.display = 'block';
+                }}
+              />
+              <div style={{...pdfStyles.logoIcon, display: 'none'}}>☀️</div>
               <div style={pdfStyles.logoText}>
                 <div style={pdfStyles.companyName}>SYED</div>
                 <div style={pdfStyles.solarText}>SOLAR ENERGY</div>
@@ -963,7 +1013,7 @@ const QuotationForm = () => {
   // Main component render
   if (showQuotationsList) {
     return (
-      <div style={styles.container}>
+      <div style={styles.container} data-quotation-app="true">
         <div style={styles.header}>
           <div style={styles.headerContent}>
             <div>
@@ -1073,7 +1123,7 @@ const QuotationForm = () => {
   
   if (showPreview && currentQuotation) {
     return (
-      <div style={styles.previewContainer}>
+      <div style={styles.previewContainer} data-quotation-app="true">
         <div style={styles.previewHeader}>
           <h1 style={styles.previewTitle}>📋 Quotation Preview</h1>
           <div style={styles.previewActions}>
@@ -1107,7 +1157,7 @@ const QuotationForm = () => {
   }
   
   return (
-    <div style={styles.container}>
+    <div style={styles.container} data-quotation-app="true">
       {/* Header */}
       <div style={styles.header}>
         <div style={styles.headerContent}>
