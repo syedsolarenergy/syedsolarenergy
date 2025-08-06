@@ -493,7 +493,8 @@ const QuotationForm = () => {
           <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
             <div style="display: flex; align-items: center; gap: 10px;">
               <div style="display: flex; align-items: center; gap: 8px;">
-                <div style="font-size: 2.5rem; color: #FF6B35;">☀️</div>
+                <img src="logo.png" alt="Syed Solar Energy Logo" style="width: 60px; height: 60px; object-fit: contain;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                <div style="font-size: 2.5rem; color: #FF6B35; display: none;">☀️</div>
                 <div style="display: flex; flex-direction: column; align-items: center;">
                   <div style="font-size: 1.3rem; font-weight: 900; color: #FF6B35; margin: 0;">SYED</div>
                   <div style="font-size: 0.8rem; color: #F7931E; font-weight: 600; margin: 0;">SOLAR ENERGY</div>
