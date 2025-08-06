@@ -1,1731 +1,933 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { supabase } from "../supabaseClient"; // Add Supabase integration
+// src/components/QuotationForm.js
+import React, { useState, useCallback } from 'react';
+import { supabase } from '../supabaseClient';
+import { v4 as uuidv4 } from 'uuid';
 
-const QuotationForm = () => {
-  // State variables
-  const [customer, setCustomer] = useState({ name: '', contact: '', email: '', address: '' });
-  const [staffList] = useState(['Engr. Zubair', 'Engr. Aqib', 'Ahmed Khan', 'Ali Hassan']);
-  const [staffName, setStaffName] = useState('');
+// Helper function to safely escape HTML
+const escapeHtml = (str) => {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+};
+
+const initialCustomer = { name: '', contact: '', email: '', address: '' };
+const initialEquipment = {
+  inverter: { company: '', kw: '', quantity: 1, pricePerUnit: 0 },
+  battery: { type: '', model: '', quantity: 1, price: 0 },
+  solarPanel: { company: '', watts: '', quantity: 1, pricePerWatt: 0 },
+  stand: { type: '', price: 0 },
+  safety: 0,
+  transport: 0,
+  labour: 0,
+  engineer: 0,
+  greenMeter: 0,
+};
+
+export default function QuotationForm() {
+  // Form state
+  const [customer, setCustomer] = useState(initialCustomer);
+  const [staff, setStaff] = useState('');
   const [systemType, setSystemType] = useState('');
   const [location, setLocation] = useState('peshawar');
-  const [quotationDate] = useState(new Date().toLocaleDateString('en-PK', { year: 'numeric', month: 'long', day: 'numeric' }));
-  
-  // Equipment states
-  const [inverter, setInverter] = useState({ company: '', kw: '', quantity: 1, pricePerUnit: 0 });
-  const [batteryType, setBatteryType] = useState('');
-  const [batteryModel, setBatteryModel] = useState('');
-  const [batteryQuantity, setBatteryQuantity] = useState(1);
-  const [batteryPrice, setBatteryPrice] = useState(0);
-  const [solarPanel, setSolarPanel] = useState({ company: '', watts: '', pricePerWatt: 0, quantity: 1 });
-  const [stand, setStand] = useState({ type: '', pricePerStand: 0 });
-  // Additional costs
-  const [safety, setSafety] = useState(0);
-  const [transport, setTransport] = useState(5000);
-  const [isGreenmeterIncluded, setIsGreenmeterIncluded] = useState(false);
-  const [isEngineerIncluded, setIsEngineerIncluded] = useState(false);
-  const [labour, setLabour] = useState(20000);
-  const [engineer, setEngineer] = useState(10000);
-  const [Greenmeter, setGreenmeter] = useState(10000);
-  // UI states
-  const [savedQuotations, setSavedQuotations] = useState([]);
-  const [showPreview, setShowPreview] = useState(false);
-  const [showQuotationsList, setShowQuotationsList] = useState(false);
-  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [equipment, setEquipment] = useState(initialEquipment);
+  const [includeEngineer, setIncludeEngineer] = useState(false);
+  const [includeGreenMeter, setIncludeGreenMeter] = useState(false);
+
+  // Control state
   const [currentQuotation, setCurrentQuotation] = useState(null);
-  const [isSavingToDatabase, setIsSavingToDatabase] = useState(false); // Add Supabase saving state
-  
-  // Ref for PDF generation
-  const quotationRef = useRef();
-  
-  // Equipment options
-  const inverterCompanies = ['Inverex', 'Ziewnic', 'Growatt', 'Goodwe', '1On', 'Solax', 'Sunlife', 'longlife'];
-  const inverterKW = ['1.2', '3.2', '3.6', '4.2', '5.5', '6.2', '8.0', '10', '12', '15'];
-  const batteryTypes = ['Lithium', 'Tubular'];
-  const lithium24 = ['Itell 2.56kWh', 'Ziewnic 2.56kWh'];
-  const lithium48 = ['Itell 5.12kWh', 'Ziewnic 5.12kWh', 'Solax 5.12kWh', '1On 5.12kWh'];
-  const tubular = ['Osaka 1800Ah', 'Osaka 2500Ah', 'Phoenix 1800Ah','Phoenix 2500Ah','Hawk 1800Ah','Hawk 2500Ah',];
-  const panelCompanies = ['JA Solar', 'Canadian', 'Longi'];
-  const panelWatts = ['585', '590', '605'];
-  const standTypes = ['16 Gauge', '18 Gauge', 'Girder', 'L2 (2 panels)'];
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [printing, setPrinting] = useState(false);
+  const [error, setError] = useState('');
 
-  // --- SUPABASE INTEGRATION ---
-  async function saveQuotationToSupabase(quotationData) {
-    try {
-      setIsSavingToDatabase(true);
-      
-      // Map the quotation data to match our Supabase table structure
-      const supabaseData = {
-        customer_name: quotationData.customer.name,
-        customer_contact: quotationData.customer.contact,
-        customer_email: quotationData.customer.email || null,
-        customer_address: quotationData.customer.address,
-        system_type: quotationData.systemType,
-        panel_brand: quotationData.solarPanel.company,
-        panel_watt: quotationData.solarPanel.watts,
-        panel_quantity: quotationData.solarPanel.quantity,
-        panel_total: getPanelPrice() * quotationData.solarPanel.quantity,
-        inverter_type: quotationData.inverter.company,
-        inverter_size: `${quotationData.inverter.kw}kW`,
-        inverter_total: quotationData.inverter.quantity * quotationData.inverter.pricePerUnit,
-        battery_type: batteryType || null,
-        battery_model: quotationData.batteryModel || null,
-        battery_quantity: quotationData.batteryQuantity || null,
-        battery_total: (quotationData.batteryQuantity || 0) * (quotationData.batteryPrice || 0),
-        stand_type: quotationData.stand.type,
-        stand_quantity: getStandQty(),
-        stand_total: getStandQty() * quotationData.stand.pricePerStand,
-        safety_charges: quotationData.safety,
-        transport_charges: quotationData.transport,
-        installation_charges: quotationData.labour,
-        green_meter: isGreenmeterIncluded,
-        green_meter_charges: quotationData.Greenmeter || 0,
-        total_amount: quotationData.total,
-        quotation_date: new Date().toISOString(),
-        created_at: new Date().toISOString(),
-        // Additional fields specific to this system
-        staff_name: quotationData.staff,
-        location: quotationData.location,
-        quotation_id: quotationData.id,
-        engineer_charges: quotationData.engineer || 0,
-        follow_up_status: quotationData.followUpStatus || 'Pending'
-      };
-
-      console.log("Saving to Supabase:", supabaseData);
-
-      const { data, error } = await supabase
-        .from("quotations")
-        .insert([supabaseData])
-        .select();
-
-      if (error) {
-        console.error("Supabase error:", error);
-        
-        // Provide specific error messages
-        let errorMessage = "Quotation generated successfully, but couldn't save to database.\n\n";
-        
-        if (error.code === '42P01') {
-          errorMessage += "Issue: Table 'quotations' doesn't exist. Please create the table first.";
-        } else if (error.code === '42501') {
-          errorMessage += "Issue: Permission denied. Please check Row Level Security policies.";
-        } else if (error.message?.includes('violates not-null constraint')) {
-          errorMessage += "Issue: Missing required field. Please check all required fields are filled.";
-        } else if (error.message?.includes('column') && error.message?.includes('does not exist')) {
-          errorMessage += "Issue: Database column mismatch. Please update table structure.";
-        } else {
-          errorMessage += `Issue: ${error.message}`;
-        }
-        
-        alert(errorMessage);
-        return null;
-      } else {
-        console.log("✅ Quotation saved to Supabase successfully:", data);
-        return data[0];
-      }
-    } catch (err) {
-      console.error("Unexpected Supabase error:", err);
-      
-      let errorMessage = "Quotation generated successfully, but couldn't save to database.\n\n";
-      
-      if (err.message?.includes('supabase')) {
-        errorMessage += "Issue: Supabase configuration problem. Please check your setup.";
-      } else if (err.message?.includes('fetch')) {
-        errorMessage += "Issue: Network connection problem.";
-      } else {
-        errorMessage += `Issue: ${err.message}`;
-      }
-      
-      alert(errorMessage);
-      return null;
-    } finally {
-      setIsSavingToDatabase(false);
-    }
-  }
-
-  // Load quotations on component mount
-  useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem("quotations")) || [];
-    setSavedQuotations(saved);
-  }, []);
-  
-  // Effects for dynamic cost adjustments
-  useEffect(() => {
-    if (systemType === 'Hybrid') setSafety(45000);
-    else if (systemType === 'Daytime') setSafety(25000);
-    else setSafety(0);
-  }, [systemType]);
-  
-  useEffect(() => {
-    setTransport(location === 'peshawar' ? 5000 : 10000);
-  }, [location]);
-  
-  useEffect(() => {
-    setLabour(isEngineerIncluded ? 15000 : 20000);
-  }, [isEngineerIncluded]);
-  
-  // Helper functions
-  const getBatteryOptions = () => {
-    const kw = parseFloat(inverter.kw);
-    if (batteryType === 'Lithium') return kw <= 4.2 ? lithium24 : lithium48;
-    if (batteryType === 'Tubular') return tubular;
-    return [];
-  };
-  
-  const getPanelPrice = () => parseFloat(solarPanel.pricePerWatt) * parseInt(solarPanel.watts || 0);
-  const getStandQty = () => stand.type === 'L2 (2 panels)' ? Math.ceil(solarPanel.quantity / 2) : solarPanel.quantity;
-  const getTotal = () =>
-    inverter.quantity * inverter.pricePerUnit +
-    batteryQuantity * batteryPrice +
-    getPanelPrice() * solarPanel.quantity +
-    getStandQty() * stand.pricePerStand +
-    safety + transport + labour + (isEngineerIncluded ? engineer : 0) +
-    (isGreenmeterIncluded ? Greenmeter : 0);
-  
-  // Generate quotation ID
-  const generateQuotationId = () => {
+  // Generate a new quotation object from form
+  const buildQuotation = useCallback(() => {
+    const id = uuidv4();
     const date = new Date();
-    const year = date.getFullYear().toString().slice(-2);
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-    return `SE-${year}${month}-${random}`;
-  };
-  
-  // Generate quotation and show preview
-  const generateQuotation = async () => {
-    if (!customer.name || !customer.contact || !staffName || !systemType) {
-      alert("Please fill in all required fields (Customer Name, Contact, Staff, System Type)");
-      return;
+    const quotationDate = date.toLocaleDateString('en-PK', {
+      year: 'numeric', month: 'long', day: 'numeric'
+    });
+    
+    const {
+      inverter, battery, solarPanel, stand,
+      safety, transport, labour, engineer, greenMeter
+    } = equipment;
+
+    const panelUnitPrice = parseFloat(solarPanel.pricePerWatt) * parseInt(solarPanel.watts, 10);
+    const standQty = stand.type === 'L2 (2 panels)'
+      ? Math.ceil(solarPanel.quantity / 2)
+      : solarPanel.quantity;
+
+    const total = 
+      inverter.quantity * inverter.pricePerUnit +
+      battery.quantity * battery.price +
+      panelUnitPrice * solarPanel.quantity +
+      standQty * stand.price +
+      safety + transport + labour +
+      (includeEngineer ? engineer : 0) +
+      (includeGreenMeter ? greenMeter : 0);
+
+    return {
+      id, date: date.toISOString(), quotationDate,
+      customer, staff, systemType, location,
+      inverter, battery, solarPanel, stand,
+      includeEngineer, includeGreenMeter,
+      safety, transport, labour, engineer, greenMeter,
+      panelUnitPrice, standQty, total, followUpStatus: 'Pending'
+    };
+  }, [customer, staff, systemType, location, equipment, includeEngineer, includeGreenMeter]);
+
+  // Form validation
+  const isValid = () => {
+    if (!customer.name.trim()) {
+      setError('Customer name is required');
+      return false;
     }
-    
-    setIsGeneratingPDF(true);
-    
-    const quotationId = generateQuotationId();
-    const newQuotation = {
-      id: quotationId,
-      customer,
-      staff: staffName,
-      systemType,
+    if (!customer.contact.trim()) {
+      setError('Customer contact is required');
+      return false;
+    }
+    if (!staff.trim()) {
+      setError('Staff name is required');
+      return false;
+    }
+    if (!systemType.trim()) {
+      setError('System type is required');
+      return false;
+    }
+    setError('');
+    return true;
+  };
+
+  // Save to Supabase
+  const saveToSupabase = async (q) => {
+    setSaving(true);
+    const {
+      id, date, customer, staff, systemType, location,
+      inverter, battery, solarPanel, stand,
+      includeEngineer, includeGreenMeter,
+      safety, transport, labour, engineer, greenMeter,
+      panelUnitPrice, standQty, total
+    } = q;
+
+    const payload = {
+      quotation_id: id,
+      created_at: date,
+      customer_name: customer.name,
+      customer_contact: customer.contact,
+      customer_email: customer.email || null,
+      customer_address: customer.address,
+      staff_name: staff,
+      system_type: systemType,
       location,
-      inverter,
-      batteryModel,
-      batteryQuantity,
-      batteryPrice,
-      solarPanel,
-      stand,
-      Greenmeter: isGreenmeterIncluded ? Greenmeter : 0,
-      safety,
-      transport,
-      labour,
-      engineer: isEngineerIncluded ? engineer : 0,
-      total: getTotal(),
-      date: new Date().toLocaleString(),
-      followUpDate: "",
-      followUpStatus: "Pending",
-      remarks: "",
-      quotationDate
+      inverter_type: inverter.company,
+      inverter_size: `${inverter.kw}kW`,
+      inverter_qty: inverter.quantity,
+      inverter_total: inverter.quantity * inverter.pricePerUnit,
+      battery_type: battery.type || null,
+      battery_model: battery.model || null,
+      battery_qty: battery.quantity,
+      battery_total: battery.quantity * battery.price,
+      panel_brand: solarPanel.company,
+      panel_watt: solarPanel.watts,
+      panel_qty: solarPanel.quantity,
+      panel_unit_price: solarPanel.pricePerWatt,
+      panel_total: solarPanel.quantity * panelUnitPrice,
+      stand_type: stand.type,
+      stand_qty: standQty,
+      stand_total: standQty * stand.price,
+      safety_charges: safety,
+      transport_charges: transport,
+      labour_charges: labour,
+      engineer_charges: includeEngineer ? engineer : 0,
+      greenmeter_charges: includeGreenMeter ? greenMeter : 0,
+      total_amount: total,
+      follow_up_status: 'Pending'
     };
 
-    // Save to Supabase first
-    const savedToSupabase = await saveQuotationToSupabase(newQuotation);
+    const { error } = await supabase
+      .from('quotations')
+      .insert([payload]);
+
+    setSaving(false);
+    if (error) throw error;
+  };
+
+  // Generate + preview
+  const handleGenerate = async () => {
+    if (!isValid()) return;
     
-    // Save quotation to localStorage for follow-ups (keep existing functionality)
-    const updatedQuotations = [...savedQuotations, newQuotation];
-    setSavedQuotations(updatedQuotations);
-    localStorage.setItem("quotations", JSON.stringify(updatedQuotations));
-    
-    setCurrentQuotation(newQuotation);
-    setShowPreview(true);
-    setIsGeneratingPDF(false);
-    
-    // Show success message
-    if (savedToSupabase) {
-      alert("✅ Quotation generated and saved to database successfully! You can now print or save it as PDF using your browser.");
-    } else {
-      alert("✅ Quotation generated successfully! You can now print or save it as PDF using your browser.\n\nNote: Quotation was saved locally but couldn't sync to database.");
+    setLoading(true);
+    const q = buildQuotation();
+    try {
+      await saveToSupabase(q);
+      setCurrentQuotation(q);
+    } catch (err) {
+      console.error(err);
+      setError('Failed to save to database. Previewing locally.');
+      setCurrentQuotation(q);
+    } finally {
+      setLoading(false);
     }
   };
-  
-  // Print/Save quotation using browser's print functionality
-  const printQuotation = () => {
-    // Check if we have the ref and currentQuotation
-    if (!quotationRef.current || !currentQuotation) {
-      alert("❌ Please generate a quotation first before printing.");
+
+  // Print logic
+  const handlePrint = () => {
+    if (!currentQuotation) return;
+    
+    setPrinting(true);
+    const win = window.open('', '_blank');
+    if (!win) {
+      setError('Please enable pop-ups to print');
+      setPrinting(false);
       return;
     }
-    
-    try {
-      const printWindow = window.open('', '_blank');
-      if (!printWindow) {
-        alert("❌ Please allow pop-ups for this site to print quotations.");
-        return;
-      }
-      
-      const quotationHTML = quotationRef.current.innerHTML;
-      
-      printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta charset="UTF-8">
-            <title>Quotation - ${currentQuotation?.customer.name}</title>
-            <style>
-              body { 
-                font-family: 'Segoe UI', Arial, sans-serif; 
-                margin: 0; 
-                padding: 15px;
-                line-height: 1.3;
-                color: #333;
-                background: white;
-              }
-              @media print {
-                body { margin: 0; padding: 10px; }
-                .no-print { display: none !important; }
-                @page { size: A4; margin: 0.5in; }
-              }
-              table { 
-                border-collapse: collapse; 
-                width: 100%; 
-                margin: 8px 0; 
-                page-break-inside: avoid;
-              }
-              th, td { 
-                border: 1px solid #ddd; 
-                padding: 6px; 
-                text-align: left; 
-                font-size: 11px;
-              }
-              th { 
-                background-color: #FF6B35 !important; 
-                color: white !important;
-                font-weight: bold; 
-              }
-              .header { margin-bottom: 15px; }
-              .total-section { 
-                margin-top: 15px; 
-                padding: 12px; 
-                background-color: #f8f9fa; 
-                border-radius: 8px; 
-                border: 2px solid #FF6B35;
-              }
-              .terms-section { margin-top: 15px; }
-              .footer { 
-                margin-top: 25px; 
-                border-top: 2px solid #FF6B35; 
-                padding-top: 15px; 
-              }
-              h1, h2, h3 { color: #FF6B35; }
-              .logo-icon { color: #FF6B35; }
-              .page-break { page-break-before: always; }
-            </style>
-          </head>
-          <body>
-            ${quotationHTML}
-            <script>
-              window.onload = function() {
-                setTimeout(function() {
-                  window.print();
-                  window.onafterprint = function() {
-                    window.close();
-                  }
-                }, 500);
-              }
-            </script>
-          </body>
-        </html>
-      `);
-      
-      printWindow.document.close();
-    } catch (error) {
-      console.error("Error printing quotation:", error);
-      alert("❌ Error printing quotation. Please try again.");
-    }
+
+    const q = currentQuotation;
+    const esc = escapeHtml;
+    const includeGM = q.includeGreenMeter;
+    const includeEng = q.includeEngineer;
+
+    win.document.write(`
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <title>Quotation ${esc(q.id)}</title>
+          <style>
+            body { 
+              font-family: sans-serif; 
+              padding: 20px; 
+              background-color: #f0f0f0;
+              position: relative;
+            }
+            .watermark {
+              position: absolute;
+              top: 50%;
+              left: 50%;
+              transform: translate(-50%, -50%) rotate(-45deg);
+              font-size: 80px;
+              font-weight: bold;
+              color: rgba(255, 107, 53, 0.2);
+              z-index: -1;
+              pointer-events: none;
+              white-space: nowrap;
+            }
+            h1, h2, h3 { color: #FF6B35; }
+            table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background: #FF6B35; color: white; }
+            .total-row { font-weight: bold; }
+            .header { 
+              display: flex; 
+              justify-content: space-between; 
+              align-items: center;
+              margin-bottom: 20px;
+            }
+            .company-info { text-align: right; }
+          </style>
+        </head>
+        <body>
+          <div class="watermark">SAMPLE QUOTATION</div>
+          
+          <div class="header">
+            <div>
+              <h1>Quotation: ${esc(q.id)}</h1>
+              <p><strong>Date:</strong> ${esc(q.quotationDate)}</p>
+            </div>
+            <div class="company-info">
+              <h2>Solar Solutions Ltd</h2>
+              <p>123 Green Energy Road, Peshawar</p>
+              <p>Phone: (091) 123-4567</p>
+            </div>
+          </div>
+          
+          <div style="display: flex; justify-content: space-between;">
+            <div>
+              <h2>Customer Info</h2>
+              <p>
+                <strong>${esc(q.customer.name)}</strong><br/>
+                ${esc(q.customer.contact)}<br/>
+                ${esc(q.customer.email || '')}<br/>
+                ${esc(q.customer.address)}
+              </p>
+            </div>
+            <div>
+              <h2>Project Details</h2>
+              <p>
+                <strong>System Type:</strong> ${esc(q.systemType)}<br/>
+                <strong>Location:</strong> ${esc(q.location)}<br/>
+                <strong>Prepared By:</strong> ${esc(q.staff)}
+              </p>
+            </div>
+          </div>
+          
+          <h2>Equipment Breakdown</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Description</th>
+                <th>Qty</th>
+                <th>Unit Price (Rs)</th>
+                <th>Total (Rs)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>1</td>
+                <td>Inverter (${esc(q.inverter.company)} ${esc(q.inverter.kw)}kW)</td>
+                <td>${esc(q.inverter.quantity)}</td>
+                <td>${q.inverter.pricePerUnit.toLocaleString()}</td>
+                <td>${(q.inverter.quantity * q.inverter.pricePerUnit).toLocaleString()}</td>
+              </tr>
+              <tr>
+                <td>2</td>
+                <td>Battery (${esc(q.battery.model)})</td>
+                <td>${esc(q.battery.quantity)}</td>
+                <td>${q.battery.price.toLocaleString()}</td>
+                <td>${(q.battery.quantity * q.battery.price).toLocaleString()}</td>
+              </tr>
+              <tr>
+                <td>3</td>
+                <td>Solar Panels (${esc(q.solarPanel.company)} ${esc(q.solarPanel.watts)}W)</td>
+                <td>${esc(q.solarPanel.quantity)}</td>
+                <td>${q.solarPanel.pricePerWatt.toLocaleString()}/W</td>
+                <td>${(q.solarPanel.quantity * q.panelUnitPrice).toLocaleString()}</td>
+              </tr>
+              <tr>
+                <td>4</td>
+                <td>Stand (${esc(q.stand.type)})</td>
+                <td>${q.standQty}</td>
+                <td>${q.stand.price.toLocaleString()}</td>
+                <td>${(q.standQty * q.stand.price).toLocaleString()}</td>
+              </tr>
+              ${includeGM ? `
+              <tr>
+                <td>5</td>
+                <td>Green Meter</td>
+                <td>1</td>
+                <td>${q.greenMeter.toLocaleString()}</td>
+                <td>${q.greenMeter.toLocaleString()}</td>
+              </tr>` : ''}
+              <tr>
+                <td>${includeGM ? '6' : '5'}</td>
+                <td>Safety Equipment</td>
+                <td>1</td>
+                <td>${q.safety.toLocaleString()}</td>
+                <td>${q.safety.toLocaleString()}</td>
+              </tr>
+              <tr>
+                <td>${includeGM ? '7' : '6'}</td>
+                <td>Transport (${esc(q.location)})</td>
+                <td>1</td>
+                <td>${q.transport.toLocaleString()}</td>
+                <td>${q.transport.toLocaleString()}</td>
+              </tr>
+              <tr>
+                <td>${includeGM ? '8' : '7'}</td>
+                <td>Labour</td>
+                <td>1</td>
+                <td>${q.labour.toLocaleString()}</td>
+                <td>${q.labour.toLocaleString()}</td>
+              </tr>
+              ${includeEng ? `
+              <tr>
+                <td>${includeGM ? '9' : '8'}</td>
+                <td>Engineering Supervision</td>
+                <td>1</td>
+                <td>${q.engineer.toLocaleString()}</td>
+                <td>${q.engineer.toLocaleString()}</td>
+              </tr>` : ''}
+              <tr class="total-row">
+                <td colspan="4" style="text-align: right;">TOTAL:</td>
+                <td>Rs. ${q.total.toLocaleString()}</td>
+              </tr>
+            </tbody>
+          </table>
+          
+          <div style="margin-top: 30px;">
+            <p><strong>Terms & Conditions:</strong></p>
+            <ul>
+              <li>Prices valid for 7 days from quotation date</li>
+              <li>Installation timeline: 2-3 weeks after confirmation</li>
+              <li>Payment: 50% advance, 50% on completion</li>
+              <li>Warranty: 5 years on equipment, 2 years on installation</li>
+            </ul>
+            <p style="margin-top: 20px; text-align: center;">
+              <em>This is a sample quotation for demonstration purposes only</em>
+            </p>
+          </div>
+        </body>
+      </html>
+    `);
+
+    win.document.close();
+    win.focus();
+    win.print();
+    win.close();
+    setPrinting(false);
   };
-  
+
+  // Reset form
   const resetForm = () => {
-    setCustomer({ name: '', contact: '', email: '', address: '' });
-    setStaffName('');
+    setCustomer(initialCustomer);
+    setStaff('');
     setSystemType('');
-    setInverter({ company: '', kw: '', quantity: 1, pricePerUnit: 0 });
-    setBatteryType('');
-    setBatteryModel('');
-    setBatteryQuantity(1);
-    setBatteryPrice(0);
-    setSolarPanel({ company: '', watts: '', pricePerWatt: 0, quantity: 1 });
-    setStand({ type: '', pricePerStand: 0 });
-    setIsGreenmeterIncluded(false);
-    setSafety(0);
-    setTransport(5000);
-    setIsEngineerIncluded(false);
-    setLabour(20000);
-    setEngineer(10000);
-    setShowPreview(false);
+    setEquipment(initialEquipment);
+    setIncludeEngineer(false);
+    setIncludeGreenMeter(false);
     setCurrentQuotation(null);
+    setError('');
   };
-  
-  // Quotation Preview Component for PDF generation
-  const QuotationPreview = () => (
-    <div style={pdfStyles.container}>
-      {/* Header with Logo and Company Info */}
-      <div style={pdfStyles.header}>
-        <div style={pdfStyles.logoSection}>
-          <div style={pdfStyles.logoContainer}>
-            <div style={pdfStyles.logo}>
-              <div style={pdfStyles.logoIcon}>☀️</div>
-              <div style={pdfStyles.logoText}>
-                <div style={pdfStyles.companyName}>SYED</div>
-                <div style={pdfStyles.solarText}>SOLAR ENERGY</div>
-              </div>
-            </div>
-          </div>
-          <div style={pdfStyles.companyDetails}>
-            <h1 style={pdfStyles.mainTitle}>SYED SOLAR ENERGY PVT LTD</h1>
-            <p style={pdfStyles.tagline}>Your Partner in Sustainable Energy Solutions</p>
-            <div style={pdfStyles.contactInfo}>
-              <p>📍 Office #23 Mustafa Plaza Ring Road Near Imtiaz Mega Center, Peshawar</p>
-              <p>📞 0307-5596695/03044678929 | 📧 sales@syedsolarenergy.com</p>
-              <p>🌐 www.syedsolarenergy.com</p>
-            </div>
-          </div>
-        </div>
-        <div style={pdfStyles.quotationInfo}>
-          <div style={pdfStyles.quotationTitle}>QUOTATION</div>
-          <div style={pdfStyles.quotationDetails}>
-            <p><strong>Quotation #:</strong> {currentQuotation?.id}</p>
-            <p><strong>Date:</strong> {quotationDate}</p>
-            <p><strong>Valid Until:</strong> {new Date(Date.now() + 7*24*60*60*1000).toLocaleDateString()}</p>
-          </div>
-        </div>
-      </div>
-      
-      {/* Customer and Project Info */}
-      <div style={pdfStyles.infoSection}>
-        <div style={pdfStyles.customerInfo}>
-          <h3 style={pdfStyles.sectionTitle}>📋 CUSTOMER INFORMATION</h3>
-          <div style={pdfStyles.infoCard}>
-            <p><strong>Name:</strong> {customer.name}</p>
-            <p><strong>Contact:</strong> {customer.contact}</p>
-            <p><strong>Email:</strong> {customer.email}</p>
-            <p><strong>Address:</strong> {customer.address}</p>
-          </div>
-        </div>
-        <div style={pdfStyles.projectInfo}>
-          <h3 style={pdfStyles.sectionTitle}>⚡ PROJECT DETAILS</h3>
-          <div style={pdfStyles.infoCard}>
-            <p><strong>Prepared By:</strong> {staffName}</p>
-            <p><strong>System Type:</strong> {systemType}</p>
-            <p><strong>Location:</strong> {location}</p>
-            <p><strong>Total Capacity:</strong> {(parseFloat(inverter.kw) || 0)} kW</p>
-          </div>
-        </div>
-      </div>
-      
-      {/* Equipment Details Table */}
-      <div style={pdfStyles.equipmentSection}>
-        <h3 style={pdfStyles.sectionTitle}>🔧 EQUIPMENT & PRICING BREAKDOWN</h3>
-        <table style={pdfStyles.table}>
-          <thead>
-            <tr style={pdfStyles.tableHeader}>
-              <th style={pdfStyles.th}>S.No</th>
-              <th style={pdfStyles.th}>Item Description</th>
-              <th style={pdfStyles.th}>Brand/Model</th>
-              <th style={pdfStyles.th}>Qty</th>
-              <th style={pdfStyles.th}>Unit Price (Rs)</th>
-              <th style={pdfStyles.th}>Total (Rs)</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr style={pdfStyles.tableRow}>
-              <td style={pdfStyles.td}>1</td>
-              <td style={pdfStyles.td}>Solar Inverter ({inverter.kw}kW)</td>
-              <td style={pdfStyles.td}>{inverter.company} {inverter.kw}kW</td>
-              <td style={pdfStyles.td}>{inverter.quantity}</td>
-              <td style={pdfStyles.td}>{inverter.pricePerUnit.toLocaleString()}</td>
-              <td style={pdfStyles.td}>{(inverter.quantity * inverter.pricePerUnit).toLocaleString()}</td>
-            </tr>
-            <tr style={pdfStyles.tableRow}>
-              <td style={pdfStyles.td}>2</td>
-              <td style={pdfStyles.td}>Battery Storage System</td>
-              <td style={pdfStyles.td}>{batteryModel}</td>
-              <td style={pdfStyles.td}>{batteryQuantity}</td>
-              <td style={pdfStyles.td}>{batteryPrice.toLocaleString()}</td>
-              <td style={pdfStyles.td}>{(batteryQuantity * batteryPrice).toLocaleString()}</td>
-            </tr>
-            <tr style={pdfStyles.tableRow}>
-              <td style={pdfStyles.td}>3</td>
-              <td style={pdfStyles.td}>Solar Panels ({solarPanel.watts}W)</td>
-              <td style={pdfStyles.td}>{solarPanel.company} {solarPanel.watts}W</td>
-              <td style={pdfStyles.td}>{solarPanel.quantity}</td>
-              <td style={pdfStyles.td}>{getPanelPrice().toLocaleString()}</td>
-              <td style={pdfStyles.td}>{(getPanelPrice() * solarPanel.quantity).toLocaleString()}</td>
-            </tr>
-            <tr style={pdfStyles.tableRow}>
-              <td style={pdfStyles.td}>4</td>
-              <td style={pdfStyles.td}>Mounting Structure</td>
-              <td style={pdfStyles.td}>{stand.type}</td>
-              <td style={pdfStyles.td}>{getStandQty()}</td>
-              <td style={pdfStyles.td}>{stand.pricePerStand.toLocaleString()}</td>
-              <td style={pdfStyles.td}>{(getStandQty() * stand.pricePerStand).toLocaleString()}</td>
-            </tr>
-            {isGreenmeterIncluded && (
-              <tr style={pdfStyles.tableRow}>
-                <td style={pdfStyles.td}>8</td>
-                <td style={pdfStyles.td}>Green meter</td>
-                <td style={pdfStyles.td}>Technical Oversight</td>
-                <td style={pdfStyles.td}>1</td>
-                <td style={pdfStyles.td}>{Greenmeter.toLocaleString()}</td>
-                <td style={pdfStyles.td}>{Greenmeter.toLocaleString()}</td>
-              </tr>
-            )}
-            <tr style={pdfStyles.tableRow}>
-              <td style={pdfStyles.td}>5</td>
-              <td style={pdfStyles.td}>Safety Equipment</td>
-              <td style={pdfStyles.td}>DC/AC Breakers, Surge Protectors</td>
-              <td style={pdfStyles.td}>1 Set</td>
-              <td style={pdfStyles.td}>{safety.toLocaleString()}</td>
-              <td style={pdfStyles.td}>{safety.toLocaleString()}</td>
-            </tr>
-            <tr style={pdfStyles.tableRow}>
-              <td style={pdfStyles.td}>6</td>
-              <td style={pdfStyles.td}>Transportation</td>
-              <td style={pdfStyles.td}>Delivery to {location}</td>
-              <td style={pdfStyles.td}>1</td>
-              <td style={pdfStyles.td}>{transport.toLocaleString()}</td>
-              <td style={pdfStyles.td}>{transport.toLocaleString()}</td>
-            </tr>
-            <tr style={pdfStyles.tableRow}>
-              <td style={pdfStyles.td}>7</td>
-              <td style={pdfStyles.td}>Installation & Commissioning</td>
-              <td style={pdfStyles.td}>Professional Installation</td>
-              <td style={pdfStyles.td}>1</td>
-              <td style={pdfStyles.td}>{labour.toLocaleString()}</td>
-              <td style={pdfStyles.td}>{labour.toLocaleString()}</td>
-            </tr>
-            {isEngineerIncluded && (
-              <tr style={pdfStyles.tableRow}>
-                <td style={pdfStyles.td}>8</td>
-                <td style={pdfStyles.td}>Engineering Supervision</td>
-                <td style={pdfStyles.td}>Technical Oversight</td>
-                <td style={pdfStyles.td}>1</td>
-                <td style={pdfStyles.td}>{engineer.toLocaleString()}</td>
-                <td style={pdfStyles.td}>{engineer.toLocaleString()}</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-      
-      {/* Total Section */}
-      <div style={pdfStyles.totalSection}>
-        <div style={pdfStyles.totalBox}>
-          <h2 style={pdfStyles.totalTitle}>TOTAL SYSTEM COST</h2>
-          <div style={pdfStyles.totalAmount}>Rs. {getTotal().toLocaleString()}</div>
-          <p style={pdfStyles.totalNote}>*All prices are inclusive of installation and commissioning</p>
-        </div>
-      </div>
-      
-      {/* Terms and Conditions */}
-      <div style={pdfStyles.termsSection}>
-        <h3 style={pdfStyles.sectionTitle}>📋 TERMS & CONDITIONS</h3>
-        <div style={pdfStyles.termsList}>
-          <div style={pdfStyles.termsColumn}>
-            <h4>Payment Terms:</h4>
-            <ul>
-              <li>05% advance payment required</li>
-              <li>70% on material delivery</li>
-              <li>25% on successful commissioning</li>
-            </ul>
-            <h4>Warranty:</h4>
-            <ul>
-              <li> Solar Panels will be A-Grade</li>
-              <li>Daytime Inverter 5-Years(1Year Replace & 4 Years Service</li>
-              <li>Hybrid Inverter Depends on Company Policy</li>
-              <li>Batteries Depends On Company Policy</li>
-              <li>1 year on installation work</li>
-            </ul>
-          </div>
-          <div style={pdfStyles.termsColumn}>
-            <h4>Delivery Timeline:</h4>
-            <ul>
-              <li>1-2 working days from advance</li>
-              <li>Installation: 2-3 working days</li>
-              <li>Net metering assistance included</li>
-            </ul>
-            <h4>Additional Services:</h4>
-            <ul>
-              <li>Free system monitoring setup</li>
-              <li>Annual maintenance available</li>
-              <li>24/7 technical support</li>
-              <li>Performance guarantee</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-      
-      {/* Footer */}
-      <div style={pdfStyles.footer}>
-        <div style={pdfStyles.footerContent}>
-          <div style={pdfStyles.footerLeft}>
-            <p><strong>Thank you for choosing Syed Solar Energy!</strong></p>
-            <p>For any queries, please contact us at:</p>
-            <p>📞 0307-5596695/03044678929 | 📧 sales@syedsolarenergy.com</p>
-          </div>
-          <div style={pdfStyles.footerRight}>
-            <div style={pdfStyles.signature}>
-              <div style={pdfStyles.signatureLine}></div>
-              <p><strong>Authorized Signature</strong></p>
-              <p>Syed Solar Energy Pvt Ltd</p>
-            </div>
-          </div>
-        </div>
-        <div style={pdfStyles.footerBottom}>
-          <p>This quotation is valid for 3 days from the date of issue & Solar Panels Price may Vary. | Generated on {new Date().toLocaleString()}</p>
-        </div>
+
+  // Form input component
+  const FormInput = ({ label, value, onChange, type = 'text', required = false, ...props }) => (
+    <div style={styles.inputGroup}>
+      {label && <label style={styles.label}>{label}{required && ' *'}</label>}
+      <input
+        type={type}
+        value={value}
+        onChange={onChange}
+        style={styles.input}
+        required={required}
+        {...props}
+      />
+    </div>
+  );
+
+  // Equipment section component
+  const EquipmentSection = ({ title, fields }) => (
+    <div style={styles.equipmentSection}>
+      <h3>{title}</h3>
+      <div style={styles.equipmentGrid}>
+        {fields.map((field, index) => (
+          <FormInput
+            key={index}
+            label={field.label}
+            value={field.value}
+            onChange={field.onChange}
+            type={field.type}
+            placeholder={field.placeholder}
+          />
+        ))}
       </div>
     </div>
   );
-  
-  // Main component render
-  if (showQuotationsList) {
-    return (
-      <div style={styles.container}>
-        <div style={styles.header}>
-          <div style={styles.headerContent}>
-            <div>
-              <h1 style={styles.title}>📋 Saved Quotations</h1>
-              <p style={styles.subtitle}>Manage and track all your quotations</p>
-            </div>
-            <button
-              onClick={() => setShowQuotationsList(false)}
-              style={styles.backButton}
-            >
-              ← Back to Generator
-            </button>
-          </div>
-        </div>
-        <div style={styles.quotationsGrid}>
-          {savedQuotations.map((quotation, index) => (
-            <div key={index} style={styles.quotationCard}>
-              <div style={styles.quotationHeader}>
-                <h3>{quotation.customer.name}</h3>
-                <span style={styles.quotationId}>#{quotation.id}</span>
-              </div>
-              <div style={styles.quotationDetails}>
-                <p><strong>System:</strong> {quotation.systemType}</p>
-                <p><strong>Total:</strong> Rs {quotation.total.toLocaleString()}</p>
-                <p><strong>Date:</strong> {new Date(quotation.date).toLocaleDateString()}</p>
-                <p><strong>Status:</strong> 
-                  <span style={{
-                    ...styles.statusBadge,
-                    backgroundColor: quotation.followUpStatus === 'Pending' ? '#ff9800' : 
-                                   quotation.followUpStatus === 'Contacted' ? '#2196f3' : '#4caf50'
-                  }}>
-                    {quotation.followUpStatus}
-                  </span>
-                </p>
-              </div>
-              <div style={styles.quotationActions}>
-                <button
-                  onClick={() => {
-                    setCurrentQuotation(quotation);
-                    setShowPreview(true);
-                    setShowQuotationsList(false);
-                  }}
-                  style={styles.viewButton}
-                >
-                  👁️ View
-                </button>
-                <button
-                  onClick={() => {
-                    setCurrentQuotation(quotation);
-                    setShowPreview(true);
-                    setShowQuotationsList(false);
-                    // Add a small delay to ensure the preview is rendered before printing
-                    setTimeout(() => {
-                      printQuotation();
-                    }, 100);
-                  }}
-                  style={styles.downloadButton}
-                >
-                  🖨️ Print
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-        {savedQuotations.length === 0 && (
-          <div style={styles.emptyState}>
-            <div style={styles.emptyIcon}>📋</div>
-            <h3>No quotations yet</h3>
-            <p>Create your first quotation to get started</p>
-          </div>
-        )}
-      </div>
-    );
-  }
-  
-  if (showPreview && currentQuotation) {
-    return (
-      <div style={styles.previewContainer}>
-        <div style={styles.previewHeader}>
-          <h1 style={styles.previewTitle}>📋 Quotation Preview</h1>
-          <div style={styles.previewActions}>
-            <button
-              onClick={() => setShowPreview(false)}
-              style={styles.backButton}
-            >
-              ← Back to Form
-            </button>
-            <button
-              onClick={() => printQuotation()}
-              style={styles.downloadButton}
-              disabled={isGeneratingPDF}
-            >
-              {isGeneratingPDF ? "⏳ Generating..." : "🖨️ Print/Save PDF"}
-            </button>
-            <button
-              onClick={resetForm}
-              style={styles.newQuotationButton}
-            >
-              ➕ New Quotation
-            </button>
-          </div>
-        </div>
-        
-        <div ref={quotationRef}>
-          <QuotationPreview />
-        </div>
-      </div>
-    );
-  }
-  
+
   return (
     <div style={styles.container}>
-      {/* Header */}
-      <div style={styles.header}>
-        <div style={styles.headerContent}>
-          <div>
-            <h1 style={styles.title}>🧾 Quotation Generator</h1>
-            <p style={styles.subtitle}>Create quotations with automatic database sync and follow-up integration</p>
-            {isSavingToDatabase && (
-              <p style={{ color: '#FFE0B2', fontSize: '0.9rem', margin: '5px 0 0 0' }}>
-                💾 Syncing to database...
-              </p>
-            )}
-          </div>
-          <div style={styles.headerActions}>
-            <button
-              onClick={() => setShowQuotationsList(true)}
-              style={styles.viewQuotationsButton}
-            >
-              📋 View Quotations ({savedQuotations.length})
-            </button>
-          </div>
-        </div>
-      </div>
-      
-      {/* Analytics Cards */}
-      <div style={styles.analyticsGrid}>
-        <div style={styles.analyticsCard}>
-          <div style={styles.analyticsIcon}>📊</div>
-          <div style={styles.analyticsContent}>
-            <div style={styles.analyticsValue}>{savedQuotations.length}</div>
-            <div style={styles.analyticsTitle}>Total Quotations</div>
-          </div>
-        </div>
-        <div style={styles.analyticsCard}>
-          <div style={styles.analyticsIcon}>💰</div>
-          <div style={styles.analyticsContent}>
-            <div style={styles.analyticsValue}>
-              Rs {savedQuotations.reduce((sum, q) => sum + q.total, 0).toLocaleString()}
-            </div>
-            <div style={styles.analyticsTitle}>Total Value</div>
-          </div>
-        </div>
-        <div style={styles.analyticsCard}>
-          <div style={styles.analyticsIcon}>📞</div>
-          <div style={styles.analyticsContent}>
-            <div style={styles.analyticsValue}>
-              {savedQuotations.filter(q => q.followUpStatus === 'Pending').length}
-            </div>
-            <div style={styles.analyticsTitle}>Pending Follow-ups</div>
-          </div>
-        </div>
-        <div style={styles.analyticsCard}>
-          <div style={styles.analyticsIcon}>✅</div>
-          <div style={styles.analyticsContent}>
-            <div style={styles.analyticsValue}>
-              {savedQuotations.filter(q => q.followUpStatus === 'Closed').length}
-            </div>
-            <div style={styles.analyticsTitle}>Closed Deals</div>
-          </div>
-        </div>
-      </div>
-      
-      {/* Quotation Form */}
-      <div style={styles.formContainer}>
-        <div style={styles.formHeader}>
-          <h2 style={styles.formTitle}>💼 Create New Quotation</h2>
-          <p style={styles.formSubtitle}>Fill in the details to generate a professional quotation</p>
-        </div>
-        <div style={styles.formSections}>
-          {/* Customer Information */}
-          <div style={styles.formSection}>
-            <h3 style={styles.sectionTitle}>👤 Customer Information</h3>
-            <div style={styles.formGrid}>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Customer Name *</label>
-                <input
-                  type="text"
-                  placeholder="Ahmed Khan"
-                  value={customer.name}
-                  onChange={(e) => setCustomer({...customer, name: e.target.value})}
-                  style={styles.input}
-                />
-              </div>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Contact Number *</label>
-                <input
-                  type="text"
-                  placeholder="+92 300 1234567"
-                  value={customer.contact}
-                  onChange={(e) => setCustomer({...customer, contact: e.target.value})}
-                  style={styles.input}
-                />
-              </div>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Email Address</label>
-                <input
-                  type="email"
-                  placeholder="customer@email.com"
-                  value={customer.email}
-                  onChange={(e) => setCustomer({...customer, email: e.target.value})}
-                  style={styles.input}
-                />
-              </div>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Complete Address *</label>
-                <input
-                  type="text"
-                  placeholder="House # 123, Street Name, Area, City"
-                  value={customer.address}
-                  onChange={(e) => setCustomer({...customer, address: e.target.value})}
-                  style={styles.input}
-                />
-              </div>
-            </div>
-          </div>
+      {!currentQuotation ? (
+        <>
+          <h1 style={styles.title}>📋 Quotation Generator</h1>
           
-          {/* Project Setup */}
-          <div style={styles.formSection}>
-            <h3 style={styles.sectionTitle}>⚙️ Project Configuration</h3>
+          {error && <div style={styles.error}>{error}</div>}
+          
+          {/* Customer Section */}
+          <section style={styles.section}>
+            <h2 style={styles.sectionTitle}>👤 Customer Info</h2>
             <div style={styles.formGrid}>
+              <FormInput
+                label="Name"
+                value={customer.name}
+                onChange={e => setCustomer(c => ({ ...c, name: e.target.value }))}
+                required
+              />
+              <FormInput
+                label="Contact"
+                value={customer.contact}
+                onChange={e => setCustomer(c => ({ ...c, contact: e.target.value }))}
+                required
+              />
+              <FormInput
+                label="Email"
+                value={customer.email}
+                onChange={e => setCustomer(c => ({ ...c, email: e.target.value }))}
+                type="email"
+              />
+              <FormInput
+                label="Address"
+                value={customer.address}
+                onChange={e => setCustomer(c => ({ ...c, address: e.target.value }))}
+              />
+            </div>
+          </section>
+
+          {/* Project Section */}
+          <section style={styles.section}>
+            <h2 style={styles.sectionTitle}>⚙️ Project Details</h2>
+            <div style={styles.formGrid}>
+              <FormInput
+                label="Prepared By"
+                value={staff}
+                onChange={e => setStaff(e.target.value)}
+                required
+              />
+              <FormInput
+                label="System Type"
+                value={systemType}
+                onChange={e => setSystemType(e.target.value)}
+                required
+              />
               <div style={styles.inputGroup}>
-                <label style={styles.label}>Prepared By *</label>
-                <select
-                  value={staffName}
-                  onChange={(e) => setStaffName(e.target.value)}
-                  style={styles.input}
-                >
-                  <option value="">Select Staff Member</option>
-                  {staffList.map(staff => (
-                    <option key={staff} value={staff}>{staff}</option>
-                  ))}
-                </select>
-              </div>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>System Type *</label>
-                <select
-                  value={systemType}
-                  onChange={(e) => setSystemType(e.target.value)}
-                  style={styles.input}
-                >
-                  <option value="">Select System Type</option>
-                  <option value="Hybrid">Hybrid System</option>
-                  <option value="Daytime">Daytime System</option>
-                  <option value="Grid-Tie">Grid-Tie System</option>
-                </select>
-              </div>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Installation Location</label>
+                <label style={styles.label}>Location *</label>
                 <select
                   value={location}
-                  onChange={(e) => setLocation(e.target.value)}
+                  onChange={e => setLocation(e.target.value)}
                   style={styles.input}
                 >
                   <option value="peshawar">Peshawar</option>
-                  <option value="other">Other Location</option>
+                  <option value="islamabad">Islamabad</option>
+                  <option value="lahore">Lahore</option>
+                  <option value="karachi">Karachi</option>
+                  <option value="other">Other</option>
                 </select>
               </div>
             </div>
-          </div>
-          
-          {/* Equipment Configuration */}
-          <div style={styles.formSection}>
-            <h3 style={styles.sectionTitle}>🔌 Inverter Selection</h3>
-            <div style={styles.formGrid}>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Inverter Company</label>
-                <select
-                  value={inverter.company}
-                  onChange={(e) => setInverter({...inverter, company: e.target.value})}
-                  style={styles.input}
-                >
-                  <option value="">Select Company</option>
-                  {inverterCompanies.map(company => (
-                    <option key={company} value={company}>{company}</option>
-                  ))}
-                </select>
-              </div>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Capacity (kW)</label>
-                <select
-                  value={inverter.kw}
-                  onChange={(e) => setInverter({...inverter, kw: e.target.value})}
-                  style={styles.input}
-                >
-                  <option value="">Select Capacity</option>
-                  {inverterKW.map(kw => (
-                    <option key={kw} value={kw} >{kw} kW</option>
-                  ))}
-                </select>
-              </div>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Quantity</label>
-                <input
+          </section>
+
+          {/* Equipment Section */}
+          <section style={styles.section}>
+            <h2 style={styles.sectionTitle}>🔌 Equipment Details</h2>
+            
+            <EquipmentSection
+              title="Inverter"
+              fields={[
+                {
+                  label: "Company",
+                  value: equipment.inverter.company,
+                  onChange: e => setEquipment(eq => ({
+                    ...eq, inverter: { ...eq.inverter, company: e.target.value }
+                  })),
+                  placeholder: "e.g., Huawei, Growatt"
+                },
+                {
+                  label: "kW",
+                  value: equipment.inverter.kw,
+                  onChange: e => setEquipment(eq => ({
+                    ...eq, inverter: { ...eq.inverter, kw: e.target.value }
+                  })),
+                  type: "number",
+                  placeholder: "e.g., 5, 10"
+                },
+                {
+                  label: "Quantity",
+                  value: equipment.inverter.quantity,
+                  onChange: e => setEquipment(eq => ({
+                    ...eq, inverter: { 
+                      ...eq.inverter, 
+                      quantity: parseInt(e.target.value, 10) || 1 
+                    }
+                  })),
+                  type: "number"
+                },
+                {
+                  label: "Price/Unit (Rs)",
+                  value: equipment.inverter.pricePerUnit,
+                  onChange: e => setEquipment(eq => ({
+                    ...eq, inverter: { 
+                      ...eq.inverter, 
+                      pricePerUnit: parseInt(e.target.value, 10) || 0 
+                    }
+                  })),
+                  type: "number"
+                }
+              ]}
+            />
+            
+            <EquipmentSection
+              title="Battery"
+              fields={[
+                {
+                  label: "Type",
+                  value: equipment.battery.type,
+                  onChange: e => setEquipment(eq => ({
+                    ...eq, battery: { ...eq.battery, type: e.target.value }
+                  })),
+                  placeholder: "e.g., Lithium, Lead Acid"
+                },
+                {
+                  label: "Model",
+                  value: equipment.battery.model,
+                  onChange: e => setEquipment(eq => ({
+                    ...eq, battery: { ...eq.battery, model: e.target.value }
+                  })),
+                  placeholder: "e.g., LFP 5kWh"
+                },
+                {
+                  label: "Quantity",
+                  value: equipment.battery.quantity,
+                  onChange: e => setEquipment(eq => ({
+                    ...eq, battery: { 
+                      ...eq.battery, 
+                      quantity: parseInt(e.target.value, 10) || 1 
+                    }
+                  })),
+                  type: "number"
+                },
+                {
+                  label: "Price (Rs)",
+                  value: equipment.battery.price,
+                  onChange: e => setEquipment(eq => ({
+                    ...eq, battery: { 
+                      ...eq.battery, 
+                      price: parseInt(e.target.value, 10) || 0 
+                    }
+                  })),
+                  type: "number"
+                }
+              ]}
+            />
+            
+            <EquipmentSection
+              title="Solar Panel"
+              fields={[
+                {
+                  label: "Company",
+                  value: equipment.solarPanel.company,
+                  onChange: e => setEquipment(eq => ({
+                    ...eq, solarPanel: { ...eq.solarPanel, company: e.target.value }
+                  })),
+                  placeholder: "e.g., Jinko, Longi"
+                },
+                {
+                  label: "Watts",
+                  value: equipment.solarPanel.watts,
+                  onChange: e => setEquipment(eq => ({
+                    ...eq, solarPanel: { ...eq.solarPanel, watts: e.target.value }
+                  })),
+                  type: "number",
+                  placeholder: "e.g., 550, 600"
+                },
+                {
+                  label: "Quantity",
+                  value: equipment.solarPanel.quantity,
+                  onChange: e => setEquipment(eq => ({
+                    ...eq, solarPanel: { 
+                      ...eq.solarPanel, 
+                      quantity: parseInt(e.target.value, 10) || 1 
+                    }
+                  })),
+                  type: "number"
+                },
+                {
+                  label: "Price/Watt (Rs)",
+                  value: equipment.solarPanel.pricePerWatt,
+                  onChange: e => setEquipment(eq => ({
+                    ...eq, solarPanel: { 
+                      ...eq.solarPanel, 
+                      pricePerWatt: parseFloat(e.target.value) || 0 
+                    }
+                  })),
+                  type: "number",
+                  step: "0.01"
+                }
+              ]}
+            />
+            
+            <EquipmentSection
+              title="Stand"
+              fields={[
+                {
+                  label: "Type",
+                  value: equipment.stand.type,
+                  onChange: e => setEquipment(eq => ({
+                    ...eq, stand: { ...eq.stand, type: e.target.value }
+                  })),
+                  placeholder: "e.g., L1, L2"
+                },
+                {
+                  label: "Price (Rs)",
+                  value: equipment.stand.price,
+                  onChange: e => setEquipment(eq => ({
+                    ...eq, stand: { 
+                      ...eq.stand, 
+                      price: parseInt(e.target.value, 10) || 0 
+                    }
+                  })),
+                  type: "number"
+                }
+              ]}
+            />
+            
+            <div style={styles.costSection}>
+              <h3 style={styles.sectionTitle}>Additional Costs</h3>
+              <div style={styles.costGrid}>
+                <FormInput
+                  label="Safety Equipment (Rs)"
+                  value={equipment.safety}
+                  onChange={e => setEquipment(eq => ({ 
+                    ...eq, safety: parseInt(e.target.value, 10) || 0 
+                  }))}
                   type="number"
-                  value={inverter.quantity}
-                  onChange={(e) => setInverter({...inverter, quantity: parseInt(e.target.value) || 1})}
-                  style={styles.input}
-                  min="1"
                 />
-              </div>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Price per Unit (Rs)</label>
-                <input
+                <FormInput
+                  label="Transport (Rs)"
+                  value={equipment.transport}
+                  onChange={e => setEquipment(eq => ({ 
+                    ...eq, transport: parseInt(e.target.value, 10) || 0 
+                  }))}
                   type="number"
-                  value={inverter.pricePerUnit}
-                  onChange={(e) => setInverter({...inverter, pricePerUnit: parseInt(e.target.value) || 0})}
-                  style={styles.input}
-                  placeholder="120000"
                 />
-              </div>
-            </div>
-          </div>
-          
-          {/* Battery Configuration */}
-          <div style={styles.formSection}>
-            <h3 style={styles.sectionTitle}>🔋 Battery Configuration</h3>
-            <div style={styles.formGrid}>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Battery Type</label>
-                <select
-                  value={batteryType}
-                  onChange={(e) => setBatteryType(e.target.value)}
-                  style={styles.input}
-                >
-                  <option value="">Select Type</option>
-                  {batteryTypes.map(type => (
-                    <option key={type} value={type}>{type}</option>
-                  ))}
-                </select>
-              </div>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Battery Model</label>
-                <select
-                  value={batteryModel}
-                  onChange={(e) => setBatteryModel(e.target.value)}
-                  style={styles.input}
-                >
-                  <option value="">Select Model</option>
-                  {getBatteryOptions().map(model => (
-                    <option key={model} value={model}>{model}</option>
-                  ))}
-                </select>
-              </div>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Quantity</label>
-                <input
+                <FormInput
+                  label="Labour (Rs)"
+                  value={equipment.labour}
+                  onChange={e => setEquipment(eq => ({ 
+                    ...eq, labour: parseInt(e.target.value, 10) || 0 
+                  }))}
                   type="number"
-                  value={batteryQuantity}
-                  onChange={(e) => setBatteryQuantity(parseInt(e.target.value) || 1)}
-                  style={styles.input}
-                  min="1"
-                />
-              </div>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Price per Unit (Rs)</label>
-                <input
-                  type="number"
-                  value={batteryPrice}
-                  onChange={(e) => setBatteryPrice(parseInt(e.target.value) || 0)}
-                  style={styles.input}
-                  placeholder="230000"
-                />
-              </div>
-            </div>
-          </div>
-          
-          {/* Solar Panel Configuration */}
-          <div style={styles.formSection}>
-            <h3 style={styles.sectionTitle}>☀️ Solar Panel Configuration</h3>
-            <div style={styles.formGrid}>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Panel Company</label>
-                <select
-                  value={solarPanel.company}
-                  onChange={(e) => setSolarPanel({...solarPanel, company: e.target.value})}
-                  style={styles.input}
-                >
-                  <option value="">Select Company</option>
-                  {panelCompanies.map(company => (
-                    <option key={company} value={company}>{company}</option>
-                  ))}
-                </select>
-              </div>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Wattage</label>
-                <select
-                  value={solarPanel.watts}
-                  onChange={(e) => setSolarPanel({...solarPanel, watts: e.target.value})}
-                  style={styles.input}
-                >
-                  <option value="">Select Wattage</option>
-                  {panelWatts.map(watt => (
-                    <option key={watt} value={watt}>{watt}W</option>
-                  ))}
-                </select>
-              </div>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Quantity</label>
-                <input
-                  type="number"
-                  value={solarPanel.quantity}
-                  onChange={(e) => setSolarPanel({...solarPanel, quantity: parseInt(e.target.value) || 1})}
-                  style={styles.input}
-                  min="1"
-                />
-              </div>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Price per Watt (Rs)</label>
-                <input
-                  type="number"
-                  step="0.1"
-                  value={solarPanel.pricePerWatt}
-                  onChange={(e) => setSolarPanel({...solarPanel, pricePerWatt: parseFloat(e.target.value) || 0})}
-                  style={styles.input}
-                  placeholder="32.5"
-                />
-              </div>
-            </div>
-          </div>
-          
-          {/* Mounting Structure */}
-          <div style={styles.formSection}>
-            <h3 style={styles.sectionTitle}>🏗️ Mounting Structure</h3>
-            <div style={styles.formGrid}>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Stand Type</label>
-                <select
-                  value={stand.type}
-                  onChange={(e) => setStand({...stand, type: e.target.value})}
-                  style={styles.input}
-                >
-                  <option value="">Select Type</option>
-                  {standTypes.map(type => (
-                    <option key={type} value={type}>{type}</option>
-                  ))}
-                </select>
-              </div>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Price per Stand (Rs)</label>
-                <input
-                  type="number"
-                  value={stand.pricePerStand}
-                  onChange={(e) => setStand({...stand, pricePerStand: parseInt(e.target.value) || 0})}
-                  style={styles.input}
-                  placeholder="8000"
-                />
-              </div>
-            </div>
-          </div>
-          
-          {/* Additional Services */}
-          <div style={styles.formSection}>
-            <h3 style={styles.sectionTitle}>⚙️ Additional Services & Costs</h3>
-            <div style={styles.formGrid}>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Safety Equipment (Rs)</label>
-                <input
-                  type="number"
-                  value={safety}
-                  onChange={(e) => setSafety(parseInt(e.target.value) || 0)}
-                  style={styles.input}
-                />
-              </div>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Transportation (Rs)</label>
-                <input
-                  type="number"
-                  value={transport}
-                  onChange={(e) => setTransport(parseInt(e.target.value) || 0)}
-                  style={styles.input}
-                />
-              </div>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Labour Cost (Rs)</label>
-                <input
-                  type="number"
-                  value={labour}
-                  onChange={(e) => setLabour(parseInt(e.target.value) || 0)}
-                  style={styles.input}
-                />
-              </div>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Engineering Cost (Rs)</label>
-                <input
-                  type="number"
-                  value={engineer}
-                  onChange={(e) => setEngineer(parseInt(e.target.value) || 0)}
-                  style={styles.input}
-                />
-              </div>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Greenmeter Cost (Rs)</label>
-                <input
-                  type="number"
-                  value={Greenmeter}
-                  onChange={(e) => setGreenmeter(parseInt(e.target.value) || 0)}
-                  style={styles.input}
                 />
               </div>
             </div>
             
             <div style={styles.checkboxGroup}>
-              <label style={styles.checkboxLabel}>
+              <label style={styles.checkbox}>
                 <input
                   type="checkbox"
-                  checked={isEngineerIncluded}
-                  onChange={(e) => setIsEngineerIncluded(e.target.checked)}
-                  style={styles.checkbox}
+                  checked={includeEngineer}
+                  onChange={e => setIncludeEngineer(e.target.checked)}
                 />
-                Include Engineering Supervision Cost
+                Include Engineering Supervision (Rs {equipment.engineer})
               </label>
-              <label style={styles.checkboxLabel}>
+              <label style={styles.checkbox}>
                 <input
                   type="checkbox"
-                  checked={isGreenmeterIncluded}
-                  onChange={(e) => setIsGreenmeterIncluded(e.target.checked)}
-                  style={styles.checkbox}
+                  checked={includeGreenMeter}
+                  onChange={e => setIncludeGreenMeter(e.target.checked)}
                 />
-                Include Greenmeter Cost
+                Include Green Meter (Rs {equipment.greenMeter})
               </label>
+            </div>
+          </section>
+
+          <div style={styles.buttonGroup}>
+            <button
+              onClick={handleGenerate}
+              disabled={loading || saving}
+              style={{
+                ...styles.primaryButton,
+                opacity: (loading || saving) ? 0.7 : 1
+              }}
+            >
+              {loading ? '⏳ Generating…' : 
+               saving ? '💾 Saving…' : '📋 Generate Quotation'}
+            </button>
+            <button
+              onClick={resetForm}
+              style={styles.secondaryButton}
+            >
+              🗑️ Clear Form
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          <h1 style={styles.title}>📑 Quotation Preview</h1>
+          
+          <div style={styles.previewContainer}>
+            <div style={styles.previewHeader}>
+              <h2>Quotation #{currentQuotation.id.slice(0, 8)}</h2>
+              <p style={styles.previewMeta}>
+                <strong>Date:</strong> {currentQuotation.quotationDate} | 
+                <strong> Total:</strong> Rs. {currentQuotation.total.toLocaleString()}
+              </p>
+            </div>
+            
+            <div style={styles.previewContent}>
+              <div>
+                <h3>Customer</h3>
+                <p>{currentQuotation.customer.name}</p>
+                <p>{currentQuotation.customer.contact}</p>
+              </div>
+              
+              <div>
+                <h3>System Details</h3>
+                <p>{currentQuotation.systemType}</p>
+                <p>{currentQuotation.location}</p>
+              </div>
+            </div>
+            
+            <div style={styles.previewNote}>
+              <p>This quotation has been saved and is ready for printing.</p>
             </div>
           </div>
           
-          {/* Total and Actions */}
-          <div style={styles.totalSection}>
-            <div style={styles.totalDisplay}>
-              <h2 style={styles.totalTitle}>Total System Cost</h2>
-              <div style={styles.totalAmount}>Rs. {getTotal().toLocaleString()}</div>
-              {isSavingToDatabase && (
-                <p style={{ color: '#FF6B35', fontSize: '0.9rem', margin: '10px 0 0 0' }}>
-                  💾 Saving to database...
-                </p>
-              )}
-            </div>
-            
-            <div style={styles.actionButtons}>
-              <button
-                onClick={resetForm}
-                style={styles.resetButton}
-              >
-                🔄 Reset Form
-              </button>
-              <button
-                onClick={generateQuotation}
-                style={{
-                  ...styles.generateButton,
-                  opacity: (isGeneratingPDF || isSavingToDatabase) ? 0.7 : 1,
-                  cursor: (isGeneratingPDF || isSavingToDatabase) ? 'not-allowed' : 'pointer'
-                }}
-                disabled={isGeneratingPDF || isSavingToDatabase}
-              >
-                {isGeneratingPDF ? "⏳ Generating..." : isSavingToDatabase ? "💾 Saving..." : "📋 Generate Quotation"}
-              </button>
-            </div>
+          <div style={styles.buttonGroup}>
+            <button 
+              onClick={() => setCurrentQuotation(null)} 
+              style={styles.secondaryButton}
+            >
+              ← Edit Quotation
+            </button>
+            <button 
+              onClick={handlePrint} 
+              disabled={printing}
+              style={{
+                ...styles.primaryButton,
+                opacity: printing ? 0.7 : 1
+              }}
+            >
+              {printing ? '🖨️ Printing...' : '🖨️ Print / Save PDF'}
+            </button>
+            <button 
+              onClick={resetForm}
+              style={styles.secondaryButton}
+            >
+              ➕ Create New
+            </button>
           </div>
-        </div>
-      </div>
+        </>
+      )}
     </div>
   );
-};
+}
 
-// PDF Styles for the quotation preview - OPTIMIZED FOR 2 PAGES
-const pdfStyles = {
-  container: {
-    fontFamily: "'Segoe UI', Arial, sans-serif",
-    maxWidth: '800px',
-    margin: '0 auto',
-    padding: '15px',
-    lineHeight: '1.3',
-    color: '#333',
-    backgroundColor: 'white',
-  },
-  header: {
-    borderBottom: '3px solid #FF6B35',
-    paddingBottom: '15px',
-    marginBottom: '20px',
-  },
-  logoSection: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: '15px',
-  },
-  logoContainer: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
-  },
-  logo: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-  },
-  logoIcon: {
-    fontSize: '2.5rem',
-    color: '#FF6B35',
-  },
-  logoText: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-  },
-  companyName: {
-    fontSize: '1.3rem',
-    fontWeight: '900',
-    color: '#FF6B35',
-    margin: '0',
-  },
-  solarText: {
-    fontSize: '0.8rem',
-    color: '#F7931E',
-    fontWeight: '600',
-    margin: '0',
-  },
-  companyDetails: {
-    flex: 1,
-    marginLeft: '15px',
-  },
-  mainTitle: {
-    fontSize: '1.6rem',
-    fontWeight: '700',
-    color: '#FF6B35',
-    margin: '0 0 5px 0',
-  },
-  tagline: {
-    fontSize: '0.9rem',
-    color: '#666',
-    margin: '0 0 12px 0',
-    fontStyle: 'italic',
-  },
-  contactInfo: {
-    fontSize: '0.85rem',
-    color: '#555',
-  },
-  quotationInfo: {
-    textAlign: 'right',
-    backgroundColor: '#FFF8F0',
-    padding: '12px',
-    borderRadius: '8px',
-    border: '1px solid #FFE0CC',
-  },
-  quotationTitle: {
-    fontSize: '1.8rem',
-    fontWeight: '700',
-    color: '#FF6B35',
-    margin: '0 0 8px 0',
-  },
-  quotationDetails: {
-    fontSize: '0.85rem',
-    color: '#555',
-  },
-  infoSection: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: '15px',
-    marginBottom: '20px',
-  },
-  customerInfo: {
-    backgroundColor: '#F8F9FA',
-    padding: '15px',
-    borderRadius: '8px',
-    border: '1px solid #E9ECEF',
-  },
-  projectInfo: {
-    backgroundColor: '#FFF3E0',
-    padding: '15px',
-    borderRadius: '8px',
-    border: '1px solid #FFE0B2',
-  },
-  sectionTitle: {
-    fontSize: '1rem',
-    fontWeight: '700',
-    color: '#FF6B35',
-    margin: '0 0 12px 0',
-    borderBottom: '2px solid #FF6B35',
-    paddingBottom: '5px',
-  },
-  infoCard: {
-    fontSize: '0.85rem',
-    lineHeight: '1.5',
-  },
-  equipmentSection: {
-    marginBottom: '20px',
-  },
-  table: {
-    width: '100%',
-    borderCollapse: 'collapse',
-    marginTop: '10px',
-    fontSize: '10px',
-  },
-  tableHeader: {
-    backgroundColor: '#FF6B35',
-  },
-  th: {
-    padding: '6px',
-    textAlign: 'left',
-    color: 'white',
-    fontWeight: 'bold',
-    border: '1px solid #FF6B35',
-  },
-  tableRow: {
-    borderBottom: '1px solid #ddd',
-  },
-  td: {
-    padding: '5px',
-    border: '1px solid #ddd',
-    fontSize: '10px',
-  },
-  totalSection: {
-    backgroundColor: '#FFF8F0',
-    padding: '12px',
-    borderRadius: '8px',
-    border: '2px solid #FF6B35',
-    textAlign: 'center',
-    marginBottom: '20px',
-  },
-  totalBox: {
-    display: 'inline-block',
-  },
-  totalTitle: {
-    fontSize: '1.3rem',
-    fontWeight: '700',
-    color: '#FF6B35',
-    margin: '0 0 8px 0',
-  },
-  totalAmount: {
-    fontSize: '2rem',
-    fontWeight: '900',
-    color: '#E65100',
-    margin: '0 0 8px 0',
-  },
-  totalNote: {
-    fontSize: '0.8rem',
-    color: '#666',
-    fontStyle: 'italic',
-    margin: '0',
-  },
-  termsSection: {
-    marginBottom: '15px',
-  },
-  termsList: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: '15px',
-    fontSize: '0.8rem',
-  },
-  termsColumn: {
-    backgroundColor: '#F8F9FA',
-    padding: '12px',
-    borderRadius: '8px',
-  },
-  footer: {
-    borderTop: '2px solid #FF6B35',
-    paddingTop: '15px',
-  },
-  footerContent: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: '15px',
-  },
-  footerLeft: {
-    flex: 1,
-    fontSize: '0.8rem',
-  },
-  footerRight: {
-    textAlign: 'center',
-  },
-  signature: {
-    textAlign: 'center',
-  },
-  signatureLine: {
-    width: '180px',
-    height: '2px',
-    backgroundColor: '#333',
-    margin: '30px auto 8px auto',
-  },
-  footerBottom: {
-    textAlign: 'center',
-    fontSize: '0.7rem',
-    color: '#666',
-    fontStyle: 'italic',
-    paddingTop: '12px',
-    borderTop: '1px solid #ddd',
-  },
-  pageBreak: {
-    pageBreakBefore: 'always',
-    height: '0',
-    margin: '0',
-  }
-};
-
-// Main component styles
 const styles = {
-  container: {
-    padding: '20px',
-    background: 'linear-gradient(135deg, #FFF8F0 0%, #FFEBDD 100%)',
-    minHeight: '100vh',
-    fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-  },
-  header: {
-    background: 'linear-gradient(135deg, #FF6B35, #F7931E)',
-    borderRadius: '20px',
-    padding: '30px',
-    marginBottom: '30px',
-    color: 'white',
-    boxShadow: '0 10px 30px rgba(255, 107, 53, 0.3)',
-  },
-  headerContent: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: '20px',
+  container: { 
+    padding: 20, 
+    fontFamily: 'sans-serif',
+    maxWidth: 1200,
+    margin: '0 auto'
   },
   title: {
-    fontSize: '2.5rem',
-    fontWeight: '700',
-    margin: '0 0 10px 0',
-    textShadow: '0 2px 10px rgba(0,0,0,0.2)',
-  },
-  subtitle: {
-    fontSize: '1.1rem',
-    opacity: '0.9',
-    margin: 0,
-    fontWeight: '300',
-  },
-  headerActions: {
-    display: 'flex',
-    gap: '15px',
-  },
-  viewQuotationsButton: {
-    background: 'rgba(255, 255, 255, 0.2)',
-    color: 'white',
-    border: '2px solid rgba(255, 255, 255, 0.3)',
-    borderRadius: '12px',
-    padding: '12px 20px',
-    cursor: 'pointer',
-    fontSize: '0.9rem',
-    fontWeight: '600',
-    transition: 'all 0.3s ease',
-    backdropFilter: 'blur(10px)',
-  },
-  analyticsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-    gap: '20px',
-    marginBottom: '30px',
-  },
-  analyticsCard: {
-    background: 'linear-gradient(135deg, #FF6B35, #F7931E)',
-    borderRadius: '15px',
-    padding: '20px',
-    color: 'white',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '15px',
-    boxShadow: '0 8px 25px rgba(255, 107, 53, 0.3)',
-  },
-  analyticsIcon: {
-    fontSize: '2rem',
-  },
-  analyticsContent: {
-    flex: 1,
-  },
-  analyticsValue: {
-    fontSize: '1.5rem',
-    fontWeight: '700',
-    marginBottom: '5px',
-  },
-  analyticsTitle: {
-    fontSize: '0.85rem',
-    opacity: '0.9',
-  },
-  formContainer: {
-    background: 'white',
-    borderRadius: '20px',
-    padding: '30px',
-    boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
-  },
-  formHeader: {
-    textAlign: 'center',
-    marginBottom: '30px',
-  },
-  formTitle: {
-    fontSize: '1.8rem',
-    fontWeight: '700',
     color: '#FF6B35',
-    margin: '0 0 10px 0',
+    borderBottom: '2px solid #FF6B35',
+    paddingBottom: 10,
+    marginBottom: 20
   },
-  formSubtitle: {
-    fontSize: '1rem',
-    color: '#666',
-    margin: '0',
-  },
-  formSections: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '25px',
-  },
-  formSection: {
-    background: '#f9f9f9',
-    padding: '25px',
-    borderRadius: '15px',
-    border: '1px solid #e0e0e0',
+  section: { 
+    backgroundColor: '#f9f9f9',
+    borderRadius: 8,
+    padding: 20,
+    margin: '20px 0',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
   },
   sectionTitle: {
-    fontSize: '1.3rem',
-    fontWeight: '600',
     color: '#FF6B35',
-    marginBottom: '20px',
-    borderBottom: '2px solid #FFE0CC',
-    paddingBottom: '10px',
+    marginTop: 0
+  },
+  error: {
+    backgroundColor: '#ffebee',
+    color: '#d32f2f',
+    padding: '10px 15px',
+    borderRadius: 4,
+    marginBottom: 20
   },
   formGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-    gap: '20px',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
+    gap: 15
   },
   inputGroup: {
-    display: 'flex',
-    flexDirection: 'column',
+    marginBottom: 15
   },
   label: {
-    fontWeight: '600',
-    marginBottom: '8px',
-    color: '#333',
+    display: 'block',
+    marginBottom: 5,
+    fontWeight: 500,
+    fontSize: 14
   },
   input: {
-    padding: '12px 16px',
-    border: '2px solid #e0e0e0',
-    borderRadius: '10px',
-    fontSize: '1rem',
-    transition: 'border-color 0.3s ease',
+    width: '100%',
+    padding: '10px 12px',
+    fontSize: 14,
+    borderRadius: 4,
+    border: '1px solid #ddd',
+    boxSizing: 'border-box',
+    transition: 'border 0.3s',
+  },
+  equipmentSection: {
+    backgroundColor: '#fff',
+    borderRadius: 6,
+    padding: 15,
+    marginBottom: 20,
+    border: '1px solid #eee'
+  },
+  equipmentGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+    gap: 15
+  },
+  costSection: {
+    marginTop: 20
+  },
+  costGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+    gap: 15
   },
   checkboxGroup: {
-    marginTop: '15px',
-  },
-  checkboxLabel: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
-    fontSize: '1rem',
-    fontWeight: '500',
-    color: '#333',
-    cursor: 'pointer',
+    marginTop: 20,
+    paddingTop: 15,
+    borderTop: '1px solid #eee'
   },
   checkbox: {
-    width: '18px',
-    height: '18px',
-    accentColor: '#FF6B35',
-  },
-  totalSection: {
-    background: 'linear-gradient(135deg, #FFF3E0, #FFE0B2)',
-    padding: '30px',
-    borderRadius: '20px',
-    border: '2px solid #FF6B35',
-    textAlign: 'center',
-  },
-  totalDisplay: {
-    marginBottom: '25px',
-  },
-  totalTitle: {
-    fontSize: '1.8rem',
-    fontWeight: '700',
-    color: '#FF6B35',
-    margin: '0 0 15px 0',
-  },
-  totalAmount: {
-    fontSize: '3rem',
-    fontWeight: '900',
-    color: '#E65100',
-    margin: '0',
-    textShadow: '0 2px 5px rgba(0,0,0,0.1)',
-  },
-  actionButtons: {
     display: 'flex',
-    gap: '20px',
-    justifyContent: 'center',
-    flexWrap: 'wrap',
+    alignItems: 'center',
+    margin: '10px 0',
+    fontSize: 14,
+    cursor: 'pointer',
   },
-  resetButton: {
-    background: 'linear-gradient(135deg, #9e9e9e, #757575)',
+  buttonGroup: {
+    display: 'flex',
+    gap: 10,
+    marginTop: 20,
+    flexWrap: 'wrap'
+  },
+  primaryButton: {
+    padding: '12px 25px',
+    background: '#FF6B35',
     color: 'white',
     border: 'none',
-    borderRadius: '12px',
-    padding: '15px 30px',
-    fontSize: '1rem',
-    fontWeight: '600',
+    borderRadius: 4,
     cursor: 'pointer',
-    transition: 'all 0.3s ease',
+    fontSize: 16,
+    fontWeight: 600,
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8
   },
-  generateButton: {
-    background: 'linear-gradient(135deg, #FF6B35, #F7931E)',
-    color: 'white',
+  secondaryButton: {
+    padding: '12px 25px',
+    background: '#f0f0f0',
+    color: '#333',
     border: 'none',
-    borderRadius: '12px',
-    padding: '15px 30px',
-    fontSize: '1rem',
-    fontWeight: '600',
+    borderRadius: 4,
     cursor: 'pointer',
-    transition: 'all 0.3s ease',
-    boxShadow: '0 8px 25px rgba(255, 107, 53, 0.3)',
+    fontSize: 16,
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8
   },
-  // Preview Container Styles
   previewContainer: {
-    padding: '20px',
-    background: 'linear-gradient(135deg, #FFF8F0 0%, #FFEBDD 100%)',
-    minHeight: '100vh',
+    backgroundColor: '#f9f9f9',
+    borderRadius: 8,
+    padding: 20,
+    margin: '20px 0',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
   },
   previewHeader: {
-    background: 'white',
-    borderRadius: '15px',
-    padding: '20px',
-    marginBottom: '20px',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    boxShadow: '0 5px 15px rgba(0,0,0,0.1)',
-    flexWrap: 'wrap',
-    gap: '20px',
+    borderBottom: '1px solid #ddd',
+    paddingBottom: 15,
+    marginBottom: 20
   },
-  previewTitle: {
-    fontSize: '1.8rem',
-    fontWeight: '700',
-    color: '#FF6B35',
-    margin: '0',
-  },
-  previewActions: {
-    display: 'flex',
-    gap: '15px',
-    flexWrap: 'wrap',
-  },
-  // Quotations List Styles
-  quotationsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
-    gap: '25px',
-    marginTop: '20px',
-  },
-  quotationCard: {
-    background: 'white',
-    borderRadius: '15px',
-    padding: '25px',
-    border: '2px solid #FFE0CC',
-    boxShadow: '0 8px 25px rgba(0,0,0,0.1)',
-    transition: 'all 0.3s ease',
-  },
-  quotationHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '15px',
-  },
-  quotationId: {
-    background: 'linear-gradient(135deg, #FF6B35, #F7931E)',
-    color: 'white',
-    padding: '5px 12px',
-    borderRadius: '20px',
-    fontSize: '0.8rem',
-    fontWeight: '600',
-  },
-  quotationDetails: {
-    marginBottom: '20px',
-    lineHeight: '1.6',
-  },
-  statusBadge: {
-    color: 'white',
-    padding: '4px 8px',
-    borderRadius: '12px',
-    fontSize: '0.75rem',
-    fontWeight: '600',
-    marginLeft: '5px',
-  },
-  quotationActions: {
-    display: 'flex',
-    gap: '10px',
-  },
-  viewButton: {
-    background: 'linear-gradient(135deg, #2196f3, #1976d2)',
-    color: 'white',
-    border: 'none',
-    borderRadius: '8px',
-    padding: '8px 15px',
-    cursor: 'pointer',
-    fontSize: '0.85rem',
-    fontWeight: '600',
-    flex: 1,
-  },
-  downloadButton: {
-    background: 'linear-gradient(135deg, #4caf50, #45a049)',
-    color: 'white',
-    border: 'none',
-    borderRadius: '8px',
-    padding: '8px 15px',
-    cursor: 'pointer',
-    fontSize: '0.85rem',
-    fontWeight: '600',
-  },
-  emptyState: {
-    textAlign: 'center',
-    padding: '60px 20px',
+  previewMeta: {
     color: '#666',
+    fontSize: 14
   },
-  emptyIcon: {
-    fontSize: '4rem',
-    marginBottom: '20px',
+  previewContent: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: 30
   },
-  backButton: {
-    background: 'linear-gradient(135deg, #757575, #616161)',
-    color: 'white',
-    border: 'none',
-    borderRadius: '8px',
-    padding: '8px 15px',
-    cursor: 'pointer',
-    fontSize: '0.85rem',
-    fontWeight: '600',
-  },
-  newQuotationButton: {
-    background: 'linear-gradient(135deg, #FF6B35, #F7931E)',
-    color: 'white',
-    border: 'none',
-    borderRadius: '8px',
-    padding: '8px 15px',
-    cursor: 'pointer',
-    fontSize: '0.85rem',
-    fontWeight: '600',
-  },
+  previewNote: {
+    marginTop: 20,
+    paddingTop: 15,
+    borderTop: '1px solid #eee',
+    fontStyle: 'italic',
+    color: '#666'
+  }
 };
-
-export default QuotationForm;
