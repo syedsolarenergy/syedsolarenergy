@@ -19,12 +19,16 @@ const cssVariables = `
     --heading-3: clamp(1.25rem, 3.5vw, 2rem);
     --text-base: clamp(0.875rem, 2.2vw, 1.125rem);
     --text-small: clamp(0.75rem, 2vw, 1rem);
+    --text-tiny: clamp(0.65rem, 1.8vw, 0.9rem);
     --stat-number: clamp(1.5rem, 6vw, 3rem);
     --border-radius: clamp(12px, 2.5vw, 20px);
     --container-max: min(1400px, 95vw);
     --grid-gap: clamp(16px, 4vw, 40px);
     --card-min-width: min(280px, 90vw);
     --hero-height: clamp(500px, 70vh, 800px);
+    --review-card-padding: clamp(12px, 3vw, 24px);
+    --review-avatar-size: clamp(35px, 7vw, 50px);
+    --review-min-height: clamp(180px, 25vw, 200px);
   }
 
   /* Mobile overflow prevention */
@@ -58,8 +62,8 @@ const cssVariables = `
 
   .grid-reviews {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
-    gap: var(--grid-gap);
+    grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr));
+    gap: clamp(12px, 3vw, 24px);
     width: 100%;
   }
 
@@ -107,6 +111,9 @@ const cssVariables = `
       --card-min-width: 100%;
       --grid-gap: clamp(12px, 4vw, 20px);
       --hero-height: auto;
+      --review-card-padding: clamp(8px, 2.5vw, 16px);
+      --review-avatar-size: clamp(30px, 6vw, 40px);
+      --review-min-height: clamp(160px, 22vw, 180px);
     }
 
     .hero-content {
@@ -127,11 +134,26 @@ const cssVariables = `
     .hero-image {
       order: -1;
     }
+
+    .grid-reviews {
+      grid-template-columns: 1fr;
+      gap: clamp(10px, 2.5vw, 16px);
+    }
   }
 
   @media (min-width: 641px) and (max-width: 1024px) {
     .grid-features {
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    }
+
+    .grid-reviews {
+      grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+    }
+  }
+
+  @media (min-width: 1025px) {
+    .grid-reviews {
+      grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
     }
   }
 
@@ -139,6 +161,15 @@ const cssVariables = `
   @media (min-width: 1920px) {
     :root {
       --container-max: 1600px;
+    }
+  }
+
+  /* Smaller text on very small screens */
+  @media (max-width: 480px) {
+    :root {
+      --text-tiny: clamp(0.6rem, 1.6vw, 0.8rem);
+      --review-card-padding: clamp(6px, 2vw, 12px);
+      --review-avatar-size: clamp(28px, 5.5vw, 35px);
     }
   }
 `;
@@ -1114,7 +1145,13 @@ export default function Home() {
                   flexWrap: 'wrap'
                 }}>
                   <button
-                    onClick={() => window.location.href = '/quotation'}
+                    onClick={() => {
+                      if (heroSection?.button_link) {
+                        window.location.href = heroSection.button_link;
+                      } else {
+                        window.location.href = '/quotation';
+                      }
+                    }}
                     style={{
                       background: 'linear-gradient(45deg, #FF6B35, #F7931E)',
                       color: 'white',
@@ -1216,138 +1253,124 @@ export default function Home() {
           </div>
         </section>
 
-{/* Enhanced Customer Reviews */}
-<section style={{
-  padding: 'var(--section-padding) 0',
-  background: `
-    linear-gradient(135deg, rgba(255, 107, 53, 0.06) 0%, rgba(247, 147, 30, 0.06) 50%, rgba(255, 152, 0, 0.06) 100%),
-    url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="waves" width="100" height="20" patternUnits="userSpaceOnUse"><path d="M0 10 Q25 0 50 10 T100 10 V20 H0 Z" fill="rgba(255,107,53,0.05)"/></pattern></defs><rect width="100" height="100" fill="url(%23waves)"/></svg>')
-  `,
-  position: 'relative'
-}}>
-  <div className="universal-container" style={{ position: 'relative', zIndex: 2 }}>
-    <SectionHeader
-      title="What Our Customers Say"
-      subtitle="Real experiences from our valued clients across Pakistan"
-    />
+        {/* Enhanced Customer Reviews - Universally Screen Friendly */}
+        <section style={{
+          padding: 'var(--section-padding) 0',
+          background: `
+            linear-gradient(135deg, rgba(255, 107, 53, 0.06) 0%, rgba(247, 147, 30, 0.06) 50%, rgba(255, 152, 0, 0.06) 100%),
+            url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="waves" width="100" height="20" patternUnits="userSpaceOnUse"><path d="M0 10 Q25 0 50 10 T100 10 V20 H0 Z" fill="rgba(255,107,53,0.05)"/></pattern></defs><rect width="100" height="100" fill="url(%23waves)"/></svg>')
+          `,
+          position: 'relative'
+        }}>
+          <div className="universal-container" style={{ position: 'relative', zIndex: 2 }}>
+            <SectionHeader
+              title="What Our Customers Say"
+              subtitle="Real experiences from our valued clients across Pakistan"
+            />
 
-    <div className="grid-reviews">
-      {reviews.map(review => (
-        <Card3D key={review.id} style={{ padding: 'var(--card-padding)' }}>
-          <div style={{ textAlign: 'center', padding: 'var(--card-padding)' }}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              marginBottom: 'clamp(12px, 2.5vw, 16px)',
-              gap: 'clamp(8px, 2vw, 12px)'
-            }}>
-              {review.avatar_url
-                ? <img
-                    src={review.avatar_url}
-                    alt={review.name}
-                    style={{
-                      width: 'clamp(40px, 8vw, 50px)',
-                      height: 'clamp(40px, 8vw, 50px)',
-                      borderRadius: '50%',
-                      objectFit: 'cover',
-                      border: '2px solid #FF6B35'
-                    }}
-                  />
-                : <div style={{
-                    width: 'clamp(40px, 8vw, 50px)',
-                    height: 'clamp(40px, 8vw, 50px)',
-                    borderRadius: '50%',
-                    background: 'linear-gradient(45deg, #FF6B35, #F7931E)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'white',
-                    fontWeight: 'bold',
-                    fontSize: 'clamp(1rem, 3vw, 1.2rem)'
-                  }}>
-                    {review.name.charAt(0)}
-                  </div>
-              }
-              <div style={{ flex: 1, textAlign: 'left' }}>
-                <h4 style={{
-                  margin: 0,
-                  color: '#FF6B35',
-                  fontSize: 'clamp(16px, 3vw, 18px)',
-                  fontWeight: 'bold'
+            <div className="grid-reviews">
+              {reviews.map(review => (
+                <Card3D key={review.id} style={{ 
+                  padding: 'var(--review-card-padding)',
+                  minHeight: 'var(--review-min-height)',
+                  display: 'flex',
+                  flexDirection: 'column'
                 }}>
-                  {review.name}
-                </h4>
-                {review.designation && (
-                  <p style={{
-                    margin: 0,
-                    color: '#666',
-                    fontSize: 'clamp(12px, 2vw, 14px)'
+                  <div style={{ 
+                    textAlign: 'center', 
+                    padding: 'var(--review-card-padding)',
+                    flex: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between'
                   }}>
-                    {review.designation}
-                  </p>
-                )}
-              </div>
-            </div>
+                    <div>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        marginBottom: 'clamp(8px, 2vw, 12px)',
+                        gap: 'clamp(6px, 1.5vw, 10px)'
+                      }}>
+                        {review.avatar_url
+                          ? <img
+                              src={review.avatar_url}
+                              alt={review.name}
+                              style={{
+                                width: 'var(--review-avatar-size)',
+                                height: 'var(--review-avatar-size)',
+                                borderRadius: '50%',
+                                objectFit: 'cover',
+                                border: '2px solid #FF6B35'
+                              }}
+                            />
+                          : <div style={{
+                              width: 'var(--review-avatar-size)',
+                              height: 'var(--review-avatar-size)',
+                              borderRadius: '50%',
+                              background: 'linear-gradient(45deg, #FF6B35, #F7931E)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: 'white',
+                              fontWeight: 'bold',
+                              fontSize: 'clamp(0.8rem, 2.5vw, 1.1rem)'
+                            }}>
+                              {review.name.charAt(0)}
+                            </div>
+                        }
+                        <div style={{ flex: 1, textAlign: 'left' }}>
+                          <h4 style={{
+                            margin: 0,
+                            color: '#FF6B35',
+                            fontSize: 'clamp(14px, 2.8vw, 16px)',
+                            fontWeight: 'bold',
+                            lineHeight: '1.2'
+                          }}>
+                            {review.name}
+                          </h4>
+                          {review.designation && (
+                            <p style={{
+                              margin: 0,
+                              color: '#666',
+                              fontSize: 'var(--text-tiny)',
+                              lineHeight: '1.2'
+                            }}>
+                              {review.designation}
+                            </p>
+                          )}
+                        </div>
+                      </div>
 
-            <p style={{
-  color: '#333',
-  lineHeight: 1.6,
-  marginBottom: 'clamp(12px, 2.5vw, 16px)',
-  fontSize: 'clamp(0.875rem, 1.8vw, 1rem)',
-  fontStyle: 'italic',
-}}>
-  "{review.review}"
-</p>
-            <div style={{
-              display: 'flex',
-              justifyContent: 'center',
-              color: '#FFD700',
-              fontSize: 'clamp(0.75rem, 1.6vw, 0.9rem)',
-            }}>
-              {"★".repeat(review.stars)}{"☆".repeat(5 - review.stars)}
+                      <p style={{
+                        color: '#333',
+                        lineHeight: 1.5,
+                        marginBottom: 'clamp(8px, 2vw, 12px)',
+                        fontSize: 'var(--text-small)',
+                        fontStyle: 'italic',
+                        textAlign: 'left',
+                        flex: 1,
+                        display: 'flex',
+                        alignItems: 'center'
+                      }}>
+                        "{review.review}"
+                      </p>
+                    </div>
+                    
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'center',
+                      color: '#FFD700',
+                      fontSize: 'clamp(12px, 2.5vw, 16px)',
+                      marginTop: 'auto'
+                    }}>
+                      {"★".repeat(review.stars)}{"☆".repeat(5 - review.stars)}
+                    </div>
+                  </div>
+                </Card3D>
+              ))}
             </div>
           </div>
-        </Card3D>
-      ))}
-    </div>
-  </div>
-
-  {/* Add these responsive tweaks */}
-  <style>
-    {`
-.grid-reviews {
-  display: grid;
-  gap: var(--grid-gap);
-  grid-template-columns: 1fr;
-}
-
-@media (min-width: 769px) {
-  .grid-reviews {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (min-width: 1025px) {
-  .grid-reviews {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-/* Smaller text on very small screens */
-@media (max-width: 480px) {
-  .grid-reviews h4 {
-    font-size: clamp(14px, 3.5vw, 16px);
-  }
-  .grid-reviews p {
-    font-size: clamp(0.75rem, 2.5vw, 0.9rem);
-    min-height: clamp(60px, 10vw, 80px);
-  }
-}
-
-    `}
-  </style>
-</section>
-
+        </section>
 
         {/* Dynamic Sections */}
         {renderSection(events, "Latest Events", eventsMode, event => (
@@ -1730,10 +1753,9 @@ export default function Home() {
               </div>
             </div>
           </section>
-        )
-      }
+        )}
 
-        {/* Enhanced Footer */}
+        {/* Use imported Footer component */}
         <Footer />
 
         {/* Popups */}
@@ -1820,6 +1842,10 @@ export default function Home() {
               .slick-dots li button:before {
                 font-size: 8px !important;
               }
+
+              .grid-reviews {
+                gap: clamp(8px, 2vw, 12px);
+              }
             }
 
             @media (min-width: 481px) and (max-width: 768px) {
@@ -1830,11 +1856,20 @@ export default function Home() {
               .grid-stats {
                 grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
               }
+
+              .grid-reviews {
+                grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
+                gap: clamp(12px, 3vw, 18px);
+              }
             }
 
             @media (min-width: 769px) and (max-width: 1024px) {
               .grid-features {
                 grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+              }
+
+              .grid-reviews {
+                grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
               }
             }
 
