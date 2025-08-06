@@ -327,7 +327,7 @@ const ServiceCard = ({ service, index }) => {
 // Enhanced Stats Component with better mobile support
 const ServiceStats = () => {
   const stats = [
-    { number: "500+", label: "Systems Installed", icon: "⚡", color: "#FF6B35" },
+    { number: "2000+", label: "Systems Installed", icon: "⚡", color: "#FF6B35" },
     { number: "24/7", label: "Support Available", icon: "🛠️", color: "#1db954" },
     { number: "5+", label: "Years Warranty", icon: "🛡️", color: "#2176ae" },
     { number: "100%", label: "Satisfaction Rate", icon: "⭐", color: "#e67e22" }
@@ -650,34 +650,36 @@ export default function Services() {
             </div>
           </div>
 
-          {/* Enhanced Service Request Form */}
-          <Card3D style={{
-            maxWidth: 'min(600px, 95vw)',
-            margin: "0 auto clamp(30px, 5vw, 40px) auto",
-            padding: "clamp(40px, 6vw, 50px) var(--card-padding)",
-            textAlign: "center",
-            position: 'relative',
-            animation: 'fadeInUp 0.8s ease-out 0.6s both'
-          }}>
-            {/* Form header decoration */}
-            <div style={{
-              position: 'absolute',
-              top: 'clamp(-20px, -3vw, -25px)',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              width: 'clamp(50px, 8vw, 60px)',
-              height: 'clamp(50px, 8vw, 60px)',
-              background: 'linear-gradient(45deg, #e65100, #ff9800)',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 'clamp(20px, 4vw, 24px)',
-              boxShadow: '0 8px 24px rgba(230, 81, 0, 0.3)',
-              animation: 'pulse 3s ease-in-out infinite'
-            }}>
-              📋
-            </div>
+         {/* Enhanced Service Request Form */}
+<Card3D style={{
+  maxWidth: 'min(600px, 95vw)',
+  margin: '0 auto clamp(30px, 5vw, 40px) auto',
+  padding: 'clamp(60px, 8vw, 70px) var(--card-padding) clamp(40px, 6vw, 50px)', // extra top padding
+  textAlign: 'center',
+  position: 'relative',
+  overflow: 'visible',      // allow icon overflow
+  animation: 'fadeInUp 0.8s ease-out 0.6s both'
+}}>
+  {/* Form header decoration */}
+  <div style={{
+    position: 'absolute',
+    top: 'clamp(-25px, -4vw, -30px)',  // lift icon up a bit
+    left: '50%',
+    transform: 'translateX(-50%)',
+    width: 'clamp(50px, 8vw, 60px)',
+    height: 'clamp(50px, 8vw, 60px)',
+    background: 'linear-gradient(45deg, #e65100, #ff9800)',
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: 'clamp(20px, 4vw, 24px)',
+    boxShadow: '0 8px 24px rgba(230, 81, 0, 0.3)',
+    animation: 'pulse 3s ease-in-out infinite',
+    zIndex: 1                      // ensure it sits above the card
+  }}>
+    📋
+  </div>
 
             <h3 style={{
               background: 'linear-gradient(45deg, #e65100, #ff9800)',
