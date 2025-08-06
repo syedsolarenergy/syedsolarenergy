@@ -12,29 +12,39 @@ const cssVariables = `
     --secondary-orange: #F7931E;
     --font-size-base: clamp(14px, 2.5vw, 18px);
     --padding-base: clamp(12px, 4vw, 40px);
-    --section-padding: clamp(20px, 6vw, 80px);
+    --section-padding: clamp(40px, 8vw, 100px);
     --card-padding: clamp(16px, 4vw, 40px);
-    --heading-1: clamp(1.75rem, 5vw, 3rem);
-    --heading-2: clamp(1.5rem, 4vw, 2.5rem);
+    --heading-1: clamp(2rem, 6vw, 4rem);
+    --heading-2: clamp(1.5rem, 4.5vw, 2.8rem);
     --heading-3: clamp(1.25rem, 3.5vw, 2rem);
     --text-base: clamp(0.875rem, 2.2vw, 1.125rem);
     --text-small: clamp(0.75rem, 2vw, 1rem);
-    --stat-number: clamp(1.5rem, 6vw, 2.8rem);
+    --text-tiny: clamp(0.65rem, 1.8vw, 0.9rem);
+    --stat-number: clamp(1.5rem, 6vw, 3rem);
     --border-radius: clamp(12px, 2.5vw, 20px);
     --container-max: min(1400px, 95vw);
-    --grid-gap: clamp(16px, 3vw, 32px);
+    --grid-gap: clamp(16px, 4vw, 40px);
     --card-min-width: min(280px, 90vw);
+    --timeline-icon-size: clamp(45px, 8vw, 60px);
+    --leadership-card-width: min(350px, 100%);
+    --values-card-min: min(160px, 100%);
   }
 
-  /* Container System */
+  /* Mobile overflow prevention */
+  html, body {
+    overflow-x: hidden;
+    max-width: 100%;
+  }
+
+  /* Universal Container System */
   .universal-container {
     width: 100%;
     max-width: var(--container-max);
     margin: 0 auto;
-    padding: 0 clamp(12px, 3vw, 24px);
+    padding: 0 var(--padding-base);
   }
 
-  /* Universal Grid System */
+  /* Enhanced Grid Systems */
   .grid-auto {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(var(--card-min-width), 1fr));
@@ -51,7 +61,7 @@ const cssVariables = `
 
   .grid-leadership {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(350px, 100%), 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(var(--leadership-card-width), 1fr));
     gap: var(--grid-gap);
     width: 100%;
     place-items: center;
@@ -59,46 +69,79 @@ const cssVariables = `
 
   .grid-values {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(140px, 100%), 1fr));
-    gap: clamp(8px, 2vw, 16px);
+    grid-template-columns: repeat(auto-fit, minmax(var(--values-card-min), 1fr));
+    gap: clamp(12px, 3vw, 20px);
   }
 
-  /* Responsive Typography */
-  .responsive-text {
-    font-size: var(--text-base);
-    line-height: 1.6;
+  /* Timeline Responsive Layout */
+  .timeline-container {
+    max-width: min(1200px, 95vw);
+    margin: 0 auto;
   }
 
-  .responsive-text-small {
-    font-size: var(--text-small);
-    line-height: 1.5;
+  .timeline-item {
+    display: flex;
+    align-items: flex-start;
+    marginBottom: clamp(20px, 4vw, 40px);
+    gap: clamp(15px, 3vw, 25px);
   }
 
-  /* Mobile-First Approach */
-  @media (max-width: 480px) {
+  .timeline-icon {
+    width: var(--timeline-icon-size);
+    height: var(--timeline-icon-size);
+    background: linear-gradient(135deg, #FF6B35, #F7931E);
+    borderRadius: 50%;
+    display: flex;
+    alignItems: center;
+    justifyContent: center;
+    fontSize: clamp(16px, 3.5vw, 22px);
+    boxShadow: 0 8px 24px rgba(255, 107, 53, 0.3);
+    flexShrink: 0;
+  }
+
+  .timeline-content {
+    flex: 1;
+    background: linear-gradient(135deg, #ffffff, #fff8f0);
+    padding: var(--card-padding);
+    borderRadius: var(--border-radius);
+    boxShadow: 0 4px 16px rgba(255, 107, 53, 0.1);
+    border: 1px solid rgba(255, 107, 53, 0.1);
+  }
+
+  /* Mobile Optimizations */
+  @media (max-width: 768px) {
     :root {
       --card-min-width: 100%;
       --grid-gap: clamp(12px, 4vw, 20px);
+      --timeline-icon-size: clamp(40px, 7vw, 50px);
+      --leadership-card-width: 100%;
+      --values-card-min: 100%;
     }
-    
+
+    .timeline-item {
+      flex-direction: column;
+      text-align: center;
+      align-items: center;
+    }
+
     .grid-leadership {
       grid-template-columns: 1fr;
     }
-    
+
     .grid-values {
       grid-template-columns: 1fr;
     }
   }
 
-  @media (min-width: 481px) and (max-width: 768px) {
+  @media (min-width: 641px) and (max-width: 1024px) {
     .grid-values {
       grid-template-columns: repeat(2, 1fr);
     }
   }
 
-  @media (min-width: 769px) {
+  @media (min-width: 1025px) {
     .grid-values {
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
     }
   }
 
@@ -108,105 +151,88 @@ const cssVariables = `
       --container-max: 1600px;
     }
   }
+
+  /* Very small screens */
+  @media (max-width: 480px) {
+    :root {
+      --text-tiny: clamp(0.6rem, 1.6vw, 0.8rem);
+    }
+  }
 `;
 
-// Enhanced Card Component with better mobile support
-const Card3D = ({ children, className = "", style = {}, mobileFullWidth = false }) => (
+// Enhanced Card Component
+const Card3D = ({ children, className = "", style = {} }) => (
   <div
     style={{
       background: 'linear-gradient(145deg, #ffffff, #fff8f0)',
       borderRadius: 'var(--border-radius)',
-      boxShadow: '0 8px 32px rgba(255, 107, 53, 0.12)',
+      boxShadow: '0 8px 24px rgba(255, 107, 53, 0.12)',
       transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
       transform: 'translateY(0)',
       cursor: 'pointer',
       overflow: 'hidden',
       border: '1px solid rgba(255, 107, 53, 0.1)',
-      width: mobileFullWidth ? '100%' : 'auto',
       ...style,
     }}
     onMouseEnter={(e) => {
       if (window.innerWidth > 768) {
         e.currentTarget.style.transform = 'translateY(-8px)';
-        e.currentTarget.style.boxShadow = '0 16px 48px rgba(255, 107, 53, 0.18)';
+        e.currentTarget.style.boxShadow = '0 16px 40px rgba(255, 107, 53, 0.18)';
         e.currentTarget.style.borderColor = 'rgba(255, 107, 53, 0.25)';
       }
     }}
     onMouseLeave={(e) => {
       e.currentTarget.style.transform = 'translateY(0)';
-      e.currentTarget.style.boxShadow = '0 8px 32px rgba(255, 107, 53, 0.12)';
+      e.currentTarget.style.boxShadow = '0 8px 24px rgba(255, 107, 53, 0.12)';
       e.currentTarget.style.borderColor = 'rgba(255, 107, 53, 0.1)';
     }}
-    className={`responsive-card ${className}`}
+    className={className}
   >
     {children}
   </div>
 );
 
-// Enhanced Timeline with better mobile layout
+// Enhanced Timeline Component
 const TimelineItem = ({ year, title, description, icon, delay = 0 }) => (
   <div className="timeline-item" style={{
-    display: 'flex',
-    alignItems: 'flex-start',
-    marginBottom: 'clamp(20px, 4vw, 40px)',
-    animation: `fadeInLeft 0.8s ease-out ${delay}s both`,
-    flexDirection: window.innerWidth <= 640 ? 'column' : 'row',
-    textAlign: window.innerWidth <= 640 ? 'center' : 'left'
+    animation: `fadeInLeft 0.8s ease-out ${delay}s both`
   }}>
     <div className="timeline-icon" style={{
-      width: 'clamp(50px, 8vw, 70px)',
-      height: 'clamp(50px, 8vw, 70px)',
-      background: 'linear-gradient(135deg, #FF6B35, #F7931E)',
-      borderRadius: '50%',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      fontSize: 'clamp(16px, 3.5vw, 22px)',
-      marginRight: window.innerWidth <= 640 ? '0' : 'clamp(15px, 3vw, 25px)',
-      marginBottom: window.innerWidth <= 640 ? 'clamp(15px, 3vw, 20px)' : '0',
-      boxShadow: '0 8px 24px rgba(255, 107, 53, 0.3)',
-      animation: 'pulse 3s ease-in-out infinite',
-      flexShrink: 0
+      animation: 'pulse 3s ease-in-out infinite'
     }}>
       {icon}
     </div>
-    <div style={{ flex: 1, width: '100%' }}>
+    <div className="timeline-content">
       <div style={{
-        background: 'linear-gradient(135deg, #ffffff, #fff8f0)',
-        padding: 'clamp(16px, 3.5vw, 28px)',
-        borderRadius: 'var(--border-radius)',
-        boxShadow: '0 4px 16px rgba(255, 107, 53, 0.1)',
-        border: '1px solid rgba(255, 107, 53, 0.1)'
+        color: '#FF6B35',
+        fontWeight: 'bold',
+        fontSize: 'clamp(14px, 2.5vw, 16px)',
+        marginBottom: 'clamp(6px, 1.5vw, 8px)'
       }}>
-        <div style={{
-          color: '#FF6B35',
-          fontWeight: 'bold',
-          fontSize: 'clamp(14px, 2.5vw, 16px)',
-          marginBottom: '8px'
-        }}>
-          {year}
-        </div>
-        <h4 style={{
-          color: '#333',
-          fontSize: 'clamp(16px, 3vw, 20px)',
-          fontWeight: 'bold',
-          marginBottom: '12px',
-          margin: 0
-        }}>
-          {title}
-        </h4>
-        <p className="responsive-text" style={{
-          color: '#666',
-          margin: 0
-        }}>
-          {description}
-        </p>
+        {year}
       </div>
+      <h4 style={{
+        color: '#333',
+        fontSize: 'clamp(16px, 3vw, 20px)',
+        fontWeight: 'bold',
+        marginBottom: 'clamp(8px, 2vw, 12px)',
+        margin: 0
+      }}>
+        {title}
+      </h4>
+      <p style={{
+        color: '#666',
+        margin: 0,
+        fontSize: 'var(--text-base)',
+        lineHeight: '1.6'
+      }}>
+        {description}
+      </p>
     </div>
   </div>
 );
 
-// Enhanced Stats Counter with better mobile sizing
+// Enhanced Stats Counter
 const StatCard = ({ number, label, icon, color = "#FF6B35" }) => {
   const [count, setCount] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
@@ -253,7 +279,6 @@ const StatCard = ({ number, label, icon, color = "#FF6B35" }) => {
   return (
     <div
       id={`stat-${label}`}
-      className="stat-card"
       style={{
         textAlign: 'center',
         padding: 'var(--card-padding)',
@@ -263,7 +288,7 @@ const StatCard = ({ number, label, icon, color = "#FF6B35" }) => {
         transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
         border: '1px solid rgba(255, 107, 53, 0.1)',
         cursor: 'pointer',
-        minHeight: 'clamp(120px, 15vw, 160px)',
+        minHeight: 'clamp(140px, 20vw, 180px)',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
@@ -299,12 +324,13 @@ const StatCard = ({ number, label, icon, color = "#FF6B35" }) => {
       }}>
         {count}+
       </div>
-      <p className="responsive-text-small" style={{
+      <p style={{
         color: '#666',
         fontWeight: '600',
         margin: 0,
         textTransform: 'uppercase',
-        letterSpacing: '0.5px'
+        letterSpacing: '0.5px',
+        fontSize: 'var(--text-base)'
       }}>
         {label}
       </p>
@@ -316,7 +342,7 @@ const StatCard = ({ number, label, icon, color = "#FF6B35" }) => {
 const SectionHeader = ({ title, subtitle = "" }) => (
   <div style={{
     textAlign: 'center',
-    marginBottom: 'clamp(30px, 6vw, 60px)',
+    marginBottom: 'clamp(40px, 8vw, 60px)',
     position: 'relative'
   }}>
     <h2 style={{
@@ -332,7 +358,8 @@ const SectionHeader = ({ title, subtitle = "" }) => (
       {title}
     </h2>
     {subtitle && (
-      <p className="responsive-text" style={{
+      <p style={{
+        fontSize: 'var(--text-base)',
         color: '#666',
         margin: 0,
         fontStyle: 'italic'
@@ -345,7 +372,7 @@ const SectionHeader = ({ title, subtitle = "" }) => (
       bottom: subtitle ? 'clamp(-12px, -2vw, -16px)' : 'clamp(-16px, -2.5vw, -20px)',
       left: '50%',
       transform: 'translateX(-50%)',
-      width: 'clamp(60px, 12vw, 120px)',
+      width: 'clamp(80px, 15vw, 120px)',
       height: '3px',
       background: 'linear-gradient(45deg, #FF6B35, #F7931E)',
       borderRadius: '2px'
@@ -370,16 +397,15 @@ export default function About() {
         position: 'relative',
         overflow: 'hidden'
       }}>
-        {/* Enhanced animated background particles */}
-        {[...Array(8)].map((_, i) => (
+        {/* Clean animated background particles */}
+        {[...Array(6)].map((_, i) => (
           <div
             key={i}
-            className="floating-particle"
             style={{
               position: 'absolute',
-              width: `${Math.random() * 6 + 3}px`,
-              height: `${Math.random() * 6 + 3}px`,
-              background: 'rgba(255,107,53,0.25)',
+              width: `${Math.random() * 4 + 2}px`,
+              height: `${Math.random() * 4 + 2}px`,
+              background: 'rgba(255,107,53,0.2)',
               borderRadius: '50%',
               top: `${Math.random() * 100}%`,
               left: `${Math.random() * 100}%`,
@@ -399,39 +425,29 @@ export default function About() {
             position: 'relative',
             overflow: 'visible',
             animation: 'fadeInUp 0.8s ease-out'
-          }} mobileFullWidth>
-            {/* Decorative top element */}
-            <div style={{
-              position: 'absolute',
-              top: 'clamp(-20px, -3vw, -25px)',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              width: 'clamp(40px, 6vw, 50px)',
-              height: 'clamp(40px, 6vw, 50px)',
-              background: 'linear-gradient(45deg, #FF6B35, #F7931E)',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 'clamp(16px, 3vw, 20px)',
-              boxShadow: '0 8px 24px rgba(255, 107, 53, 0.3)'
-            }}>
-              ⚡
-            </div>
-
+          }}>
             <img
               src={logo}
               alt="Syed Solar Energy Logo"
-              className="logo-hover"
               style={{
-                width: 'clamp(70px, 12vw, 100px)',
+                width: 'clamp(80px, 15vw, 120px)',
                 height: "auto",
                 margin: "clamp(20px, 3vw, 25px) auto clamp(15px, 2vw, 20px) auto",
                 borderRadius: 'var(--border-radius)',
                 boxShadow: "0 12px 32px rgba(255, 107, 53, 0.2)",
-                border: '2px solid #FF6B35',
+                border: '3px solid #FF6B35',
                 transition: 'all 0.3s ease',
                 animation: 'pulse 3s ease-in-out infinite'
+              }}
+              onMouseEnter={(e) => {
+                if (window.innerWidth > 768) {
+                  e.target.style.transform = 'scale(1.05)';
+                  e.target.style.boxShadow = '0 16px 40px rgba(255, 107, 53, 0.3)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.transform = 'scale(1)';
+                e.target.style.boxShadow = '0 12px 32px rgba(255, 107, 53, 0.2)';
               }}
             />
             <h1 style={{
@@ -459,10 +475,11 @@ export default function About() {
             }}>
               صاف توانائی کے سفر کا روشن راستہ
             </div>
-            <p className="responsive-text" style={{
+            <p style={{
               color: '#666',
               margin: 0,
-              fontStyle: 'italic'
+              fontStyle: 'italic',
+              fontSize: 'var(--text-base)'
             }}>
               "Illuminating the bright path of clean energy journey"
             </p>
@@ -472,7 +489,7 @@ export default function About() {
           <div style={{ marginBottom: 'var(--section-padding)' }}>
             <SectionHeader title="Our Journey" />
 
-            <div style={{ maxWidth: 'min(1200px, 95vw)', margin: '0 auto' }}>
+            <div className="timeline-container">
               <TimelineItem
                 year="1998"
                 title="Humble Beginnings"
@@ -512,123 +529,94 @@ export default function About() {
           </div>
 
           {/* Enhanced Mission, Vision, Values */}
-<div style={{ marginBottom: 'var(--section-padding)' }}>
-  <SectionHeader title="Our Foundation" />
+          <div style={{ marginBottom: 'var(--section-padding)' }}>
+            <SectionHeader title="Our Foundation" />
 
-  <div className="grid-auto" style={{ gap: 'clamp(20px, 4vw, 30px)' }}>
-    {[{
-      key: 'mission',
-      icon: '🎯',
-      title: 'Our Mission',
-      text: 'To empower every household and business with reliable, clean, and sustainable solar energy solutions tailored for the future.',
-      delay: '0.2s'
-    },{
-      key: 'vision',
-      icon: '🔮',
-      title: 'Our Vision',
-      text: 'To be the leading solar energy provider in Pakistan, driving innovation, energy independence, and environmental sustainability through excellence in service and technology.',
-      delay: '0.4s'
-    },{
-      key: 'values',
-      icon: '💎',
-      title: 'Our Values',
-      isValues: true,
-      valuesList: [
-        { title: 'Quality',       desc: 'Premium products and services' },
-        { title: 'Trust',         desc: 'Transparent and honest dealings' },
-        { title: 'Innovation',    desc: 'Cutting-edge solar technology' },
-        { title: 'Sustainability',desc: 'Protecting our environment' }
-      ],
-      delay: '0.6s'
-    }].map(({ key, icon, title, text, isValues, valuesList, delay }) => (
-      <Card3D key={key} style={{
-        position: 'relative',
-        overflow: 'visible',                       // allow icon overflow
-        padding: 'var(--card-padding)',
-        paddingTop: 'clamp(48px, 6vw, 64px)',      // space for icon
-        textAlign: 'center',
-        animation: `fadeInUp 0.8s ease-out ${delay} both`,
-        minHeight: 'clamp(280px, 35vw, 350px)',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center'
-      }}>
-        <div style={{
-          position: 'absolute',
-          top: 'clamp(-20px, -3vw, -25px)',        // lift icon a bit more
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: 'clamp(32px, 5vw, 40px)',
-          height: 'clamp(32px, 5vw, 40px)',
-          background: 'linear-gradient(45deg, #FF6B35, #F7931E)',
-          borderRadius: '50%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: 'clamp(12px, 2.5vw, 16px)',
-          boxShadow: '0 6px 20px rgba(255, 107, 53, 0.3)',
-          zIndex: 1
-        }}>
-          {icon}
-        </div>
-
-        <h3 style={{
-          color: "#FF6B35",
-          fontWeight: 800,
-          fontSize: 'var(--heading-3)',
-          margin: 0,
-          marginBottom: 'clamp(16px, 2.5vw, 20px)',
-          letterSpacing: ".01em"
-        }}>
-          {title}
-        </h3>
-
-        {isValues
-          ? <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
-              gap: 'clamp(12px, 2vw, 16px)',
-              width: '100%'
-            }}>
-              {valuesList.map((v, i) => (
-                <div key={i} style={{
-                  background: 'rgba(255, 107, 53, 0.05)',
-                  padding: 'clamp(10px, 2vw, 14px)',
-                  borderRadius: 'clamp(8px, 1.5vw, 12px)',
-                  border: '1px solid rgba(255, 107, 53, 0.1)',
-                  textAlign: 'left'
+            <div className="grid-auto" style={{ gap: 'clamp(20px, 4vw, 30px)' }}>
+              {[{
+                key: 'mission',
+                title: 'Our Mission',
+                text: 'To empower every household and business with reliable, clean, and sustainable solar energy solutions tailored for the future.',
+                delay: '0.2s'
+              },{
+                key: 'vision',
+                title: 'Our Vision',
+                text: 'To be the leading solar energy provider in Pakistan, driving innovation, energy independence, and environmental sustainability through excellence in service and technology.',
+                delay: '0.4s'
+              },{
+                key: 'values',
+                title: 'Our Values',
+                isValues: true,
+                valuesList: [
+                  { title: 'Quality', desc: 'Premium products and services' },
+                  { title: 'Trust', desc: 'Transparent and honest dealings' },
+                  { title: 'Innovation', desc: 'Cutting-edge solar technology' },
+                  { title: 'Sustainability', desc: 'Protecting our environment' }
+                ],
+                delay: '0.6s'
+              }].map(({ key, title, text, isValues, valuesList, delay }) => (
+                <Card3D key={key} style={{
+                  padding: 'var(--card-padding)',
+                  textAlign: 'center',
+                  animation: `fadeInUp 0.8s ease-out ${delay} both`,
+                  minHeight: 'clamp(280px, 35vw, 350px)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center'
                 }}>
-                  <div style={{
-                    color: '#FF6B35',
-                    fontWeight: 'bold',
-                    fontSize: 'clamp(0.875rem, 2vw, 1rem)',
-                    marginBottom: '4px'
-                  }}>
-                    {v.title}
-                  </div>
-                  <p style={{
-                    color: "#333",
+                  <h3 style={{
+                    color: "#FF6B35",
+                    fontWeight: 800,
+                    fontSize: 'var(--heading-3)',
                     margin: 0,
-                    lineHeight: 1.4
+                    marginBottom: 'clamp(16px, 2.5vw, 20px)'
                   }}>
-                    {v.desc}
-                  </p>
-                </div>
+                    {title}
+                  </h3>
+
+                  {isValues
+                    ? <div className="grid-values">
+                        {valuesList.map((v, i) => (
+                          <div key={i} style={{
+                            background: 'rgba(255, 107, 53, 0.05)',
+                            padding: 'clamp(12px, 2.5vw, 16px)',
+                            borderRadius: 'clamp(8px, 1.5vw, 12px)',
+                            border: '1px solid rgba(255, 107, 53, 0.1)',
+                            textAlign: 'left'
+                          }}>
+                            <div style={{
+                              color: '#FF6B35',
+                              fontWeight: 'bold',
+                              fontSize: 'clamp(14px, 2.5vw, 16px)',
+                              marginBottom: 'clamp(4px, 1vw, 6px)'
+                            }}>
+                              {v.title}
+                            </div>
+                            <p style={{
+                              color: "#333",
+                              margin: 0,
+                              lineHeight: 1.4,
+                              fontSize: 'var(--text-small)'
+                            }}>
+                              {v.desc}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    : <p style={{
+                        color: "#333",
+                        fontWeight: 500,
+                        margin: 0,
+                        lineHeight: 1.6,
+                        fontSize: 'var(--text-base)'
+                      }}>
+                        {text}
+                      </p>
+                  }
+                </Card3D>
               ))}
             </div>
-          : <p className="responsive-text" style={{
-              color: "#333",
-              fontWeight: 500,
-              margin: 0,
-              lineHeight: 1.6
-            }}>
-              {text}
-            </p>
-        }
-      </Card3D>
-    ))}
-  </div>
-</div>
+          </div>
 
           {/* Enhanced Stats Section */}
           <div style={{ marginBottom: 'var(--section-padding)' }}>
@@ -654,23 +642,10 @@ export default function About() {
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
-                position: 'relative',
                 animation: 'fadeInLeft 0.8s ease-out 0.2s both',
                 maxWidth: '100%',
                 width: '100%'
               }}>
-                {/* Background decoration */}
-                <div style={{
-                  position: 'absolute',
-                  top: 'clamp(12px, 2vw, 16px)',
-                  right: 'clamp(12px, 2vw, 16px)',
-                  width: 'clamp(32px, 5vw, 48px)',
-                  height: 'clamp(32px, 5vw, 48px)',
-                  background: 'linear-gradient(45deg, rgba(255, 107, 53, 0.1), rgba(247, 147, 30, 0.1))',
-                  borderRadius: '50%',
-                  animation: 'pulse 3s ease-in-out infinite'
-                }}></div>
-
                 <div style={{
                   position: 'relative',
                   marginBottom: 'clamp(16px, 3vw, 24px)'
@@ -678,10 +653,9 @@ export default function About() {
                   <img
                     src={aqibImg}
                     alt="Engr. Muhammad Aqib Afridi"
-                    className="profile-hover"
                     style={{
-                      width: 'clamp(90px, 15vw, 130px)',
-                      height: 'clamp(110px, 18vw, 150px)',
+                      width: 'clamp(100px, 18vw, 140px)',
+                      height: 'clamp(120px, 22vw, 160px)',
                       objectFit: "cover",
                       borderRadius: 'var(--border-radius)',
                       border: "3px solid #FF6B35",
@@ -689,23 +663,17 @@ export default function About() {
                       boxShadow: "0 12px 32px rgba(255, 107, 53, 0.2)",
                       transition: 'all 0.3s ease'
                     }}
+                    onMouseEnter={(e) => {
+                      if (window.innerWidth > 768) {
+                        e.target.style.transform = 'scale(1.03)';
+                        e.target.style.boxShadow = '0 16px 40px rgba(255, 107, 53, 0.3)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.transform = 'scale(1)';
+                      e.target.style.boxShadow = '0 12px 32px rgba(255, 107, 53, 0.2)';
+                    }}
                   />
-                  <div style={{
-                    position: 'absolute',
-                    bottom: 'clamp(-6px, -1vw, -8px)',
-                    right: 'clamp(-6px, -1vw, -8px)',
-                    width: 'clamp(24px, 4vw, 32px)',
-                    height: 'clamp(24px, 4vw, 32px)',
-                    background: 'linear-gradient(45deg, #FF6B35, #F7931E)',
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 'clamp(12px, 2vw, 16px)',
-                    boxShadow: '0 4px 12px rgba(255, 107, 53, 0.3)'
-                  }}>
-                    👑
-                  </div>
                 </div>
 
                 <h4 style={{ 
@@ -714,12 +682,13 @@ export default function About() {
                   WebkitTextFillColor: 'transparent',
                   backgroundClip: 'text',
                   fontWeight: 800, 
-                  fontSize: 'clamp(16px, 3vw, 20px)', 
-                  margin: "0 0 clamp(6px, 1.5vw, 10px) 0",
+                  fontSize: 'clamp(18px, 3.5vw, 22px)', 
+                  margin: "0 0 clamp(8px, 2vw, 12px) 0",
                   textAlign: 'center'
                 }}>
                   Engr. Muhammad Aqib Afridi
                 </h4>
+                
                 <div style={{ 
                   fontSize: 'var(--text-base)', 
                   fontWeight: 600, 
@@ -730,15 +699,16 @@ export default function About() {
                   <div style={{
                     background: 'linear-gradient(135deg, #fff7e6, #ffffff)',
                     padding: 'clamp(8px, 1.5vw, 12px) clamp(12px, 2vw, 16px)',
-                    borderRadius: 'clamp(8px, 1.5vw, 12px)',
+                    borderRadius: 'var(--border-radius)',
                     border: '2px solid #F7931E',
                     marginBottom: 'clamp(8px, 1.5vw, 12px)'
                   }}>
                     <strong>Founder</strong>
                   </div>
-                  <span className="responsive-text-small" style={{ 
+                  <span style={{ 
                     fontWeight: 500, 
-                    color: "#666"
+                    color: "#666",
+                    fontSize: 'var(--text-small)'
                   }}>
                     BSc Electrical Engineering, SUIT Peshawar
                   </span>
@@ -769,11 +739,13 @@ export default function About() {
                   }}>
                     Founder's Message
                   </div>
-                  <p className="responsive-text" style={{
+                  <p style={{
                     color: "#333",
                     fontWeight: 500,
                     margin: 'clamp(12px, 2vw, 16px) 0 0 0',
-                    fontStyle: 'italic'
+                    fontStyle: 'italic',
+                    fontSize: 'var(--text-base)',
+                    lineHeight: '1.6'
                   }}>
                     "With every project, my goal is to deliver not just energy but peace of mind. Syed Solar Energy was founded to serve every home and business with honesty, quality, and true after-sales support. I thank all our customers for trusting us with their energy needs—your belief in us keeps us moving forward."
                   </p>
@@ -787,23 +759,10 @@ export default function About() {
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
-                position: 'relative',
                 animation: 'fadeInRight 0.8s ease-out 0.4s both',
                 maxWidth: '100%',
                 width: '100%'
               }}>
-                {/* Background decoration */}
-                <div style={{
-                  position: 'absolute',
-                  top: 'clamp(12px, 2vw, 16px)',
-                  left: 'clamp(12px, 2vw, 16px)',
-                  width: 'clamp(32px, 5vw, 48px)',
-                  height: 'clamp(32px, 5vw, 48px)',
-                  background: 'linear-gradient(45deg, rgba(247, 147, 30, 0.1), rgba(255, 152, 0, 0.1))',
-                  borderRadius: '50%',
-                  animation: 'pulse 3s ease-in-out infinite 1s'
-                }}></div>
-
                 <div style={{
                   position: 'relative',
                   marginBottom: 'clamp(16px, 3vw, 24px)'
@@ -811,10 +770,9 @@ export default function About() {
                   <img
                     src={zubairImg}
                     alt="Engr. M Zubair Afridi"
-                    className="profile-hover"
                     style={{
-                      width: 'clamp(90px, 15vw, 130px)',
-                      height: 'clamp(110px, 18vw, 150px)',
+                      width: 'clamp(100px, 18vw, 140px)',
+                      height: 'clamp(120px, 22vw, 160px)',
                       objectFit: "cover",
                       borderRadius: 'var(--border-radius)',
                       border: "3px solid #FF6B35",
@@ -822,24 +780,17 @@ export default function About() {
                       boxShadow: "0 12px 32px rgba(255, 107, 53, 0.2)",
                       transition: 'all 0.3s ease'
                     }}
+                    onMouseEnter={(e) => {
+                      if (window.innerWidth > 768) {
+                        e.target.style.transform = 'scale(1.03)';
+                        e.target.style.boxShadow = '0 16px 40px rgba(255, 107, 53, 0.3)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.transform = 'scale(1)';
+                      e.target.style.boxShadow = '0 12px 32px rgba(255, 107, 53, 0.2)';
+                    }}
                   />
-                  <div style={{
-                    position: 'absolute',
-                    bottom: 'clamp(-6px, -1vw, -8px)',
-                    right: 'clamp(-6px, -1vw, -8px)',
-                    width: 'clamp(24px, 4vw, 32px)',
-                    height: 'clamp(24px, 4vw, 32px)',
-                    background: 'linear-gradient(45deg, #FFD700, #FFA500)',
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 'clamp(12px, 2vw, 16px)',
-                    boxShadow: '0 4px 12px rgba(255, 215, 0, 0.3)',
-                    animation: 'bounce 2s ease-in-out infinite'
-                  }}>
-                    🏅
-                  </div>
                 </div>
 
                 <h4 style={{ 
@@ -848,8 +799,8 @@ export default function About() {
                   WebkitTextFillColor: 'transparent',
                   backgroundClip: 'text',
                   fontWeight: 800, 
-                  fontSize: 'clamp(16px, 3vw, 20px)', 
-                  margin: "0 0 clamp(6px, 1.5vw, 10px) 0",
+                  fontSize: 'clamp(18px, 3.5vw, 22px)', 
+                  margin: "0 0 clamp(8px, 2vw, 12px) 0",
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -863,7 +814,7 @@ export default function About() {
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent',
                     backgroundClip: 'text',
-                    fontSize: 'clamp(10px, 1.8vw, 12px)',
+                    fontSize: 'clamp(10px, 2vw, 12px)',
                     fontWeight: 'bold',
                     border: '1px solid #FFD700',
                     borderRadius: 'clamp(8px, 1.5vw, 12px)',
@@ -885,15 +836,16 @@ export default function About() {
                   <div style={{
                     background: 'linear-gradient(135deg, #fff7e6, #ffffff)',
                     padding: 'clamp(8px, 1.5vw, 12px) clamp(12px, 2vw, 16px)',
-                    borderRadius: 'clamp(8px, 1.5vw, 12px)',
+                    borderRadius: 'var(--border-radius)',
                     border: '2px solid #F7931E',
                     marginBottom: 'clamp(8px, 1.5vw, 12px)'
                   }}>
                     <strong>CEO</strong>
                   </div>
-                  <span className="responsive-text-small" style={{ 
+                  <span style={{ 
                     fontWeight: 500, 
-                    color: "#666"
+                    color: "#666",
+                    fontSize: 'var(--text-small)'
                   }}>
                     BSc Electrical Engineering, SUIT Peshawar
                   </span>
@@ -924,11 +876,13 @@ export default function About() {
                   }}>
                     CEO's Message
                   </div>
-                  <p className="responsive-text" style={{
+                  <p style={{
                     color: "#333",
                     fontWeight: 500,
                     margin: 'clamp(12px, 2vw, 16px) 0 0 0',
-                    fontStyle: 'italic'
+                    fontStyle: 'italic',
+                    fontSize: 'var(--text-base)',
+                    lineHeight: '1.6'
                   }}>
                     "At Syed Solar Energy, our promise is reliability, transparency, and value for every customer. We are on a mission to make solar energy accessible, affordable, and easy for everyone in Pakistan. Thank you for your support—together, we are lighting the path to a cleaner, brighter future!"
                   </p>
@@ -948,8 +902,8 @@ export default function About() {
             position: 'relative',
             overflow: 'hidden',
             animation: 'fadeInUp 0.8s ease-out 0.8s both'
-          }} mobileFullWidth>
-            {/* Animated background elements */}
+          }}>
+            {/* Clean animated background elements */}
             <div style={{
               position: 'absolute',
               top: 'clamp(12px, 2vw, 16px)',
@@ -996,13 +950,12 @@ export default function About() {
             }}>
               <button
                 onClick={() => window.location.href = '/quotation'}
-                className="cta-button"
                 style={{
                   background: 'rgba(255,255,255,0.9)',
                   color: '#FF6600',
                   border: 'none',
-                  padding: 'clamp(10px, 2vw, 14px) clamp(16px, 3vw, 24px)',
-                  borderRadius: 'clamp(16px, 3vw, 25px)',
+                  padding: 'clamp(12px, 2.5vw, 16px) clamp(20px, 4vw, 28px)',
+                  borderRadius: 'clamp(20px, 4vw, 30px)',
                   fontSize: 'var(--text-base)',
                   fontWeight: 'bold',
                   cursor: 'pointer',
@@ -1012,18 +965,27 @@ export default function About() {
                   minWidth: 'clamp(160px, 35vw, 200px)',
                   flexShrink: 0
                 }}
+                onMouseEnter={(e) => {
+                  if (window.innerWidth > 768) {
+                    e.target.style.transform = 'scale(1.03)';
+                    e.target.style.boxShadow = '0 6px 20px rgba(0,0,0,0.3)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.transform = 'scale(1)';
+                  e.target.style.boxShadow = 'none';
+                }}
               >
                 🚀 Get Free Quote
               </button>
               <button
-                onClick={() => window.open('https://wa.me/923075596695?text=Hi! I would like to learn more about Syed Solar Energy and your services.', '_blank')}
-                className="cta-button"
+                onClick={() => window.open('https://wa.me/923075506695?text=Hi! I would like to learn more about Syed Solar Energy and your services.', '_blank')}
                 style={{
                   background: 'transparent',
                   color: 'white',
                   border: '2px solid rgba(255,255,255,0.8)',
-                  padding: 'clamp(8px, 1.8vw, 12px) clamp(16px, 3vw, 22px)',
-                  borderRadius: 'clamp(16px, 3vw, 25px)',
+                  padding: 'clamp(10px, 2.2vw, 14px) clamp(20px, 4vw, 26px)',
+                  borderRadius: 'clamp(20px, 4vw, 30px)',
                   fontSize: 'var(--text-base)',
                   fontWeight: 'bold',
                   cursor: 'pointer',
@@ -1032,6 +994,16 @@ export default function About() {
                   letterSpacing: '0.5px',
                   minWidth: 'clamp(160px, 35vw, 200px)',
                   flexShrink: 0
+                }}
+                onMouseEnter={(e) => {
+                  if (window.innerWidth > 768) {
+                    e.target.style.background = 'rgba(255,255,255,0.1)';
+                    e.target.style.borderColor = 'white';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.background = 'transparent';
+                  e.target.style.borderColor = 'rgba(255,255,255,0.8)';
                 }}
               >
                 📞 Contact Us
@@ -1041,7 +1013,7 @@ export default function About() {
         </div>
       </section>
 
-      {/* Enhanced Footer */}
+      {/* Use imported Footer component */}
       <Footer />
 
       {/* Enhanced CSS Animations and Responsive Design */}
@@ -1115,7 +1087,7 @@ export default function About() {
           @keyframes pulse {
             0%, 100% { 
               transform: scale(1); 
-              opacity: 0.7; 
+              opacity: 0.8; 
             }
             50% { 
               transform: scale(1.05); 
@@ -1128,76 +1100,71 @@ export default function About() {
               transform: translateY(0px); 
             }
             50% { 
-              transform: translateY(clamp(-6px, -1vw, -8px)); 
+              transform: translateY(clamp(-8px, -1.5vw, -10px)); 
             }
           }
 
-          /* Enhanced Responsive Design */
+          /* Enhanced Mobile Support */
           @media (max-width: 480px) {
             .timeline-item {
-              flex-direction: column !important;
-              text-align: center !important;
+              margin-bottom: clamp(16px, 4vw, 24px) !important;
             }
             
-            .timeline-icon {
-              margin-right: 0 !important;
-              margin-bottom: clamp(12px, 3vw, 16px) !important;
-            }
-            
-            .cta-button {
-              width: 100% !important;
-              min-width: auto !important;
-            }
-
             .grid-leadership {
-              gap: clamp(20px, 5vw, 30px) !important;
+              gap: clamp(16px, 4vw, 24px) !important;
+            }
+            
+            .grid-values {
+              gap: clamp(8px, 2vw, 12px) !important;
             }
           }
-          
+
           @media (min-width: 481px) and (max-width: 768px) {
             .timeline-item {
-              align-items: flex-start;
+              margin-bottom: clamp(24px, 5vw, 32px);
             }
           }
-          
-          @media (max-width: 640px) {
-            .timeline-item {
-              flex-direction: column;
-              text-align: center;
-            }
-            
-            .timeline-icon {
-              margin-right: 0;
-              margin-bottom: clamp(15px, 3vw, 20px);
+
+          /* High contrast mode support */
+          @media (prefers-contrast: high) {
+            .timeline-content,
+            .grid-values > div {
+              border: 2px solid #333 !important;
             }
           }
-          
-          /* Touch-friendly interactions */
-          @media (hover: none) and (pointer: coarse) {
-            .responsive-card:active {
-              transform: scale(0.98);
-            }
-            
-            .cta-button:active {
-              transform: scale(0.95);
+
+          /* Reduced motion support */
+          @media (prefers-reduced-motion: reduce) {
+            * {
+              animation-duration: 0.01ms !important;
+              animation-iteration-count: 1 !important;
+              transition-duration: 0.01ms !important;
+              scroll-behavior: auto !important;
             }
           }
-          
-          /* Enhanced hover effects for desktop */
-          @media (min-width: 769px) {
-            .logo-hover:hover {
-              transform: scale(1.05) rotate(2deg) !important;
-              box-shadow: 0 16px 40px rgba(255, 107, 53, 0.3) !important;
+
+          /* Focus management for accessibility */
+          button:focus-visible {
+            outline: 3px solid #FF6B35;
+            outline-offset: 2px;
+          }
+
+          .timeline-content:focus-visible,
+          img:focus-visible {
+            outline: 2px solid #FF6B35;
+            outline-offset: 2px;
+          }
+
+          /* Print styles */
+          @media print {
+            .floating-particle {
+              display: none !important;
             }
             
-            .profile-hover:hover {
-              transform: scale(1.03) !important;
-              box-shadow: 0 16px 40px rgba(255, 107, 53, 0.3) !important;
-            }
-            
-            .cta-button:hover {
-              transform: scale(1.03);
-              box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            .timeline-content,
+            .grid-values > div {
+              box-shadow: none !important;
+              border: 1px solid #333 !important;
             }
           }
 
@@ -1209,44 +1176,17 @@ export default function About() {
             }
           }
 
-          /* High contrast mode support */
-          @media (prefers-contrast: high) {
-            .responsive-card {
-              border: 2px solid #333 !important;
-            }
+          /* Smooth scrolling */
+          html {
+            scroll-behavior: smooth;
           }
 
-          /* Reduced motion support */
-          @media (prefers-reduced-motion: reduce) {
-            * {
-              animation-duration: 0.01ms !important;
-              animation-iteration-count: 1 !important;
-              transition-duration: 0.01ms !important;
+          /* High DPI display optimizations */
+          @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 2dppx) {
+            img {
+              image-rendering: -webkit-optimize-contrast;
+              image-rendering: crisp-edges;
             }
-          }
-
-          /* Print styles */
-          @media print {
-            .floating-particle,
-            .cta-button {
-              display: none !important;
-            }
-            
-            .responsive-card {
-              box-shadow: none !important;
-              border: 1px solid #333 !important;
-            }
-          }
-          
-          /* Focus management for accessibility */
-          .cta-button:focus-visible {
-            outline: 2px solid #FF6B35;
-            outline-offset: 2px;
-          }
-          
-          .responsive-card:focus-visible {
-            outline: 2px solid #FF6B35;
-            outline-offset: 2px;
           }
         `}
       </style>
