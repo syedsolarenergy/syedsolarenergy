@@ -3,8 +3,8 @@ import { supabase } from "../supabaseClient";
 
 // Status color mapping
 const statusColors = {
-  Pending: "#ffe0b2",
-  Contacted: "#e3f2fd"
+  pending: "#ffe0b2",
+  contacted: "#e3f2fd"
 };
 
 function FollowUps() {
@@ -25,16 +25,14 @@ function FollowUps() {
       const { data, error } = await supabase
         .from("quotations")
         .select("*")
-        .in("follow_up_status", ["Pending", "Contacted"])
+        .in("follow_up_status", ["pending", "contacted"])
         .order("created_at", { ascending: false });
 
-      if (error) {
-        console.error("Error fetching from Supabase:", error);
-        return null;
-      }
+      return (data || []).map(item => ({
+  ...item,
+  follow_up_status: item.follow_up_status?.toLowerCase()
+      }));
 
-      console.log("✅ Fetched follow-up quotations from Supabase:", data?.length || 0);
-      return data || [];
     } catch (err) {
       console.error("Unexpected error fetching from Supabase:", err);
       return null;
@@ -828,7 +826,7 @@ function FollowUps() {
                   key={q.id || index}
                   style={{
                     background:
-                      statusColors[q.followUpStatus || "Pending"] || "#fff",
+                      statusColors[q.followUpStatus || "pending"] || "#fff",
                     opacity: syncing ? 0.8 : 1,
                     transition: "opacity 0.3s ease"
                   }}
@@ -867,12 +865,12 @@ function FollowUps() {
                   </td>
                   <td style={td}>
                     <select
-                      value={q.followUpStatus || "Pending"}
+                      value={q.followUpStatus || "pending"}
                       style={{
                         ...inputStyle,
                         fontWeight: "bold",
                         color:
-                          q.followUpStatus === "Contacted"
+                          q.followUpStatus === "contacted"
                             ? "#1976d2"
                             : "#333"
                       }}
@@ -880,16 +878,16 @@ function FollowUps() {
                         updateField(q.id, "followUpStatus", e.target.value);
                       }}
                     >
-                      <option value="Pending">Pending</option>
-                      <option value="Contacted">Contacted</option>
-                      <option value="Completed">Completed</option>
-                      <option value="Closed">Closed</option>
+                      <option value="pending">Pending</option>
+                      <option value="contacted">Contacted</option>
+                      <option value="completed">Completed</option>
+                      <option value="closed">Closed</option>
                     </select>
                   </td>
                   <td style={td}>
                     <input
                       type="text"
-                      placeholder={q.followUpStatus === 'Contacted' ? "Add contact details..." : "Add remarks..."}
+                      placeholder={q.followUpStatus === 'contacted' ? "Add contact details..." : "Add remarks..."}
                       value={q.remarks || ""}
                       style={inputStyle}
                       onChange={(e) =>
@@ -900,7 +898,7 @@ function FollowUps() {
                   <td style={td}>
                     <div style={{ display: "flex", gap: "5px", flexDirection: "column" }}>
                       <button
-                        onClick={() => updateField(q.id, "followUpStatus", "Completed")}
+                        onClick={() => updateField(q.id, "followUpStatus", "completed")}
                         style={{
                           background: "#4caf50",
                           color: "white",
@@ -973,10 +971,10 @@ function FollowUps() {
             gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
             gap: "15px"
           }}>
-            {['Pending', 'Contacted'].map(status => {
-              const count = quotations.filter(q => (q.followUpStatus || "Pending") === status).length;
+            {['pending', 'contacted'].map(status => {
+              const count = quotations.filter(q => (q.followUpStatus || "pending") === status).length;
               const total = quotations.reduce((sum, q) => 
-                (q.followUpStatus || "Pending") === status ? sum + (q.total || 0) : sum, 0
+                (q.followUpStatus || "pending") === status ? sum + (q.total || 0) : sum, 0
               );
               return (
                 <div key={status} style={{
