@@ -131,68 +131,65 @@ const QuotationForm = () => {
     }
   }
 
-  // Load quotations from Supabase
-  async function loadQuotationsFromSupabase() {
-    try {
-      const { data, error } = await supabase
-        .from("quotations")
-        .select("*")
-        .order("created_at", { ascending: false });
+async function loadQuotationsFromSupabase() {
+  try {
+    const { data, error } = await supabase
+      .from("quotations")
+      .select("*")
+      .order("created_at", { ascending: false });
 
-      if (error) {
-        console.error("Error loading from Supabase:", error);
-        return [];
-      }
-      
-      const convertedData = (data || []).map(item => ({
-        id: item.quotation_id || item.id.toString(),
-        customer: {
-          name: item.customer_name,
-          contact: item.customer_contact,
-          email: item.customer_email,
-          address: item.customer_address
-        },
-        staff: item.staff_name,
-        systemType: item.system_type,
-        location: item.location,
-        inverter: {
-          company: item.inverter_type,
-          kw: item.inverter_size?.replace('kW', '') || '0',
-          quantity: 1,
-          pricePerUnit: item.inverter_total || 0
-        },
-        batteryModel: item.battery_model,
-        batteryQuantity: item.battery_quantity || 0,
-        batteryPrice: item.battery_quantity > 0 ? (item.battery_total / item.battery_quantity) : 0,
-        solarPanel: {
-          company: item.panel_brand,
-          watts: item.panel_watt,
-          quantity: item.panel_quantity,
-          pricePerWatt: item.panel_quantity > 0 ? (item.panel_total / (item.panel_quantity * parseInt(item.panel_watt))) : 0
-        },
-        stand: {
-          type: item.stand_type,
-          pricePerStand: item.stand_total / (item.stand_quantity || 1)
-        },
-        Greenmeter: item.green_meter_charges || 0,
-        safety: item.safety_charges,
-        transport: item.transport_charges,
-        labour: item.installation_charges,
-        engineer: item.engineer_charges || 0,
-        total: item.total_amount,
-        date: item.created_at,
-        followUpDate: item.follow_up_date || "",
-        followUpStatus: item.follow_up_status || "Pending",
-        remarks: item.remarks || "",
-        quotationDate: item.quotation_date
-      }));
-
-      return convertedData;
-    } catch (err) {
-      console.error("Unexpected error loading from Supabase:", err);
+    if (error) {
+      console.error("Error loading from Supabase:", error);
       return [];
     }
+
+    return data.map(item => ({
+      id: item.quotation_id || item.id.toString(),
+      customer: {
+        name: item.customer_name,
+        contact: item.customer_contact,
+        email: item.customer_email,
+        address: item.customer_address
+      },
+      staff: item.staff_name,
+      systemType: item.system_type,
+      location: item.location,
+      inverter: {
+        company: item.inverter_type,
+        kw: item.inverter_size?.replace('kW', '') || '0',
+        quantity: 1,
+        pricePerUnit: item.inverter_total || 0
+      },
+      batteryModel: item.battery_model,
+      batteryQuantity: item.battery_quantity || 0,
+      batteryPrice: item.battery_quantity > 0 ? (item.battery_total / item.battery_quantity) : 0,
+      solarPanel: {
+        company: item.panel_brand,
+        watts: item.panel_watt,
+        quantity: item.panel_quantity,
+        pricePerWatt: item.panel_quantity > 0
+          ? (item.panel_total / (item.panel_quantity * parseInt(item.panel_watt)))
+          : 0
+      },
+      stand: {
+        type: item.stand_type,
+        pricePerStand: item.stand_total / (item.stand_quantity || 1)
+      },
+      safety: item.safety_charges,
+      transport: item.transport_charges,
+      labour: item.installation_charges,
+      engineer: item.engineer_charges || 0,
+      Greenmeter: item.green_meter_charges || 0,
+      total: item.total_amount,
+      date: item.created_at,
+      followUpStatus: item.follow_up_status,  // ← will now be "Pending", "Contacted", etc.
+      quotationDate: item.quotation_date
+    }));
+  } catch (err) {
+    console.error("Unexpected error loading from Supabase:", err);
+    return [];
   }
+}
 
   // Delete quotation from both localStorage and Supabase
   async function deleteQuotation(quotationId) {
