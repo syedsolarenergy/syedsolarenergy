@@ -164,7 +164,7 @@ const QuotationForm = () => {
         location: quotationData.location,
         quotation_id: quotationData.id,
         engineer_charges: quotationData.engineer || 0,
-        follow_up_status: 'Pending'
+        follow_up_status: 'pending'
       };
 
       console.log("Saving to Supabase:", supabaseData);
@@ -412,7 +412,7 @@ const QuotationForm = () => {
       total: getTotal(),
       date: new Date().toLocaleString(),
       followUpDate: "",
-      followUpStatus: "Pending",
+      followUpStatus: "pending",
       remarks: "",
       quotationDate
     };
@@ -1222,7 +1222,7 @@ const QuotationForm = () => {
           <div style={styles.analyticsIcon}>📞</div>
           <div style={styles.analyticsContent}>
             <div style={styles.analyticsValue}>
-              {savedQuotations.filter(q => ['Pending', 'Contacted'].includes(q.followUpStatus || 'Pending')).length}
+              {savedQuotations.filter(q => ['pending', 'contacted'].includes(q.followUpStatus || 'Pending')).length}
             </div>
             <div style={styles.analyticsTitle}>Needs Follow-up</div>
           </div>
