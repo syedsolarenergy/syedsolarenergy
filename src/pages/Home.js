@@ -1316,30 +1316,35 @@ export default function Home() {
   {/* Add these responsive tweaks */}
   <style>
     {`
-    .grid-reviews {
-      display: grid;
-      gap: var(--grid-gap);
-      grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
-    }
-    @media (max-width: 768px) {
-      .grid-reviews {
-        grid-template-columns: 1fr;
-      }
-    }
-    @media (min-width: 769px) and (max-width: 1024px) {
-      .grid-reviews {
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
-    @media (max-width: 480px) {
-      .grid-reviews h4 {
-        font-size: clamp(14px, 3.5vw, 16px);
-      }
-      .grid-reviews p {
-        font-size: clamp(0.75rem, 2.5vw, 0.9rem);
-        min-height: clamp(60px, 10vw, 80px);
-      }
-    }
+.grid-reviews {
+  display: grid;
+  gap: var(--grid-gap);
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 769px) {
+  .grid-reviews {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1025px) {
+  .grid-reviews {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Smaller text on very small screens */
+@media (max-width: 480px) {
+  .grid-reviews h4 {
+    font-size: clamp(14px, 3.5vw, 16px);
+  }
+  .grid-reviews p {
+    font-size: clamp(0.75rem, 2.5vw, 0.9rem);
+    min-height: clamp(60px, 10vw, 80px);
+  }
+}
+
     `}
   </style>
 </section>
