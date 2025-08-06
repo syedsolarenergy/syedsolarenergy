@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { supabase } from "../supabaseClient";
+import { supabase } from "../supabaseClient"; // Add Supabase integration
 
 const QuotationForm = () => {
   // State variables
@@ -18,7 +18,6 @@ const QuotationForm = () => {
   const [batteryPrice, setBatteryPrice] = useState(0);
   const [solarPanel, setSolarPanel] = useState({ company: '', watts: '', pricePerWatt: 0, quantity: 1 });
   const [stand, setStand] = useState({ type: '', pricePerStand: 0 });
-  
   // Additional costs
   const [safety, setSafety] = useState(0);
   const [transport, setTransport] = useState(5000);
@@ -27,7 +26,6 @@ const QuotationForm = () => {
   const [labour, setLabour] = useState(20000);
   const [engineer, setEngineer] = useState(10000);
   const [Greenmeter, setGreenmeter] = useState(10000);
-  
   // UI states
   const [savedQuotations, setSavedQuotations] = useState([]);
   const [showPreview, setShowPreview] = useState(false);
@@ -35,7 +33,7 @@ const QuotationForm = () => {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [currentQuotation, setCurrentQuotation] = useState(null);
   const [isSavingToDatabase, setIsSavingToDatabase] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [deletingQuotationId, setDeletingQuotationId] = useState(null);
   
   // Ref for PDF generation
   const quotationRef = useRef();
@@ -56,6 +54,7 @@ const QuotationForm = () => {
     try {
       setIsSavingToDatabase(true);
       
+      // Map the quotation data to match our Supabase table structure
       const supabaseData = {
         customer_name: quotationData.customer.name,
         customer_contact: quotationData.customer.contact,
@@ -84,12 +83,15 @@ const QuotationForm = () => {
         total_amount: quotationData.total,
         quotation_date: new Date().toISOString(),
         created_at: new Date().toISOString(),
+        // Additional fields specific to this system
         staff_name: quotationData.staff,
         location: quotationData.location,
         quotation_id: quotationData.id,
         engineer_charges: quotationData.engineer || 0,
-        follow_up_status: quotationData.followUpStatus || 'Pending'
+        follow_up_status: 'Pending' // Default status for new quotations
       };
+
+      console.log("Saving to Supabase:", supabaseData);
 
       const { data, error } = await supabase
         .from("quotations")
@@ -98,6 +100,8 @@ const QuotationForm = () => {
 
       if (error) {
         console.error("Supabase error:", error);
+        
+        // Provide specific error messages
         let errorMessage = "Quotation generated successfully, but couldn't save to database.\n\n";
         
         if (error.code === '42P01') {
@@ -120,6 +124,7 @@ const QuotationForm = () => {
       }
     } catch (err) {
       console.error("Unexpected Supabase error:", err);
+      
       let errorMessage = "Quotation generated successfully, but couldn't save to database.\n\n";
       
       if (err.message?.includes('supabase')) {
@@ -137,10 +142,150 @@ const QuotationForm = () => {
     }
   }
 
+  // Load quotations from Supabase
+  async function loadQuotationsFromSupabase() {
+    try {
+      console.log("Loading quotations from Supabase...");
+      
+      const { data, error } = await supabase
+        .from("quotations")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error loading from Supabase:", error);
+        return [];
+      }
+
+      console.log("✅ Loaded quotations from Supabase:", data?.length || 0);
+      
+      // Convert Supabase data to local format
+      const convertedData = (data || []).map(item => ({
+        id: item.quotation_id || item.id.toString(),
+        customer: {
+          name: item.customer_name,
+          contact: item.customer_contact,
+          email: item.customer_email,
+          address: item.customer_address
+        },
+        staff: item.staff_name,
+        systemType: item.system_type,
+        location: item.location,
+        inverter: {
+          company: item.inverter_type,
+          kw: item.inverter_size?.replace('kW', '') || '0',
+          quantity: 1,
+          pricePerUnit: item.inverter_total || 0
+        },
+        batteryModel: item.battery_model,
+        batteryQuantity: item.battery_quantity || 0,
+        batteryPrice: item.battery_quantity > 0 ? (item.battery_total / item.battery_quantity) : 0,
+        solarPanel: {
+          company: item.panel_brand,
+          watts: item.panel_watt,
+          quantity: item.panel_quantity,
+          pricePerWatt: item.panel_quantity > 0 ? (item.panel_total / (item.panel_quantity * parseInt(item.panel_watt))) : 0
+        },
+        stand: {
+          type: item.stand_type,
+          pricePerStand: item.stand_total / (item.stand_quantity || 1)
+        },
+        Greenmeter: item.green_meter_charges || 0,
+        safety: item.safety_charges,
+        transport: item.transport_charges,
+        labour: item.installation_charges,
+        engineer: item.engineer_charges || 0,
+        total: item.total_amount,
+        date: item.created_at,
+        followUpDate: item.follow_up_date || "",
+        followUpStatus: item.follow_up_status || "Pending",
+        remarks: item.remarks || "",
+        quotationDate: item.quotation_date
+      }));
+
+      return convertedData;
+    } catch (err) {
+      console.error("Unexpected error loading from Supabase:", err);
+      return [];
+    }
+  }
+
+  // Delete quotation from both localStorage and Supabase
+  async function deleteQuotation(quotationId) {
+    if (!confirm("Are you sure you want to delete this quotation? This action cannot be undone.")) {
+      return;
+    }
+
+    try {
+      setDeletingQuotationId(quotationId);
+
+      // Delete from Supabase first
+      const { error } = await supabase
+        .from("quotations")
+        .delete()
+        .eq("quotation_id", quotationId);
+
+      if (error) {
+        console.error("Error deleting from Supabase:", error);
+        // Continue with local deletion even if Supabase fails
+        alert("Warning: Could not delete from database, but will remove locally.");
+      } else {
+        console.log("✅ Deleted from Supabase successfully");
+      }
+
+      // Delete from localStorage
+      const updatedQuotations = savedQuotations.filter(q => q.id !== quotationId);
+      setSavedQuotations(updatedQuotations);
+      localStorage.setItem("quotations", JSON.stringify(updatedQuotations));
+
+      alert("✅ Quotation deleted successfully!");
+
+    } catch (err) {
+      console.error("Unexpected error deleting quotation:", err);
+      alert("❌ Failed to delete quotation: " + err.message);
+    } finally {
+      setDeletingQuotationId(null);
+    }
+  }
+
   // Load quotations on component mount
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem("quotations")) || [];
-    setSavedQuotations(saved);
+    const loadAllQuotations = async () => {
+      try {
+        // Load from Supabase first
+        const supabaseQuotations = await loadQuotationsFromSupabase();
+        
+        // Load from localStorage
+        const localQuotations = JSON.parse(localStorage.getItem("quotations")) || [];
+        
+        // Merge data (prioritize Supabase for existing records)
+        const mergedQuotations = [...supabaseQuotations];
+        
+        // Add local quotations that don't exist in Supabase
+        localQuotations.forEach(localQuote => {
+          const existsInSupabase = supabaseQuotations.some(supabaseQuote => 
+            supabaseQuote.id === localQuote.id || 
+            (supabaseQuote.customer.name === localQuote.customer.name && 
+             supabaseQuote.customer.contact === localQuote.customer.contact)
+          );
+          
+          if (!existsInSupabase) {
+            mergedQuotations.push(localQuote);
+          }
+        });
+
+        setSavedQuotations(mergedQuotations);
+        localStorage.setItem("quotations", JSON.stringify(mergedQuotations));
+        
+      } catch (err) {
+        console.error("Error loading quotations:", err);
+        // Fallback to localStorage only
+        const localQuotations = JSON.parse(localStorage.getItem("quotations")) || [];
+        setSavedQuotations(localQuotations);
+      }
+    };
+
+    loadAllQuotations();
   }, []);
   
   // Effects for dynamic cost adjustments
@@ -220,10 +365,10 @@ const QuotationForm = () => {
       quotationDate
     };
 
-    // Save to Supabase
+    // Save to Supabase first
     const savedToSupabase = await saveQuotationToSupabase(newQuotation);
     
-    // Save to localStorage
+    // Save quotation to localStorage
     const updatedQuotations = [...savedQuotations, newQuotation];
     setSavedQuotations(updatedQuotations);
     localStorage.setItem("quotations", JSON.stringify(updatedQuotations));
@@ -232,6 +377,7 @@ const QuotationForm = () => {
     setShowPreview(true);
     setIsGeneratingPDF(false);
     
+    // Show success message
     if (savedToSupabase) {
       alert("✅ Quotation generated and saved to database successfully! You can now print or save it as PDF using your browser.");
     } else {
@@ -239,8 +385,9 @@ const QuotationForm = () => {
     }
   };
   
-  // Print/Save quotation
+  // Print/Save quotation using browser's print functionality
   const printQuotation = () => {
+    // Check if we have the ref and currentQuotation
     if (!quotationRef.current || !currentQuotation) {
       alert("❌ Please generate a quotation first before printing.");
       return;
@@ -334,7 +481,6 @@ const QuotationForm = () => {
     }
   };
   
-  // Reset form
   const resetForm = () => {
     setCustomer({ name: '', contact: '', email: '', address: '' });
     setStaffName('');
@@ -356,53 +502,225 @@ const QuotationForm = () => {
     setCurrentQuotation(null);
   };
   
-  // Delete quotation
-  const deleteQuotation = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this quotation? This action cannot be undone.")) {
-      return;
-    }
-
-    setIsDeleting(true);
-    
-    try {
-      // Remove from localStorage
-      const updatedQuotations = savedQuotations.filter(q => q.id !== id);
-      setSavedQuotations(updatedQuotations);
-      localStorage.setItem("quotations", JSON.stringify(updatedQuotations));
-      
-      // Delete from database
-      const { error } = await supabase
-        .from('quotations')
-        .delete()
-        .or(`quotation_id.eq.${id},id.eq.${id}`);
-      
-      if (error) {
-        console.error('Delete error:', error);
-        alert('Quotation deleted locally but failed to delete from database');
-      } else {
-        alert('Quotation deleted successfully!');
-      }
-      
-      if (currentQuotation?.id === id) {
-        setShowPreview(false);
-        setCurrentQuotation(null);
-      }
-      
-      if (showQuotationsList && updatedQuotations.length === 0) {
-        setShowQuotationsList(false);
-      }
-    } catch (err) {
-      console.error('Delete error:', err);
-      alert('Failed to delete quotation');
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  // Quotation Preview Component
+  // Quotation Preview Component for PDF generation
   const QuotationPreview = () => (
     <div style={pdfStyles.container}>
-      {/* ... (same as before) ... */}
+      {/* Header with Logo and Company Info */}
+      <div style={pdfStyles.header}>
+        <div style={pdfStyles.logoSection}>
+          <div style={pdfStyles.logoContainer}>
+            <div style={pdfStyles.logo}>
+              <div style={pdfStyles.logoIcon}>☀️</div>
+              <div style={pdfStyles.logoText}>
+                <div style={pdfStyles.companyName}>SYED</div>
+                <div style={pdfStyles.solarText}>SOLAR ENERGY</div>
+              </div>
+            </div>
+          </div>
+          <div style={pdfStyles.companyDetails}>
+            <h1 style={pdfStyles.mainTitle}>SYED SOLAR ENERGY PVT LTD</h1>
+            <p style={pdfStyles.tagline}>Your Partner in Sustainable Energy Solutions</p>
+            <div style={pdfStyles.contactInfo}>
+              <p>📍 Office #23 Mustafa Plaza Ring Road Near Imtiaz Mega Center, Peshawar</p>
+              <p>📞 0307-5596695/03044678929 | 📧 sales@syedsolarenergy.com</p>
+              <p>🌐 www.syedsolarenergy.com</p>
+            </div>
+          </div>
+        </div>
+        <div style={pdfStyles.quotationInfo}>
+          <div style={pdfStyles.quotationTitle}>QUOTATION</div>
+          <div style={pdfStyles.quotationDetails}>
+            <p><strong>Quotation #:</strong> {currentQuotation?.id}</p>
+            <p><strong>Date:</strong> {quotationDate}</p>
+            <p><strong>Valid Until:</strong> {new Date(Date.now() + 7*24*60*60*1000).toLocaleDateString()}</p>
+          </div>
+        </div>
+      </div>
+      
+      {/* Customer and Project Info */}
+      <div style={pdfStyles.infoSection}>
+        <div style={pdfStyles.customerInfo}>
+          <h3 style={pdfStyles.sectionTitle}>📋 CUSTOMER INFORMATION</h3>
+          <div style={pdfStyles.infoCard}>
+            <p><strong>Name:</strong> {customer.name}</p>
+            <p><strong>Contact:</strong> {customer.contact}</p>
+            <p><strong>Email:</strong> {customer.email}</p>
+            <p><strong>Address:</strong> {customer.address}</p>
+          </div>
+        </div>
+        <div style={pdfStyles.projectInfo}>
+          <h3 style={pdfStyles.sectionTitle}>⚡ PROJECT DETAILS</h3>
+          <div style={pdfStyles.infoCard}>
+            <p><strong>Prepared By:</strong> {staffName}</p>
+            <p><strong>System Type:</strong> {systemType}</p>
+            <p><strong>Location:</strong> {location}</p>
+            <p><strong>Total Capacity:</strong> {(parseFloat(inverter.kw) || 0)} kW</p>
+          </div>
+        </div>
+      </div>
+      
+      {/* Equipment Details Table */}
+      <div style={pdfStyles.equipmentSection}>
+        <h3 style={pdfStyles.sectionTitle}>🔧 EQUIPMENT & PRICING BREAKDOWN</h3>
+        <table style={pdfStyles.table}>
+          <thead>
+            <tr style={pdfStyles.tableHeader}>
+              <th style={pdfStyles.th}>S.No</th>
+              <th style={pdfStyles.th}>Item Description</th>
+              <th style={pdfStyles.th}>Brand/Model</th>
+              <th style={pdfStyles.th}>Qty</th>
+              <th style={pdfStyles.th}>Unit Price (Rs)</th>
+              <th style={pdfStyles.th}>Total (Rs)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style={pdfStyles.tableRow}>
+              <td style={pdfStyles.td}>1</td>
+              <td style={pdfStyles.td}>Solar Inverter ({inverter.kw}kW)</td>
+              <td style={pdfStyles.td}>{inverter.company} {inverter.kw}kW</td>
+              <td style={pdfStyles.td}>{inverter.quantity}</td>
+              <td style={pdfStyles.td}>{inverter.pricePerUnit.toLocaleString()}</td>
+              <td style={pdfStyles.td}>{(inverter.quantity * inverter.pricePerUnit).toLocaleString()}</td>
+            </tr>
+            <tr style={pdfStyles.tableRow}>
+              <td style={pdfStyles.td}>2</td>
+              <td style={pdfStyles.td}>Battery Storage System</td>
+              <td style={pdfStyles.td}>{batteryModel}</td>
+              <td style={pdfStyles.td}>{batteryQuantity}</td>
+              <td style={pdfStyles.td}>{batteryPrice.toLocaleString()}</td>
+              <td style={pdfStyles.td}>{(batteryQuantity * batteryPrice).toLocaleString()}</td>
+            </tr>
+            <tr style={pdfStyles.tableRow}>
+              <td style={pdfStyles.td}>3</td>
+              <td style={pdfStyles.td}>Solar Panels ({solarPanel.watts}W)</td>
+              <td style={pdfStyles.td}>{solarPanel.company} {solarPanel.watts}W</td>
+              <td style={pdfStyles.td}>{solarPanel.quantity}</td>
+              <td style={pdfStyles.td}>{getPanelPrice().toLocaleString()}</td>
+              <td style={pdfStyles.td}>{(getPanelPrice() * solarPanel.quantity).toLocaleString()}</td>
+            </tr>
+            <tr style={pdfStyles.tableRow}>
+              <td style={pdfStyles.td}>4</td>
+              <td style={pdfStyles.td}>Mounting Structure</td>
+              <td style={pdfStyles.td}>{stand.type}</td>
+              <td style={pdfStyles.td}>{getStandQty()}</td>
+              <td style={pdfStyles.td}>{stand.pricePerStand.toLocaleString()}</td>
+              <td style={pdfStyles.td}>{(getStandQty() * stand.pricePerStand).toLocaleString()}</td>
+            </tr>
+            {isGreenmeterIncluded && (
+              <tr style={pdfStyles.tableRow}>
+                <td style={pdfStyles.td}>8</td>
+                <td style={pdfStyles.td}>Green meter</td>
+                <td style={pdfStyles.td}>Technical Oversight</td>
+                <td style={pdfStyles.td}>1</td>
+                <td style={pdfStyles.td}>{Greenmeter.toLocaleString()}</td>
+                <td style={pdfStyles.td}>{Greenmeter.toLocaleString()}</td>
+              </tr>
+            )}
+            <tr style={pdfStyles.tableRow}>
+              <td style={pdfStyles.td}>5</td>
+              <td style={pdfStyles.td}>Safety Equipment</td>
+              <td style={pdfStyles.td}>DC/AC Breakers, Surge Protectors</td>
+              <td style={pdfStyles.td}>1 Set</td>
+              <td style={pdfStyles.td}>{safety.toLocaleString()}</td>
+              <td style={pdfStyles.td}>{safety.toLocaleString()}</td>
+            </tr>
+            <tr style={pdfStyles.tableRow}>
+              <td style={pdfStyles.td}>6</td>
+              <td style={pdfStyles.td}>Transportation</td>
+              <td style={pdfStyles.td}>Delivery to {location}</td>
+              <td style={pdfStyles.td}>1</td>
+              <td style={pdfStyles.td}>{transport.toLocaleString()}</td>
+              <td style={pdfStyles.td}>{transport.toLocaleString()}</td>
+            </tr>
+            <tr style={pdfStyles.tableRow}>
+              <td style={pdfStyles.td}>7</td>
+              <td style={pdfStyles.td}>Installation & Commissioning</td>
+              <td style={pdfStyles.td}>Professional Installation</td>
+              <td style={pdfStyles.td}>1</td>
+              <td style={pdfStyles.td}>{labour.toLocaleString()}</td>
+              <td style={pdfStyles.td}>{labour.toLocaleString()}</td>
+            </tr>
+            {isEngineerIncluded && (
+              <tr style={pdfStyles.tableRow}>
+                <td style={pdfStyles.td}>8</td>
+                <td style={pdfStyles.td}>Engineering Supervision</td>
+                <td style={pdfStyles.td}>Technical Oversight</td>
+                <td style={pdfStyles.td}>1</td>
+                <td style={pdfStyles.td}>{engineer.toLocaleString()}</td>
+                <td style={pdfStyles.td}>{engineer.toLocaleString()}</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+      
+      {/* Total Section */}
+      <div style={pdfStyles.totalSection}>
+        <div style={pdfStyles.totalBox}>
+          <h2 style={pdfStyles.totalTitle}>TOTAL SYSTEM COST</h2>
+          <div style={pdfStyles.totalAmount}>Rs. {getTotal().toLocaleString()}</div>
+          <p style={pdfStyles.totalNote}>*All prices are inclusive of installation and commissioning</p>
+        </div>
+      </div>
+      
+      {/* Terms and Conditions */}
+      <div style={pdfStyles.termsSection}>
+        <h3 style={pdfStyles.sectionTitle}>📋 TERMS & CONDITIONS</h3>
+        <div style={pdfStyles.termsList}>
+          <div style={pdfStyles.termsColumn}>
+            <h4>Payment Terms:</h4>
+            <ul>
+              <li>05% advance payment required</li>
+              <li>70% on material delivery</li>
+              <li>25% on successful commissioning</li>
+            </ul>
+            <h4>Warranty:</h4>
+            <ul>
+              <li> Solar Panels will be A-Grade</li>
+              <li>Daytime Inverter 5-Years(1Year Replace & 4 Years Service</li>
+              <li>Hybrid Inverter Depends on Company Policy</li>
+              <li>Batteries Depends On Company Policy</li>
+              <li>1 year on installation work</li>
+            </ul>
+          </div>
+          <div style={pdfStyles.termsColumn}>
+            <h4>Delivery Timeline:</h4>
+            <ul>
+              <li>1-2 working days from advance</li>
+              <li>Installation: 2-3 working days</li>
+              <li>Net metering assistance included</li>
+            </ul>
+            <h4>Additional Services:</h4>
+            <ul>
+              <li>Free system monitoring setup</li>
+              <li>Annual maintenance available</li>
+              <li>24/7 technical support</li>
+              <li>Performance guarantee</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      
+      {/* Footer */}
+      <div style={pdfStyles.footer}>
+        <div style={pdfStyles.footerContent}>
+          <div style={pdfStyles.footerLeft}>
+            <p><strong>Thank you for choosing Syed Solar Energy!</strong></p>
+            <p>For any queries, please contact us at:</p>
+            <p>📞 0307-5596695/03044678929 | 📧 sales@syedsolarenergy.com</p>
+          </div>
+          <div style={pdfStyles.footerRight}>
+            <div style={pdfStyles.signature}>
+              <div style={pdfStyles.signatureLine}></div>
+              <p><strong>Authorized Signature</strong></p>
+              <p>Syed Solar Energy Pvt Ltd</p>
+            </div>
+          </div>
+        </div>
+        <div style={pdfStyles.footerBottom}>
+          <p>This quotation is valid for 3 days from the date of issue & Solar Panels Price may Vary. | Generated on {new Date().toLocaleString()}</p>
+        </div>
+      </div>
     </div>
   );
   
@@ -413,7 +731,7 @@ const QuotationForm = () => {
         <div style={styles.header}>
           <div style={styles.headerContent}>
             <div>
-              <h1 style={styles.title}>📋 Saved Quotations</h1>
+              <h1 style={styles.title}>📋 All Quotations</h1>
               <p style={styles.subtitle}>Manage and track all your quotations</p>
             </div>
             <button
@@ -439,7 +757,9 @@ const QuotationForm = () => {
                   <span style={{
                     ...styles.statusBadge,
                     backgroundColor: quotation.followUpStatus === 'Pending' ? '#ff9800' : 
-                                   quotation.followUpStatus === 'Contacted' ? '#2196f3' : '#4caf50'
+                                   quotation.followUpStatus === 'Contacted' ? '#2196f3' : 
+                                   quotation.followUpStatus === 'Completed' ? '#4caf50' :
+                                   quotation.followUpStatus === 'Closed' ? '#4caf50' : '#9e9e9e'
                   }}>
                     {quotation.followUpStatus}
                   </span>
@@ -461,7 +781,10 @@ const QuotationForm = () => {
                     setCurrentQuotation(quotation);
                     setShowPreview(true);
                     setShowQuotationsList(false);
-                    setTimeout(() => printQuotation(), 100);
+                    // Add a small delay to ensure the preview is rendered before printing
+                    setTimeout(() => {
+                      printQuotation();
+                    }, 100);
                   }}
                   style={styles.downloadButton}
                 >
@@ -469,10 +792,14 @@ const QuotationForm = () => {
                 </button>
                 <button
                   onClick={() => deleteQuotation(quotation.id)}
-                  style={styles.deleteButton}
-                  disabled={isDeleting}
+                  disabled={deletingQuotationId === quotation.id}
+                  style={{
+                    ...styles.deleteButton,
+                    opacity: deletingQuotationId === quotation.id ? 0.7 : 1,
+                    cursor: deletingQuotationId === quotation.id ? 'not-allowed' : 'pointer'
+                  }}
                 >
-                  {isDeleting ? "⏳ Deleting..." : "🗑️ Delete"}
+                  {deletingQuotationId === quotation.id ? '⏳' : '🗑️'} Delete
                 </button>
               </div>
             </div>
@@ -509,13 +836,6 @@ const QuotationForm = () => {
               {isGeneratingPDF ? "⏳ Generating..." : "🖨️ Print/Save PDF"}
             </button>
             <button
-              onClick={() => deleteQuotation(currentQuotation.id)}
-              style={styles.deleteButton}
-              disabled={isDeleting}
-            >
-              {isDeleting ? "⏳ Deleting..." : "🗑️ Delete"}
-            </button>
-            <button
               onClick={resetForm}
               style={styles.newQuotationButton}
             >
@@ -533,19 +853,6 @@ const QuotationForm = () => {
   
   return (
     <div style={styles.container}>
-      <style>
-        {`
-          input[type=number]::-webkit-inner-spin-button,
-          input[type=number]::-webkit-outer-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-          }
-          input[type=number] {
-            -moz-appearance: textfield;
-          }
-        `}
-      </style>
-      
       {/* Header */}
       <div style={styles.header}>
         <div style={styles.headerContent}>
@@ -563,7 +870,7 @@ const QuotationForm = () => {
               onClick={() => setShowQuotationsList(true)}
               style={styles.viewQuotationsButton}
             >
-              📋 View Quotations ({savedQuotations.length})
+              📋 View All Quotations ({savedQuotations.length})
             </button>
           </div>
         </div>
@@ -591,18 +898,18 @@ const QuotationForm = () => {
           <div style={styles.analyticsIcon}>📞</div>
           <div style={styles.analyticsContent}>
             <div style={styles.analyticsValue}>
-              {savedQuotations.filter(q => q.followUpStatus === 'Pending').length}
+              {savedQuotations.filter(q => ['Pending', 'Contacted'].includes(q.followUpStatus || 'Pending')).length}
             </div>
-            <div style={styles.analyticsTitle}>Pending Follow-ups</div>
+            <div style={styles.analyticsTitle}>Needs Follow-up</div>
           </div>
         </div>
         <div style={styles.analyticsCard}>
           <div style={styles.analyticsIcon}>✅</div>
           <div style={styles.analyticsContent}>
             <div style={styles.analyticsValue}>
-              {savedQuotations.filter(q => q.followUpStatus === 'Closed').length}
+              {savedQuotations.filter(q => ['Closed', 'Completed'].includes(q.followUpStatus || 'Pending')).length}
             </div>
-            <div style={styles.analyticsTitle}>Closed Deals</div>
+            <div style={styles.analyticsTitle}>Completed Deals</div>
           </div>
         </div>
       </div>
@@ -741,17 +1048,20 @@ const QuotationForm = () => {
                   type="number"
                   value={inverter.quantity}
                   onChange={(e) => setInverter({...inverter, quantity: parseInt(e.target.value) || 1})}
-                  style={styles.input}
+                  style={styles.numberInput}
                   min="1"
                 />
               </div>
               <div style={styles.inputGroup}>
                 <label style={styles.label}>Price per Unit (Rs)</label>
                 <input
-                  type="number"
+                  type="text"
                   value={inverter.pricePerUnit}
-                  onChange={(e) => setInverter({...inverter, pricePerUnit: parseInt(e.target.value) || 0})}
-                  style={styles.input}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[^0-9]/g, '');
+                    setInverter({...inverter, pricePerUnit: parseInt(value) || 0});
+                  }}
+                  style={styles.numberInput}
                   placeholder="120000"
                 />
               </div>
@@ -794,17 +1104,20 @@ const QuotationForm = () => {
                   type="number"
                   value={batteryQuantity}
                   onChange={(e) => setBatteryQuantity(parseInt(e.target.value) || 1)}
-                  style={styles.input}
+                  style={styles.numberInput}
                   min="1"
                 />
               </div>
               <div style={styles.inputGroup}>
                 <label style={styles.label}>Price per Unit (Rs)</label>
                 <input
-                  type="number"
+                  type="text"
                   value={batteryPrice}
-                  onChange={(e) => setBatteryPrice(parseInt(e.target.value) || 0)}
-                  style={styles.input}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[^0-9]/g, '');
+                    setBatteryPrice(parseInt(value) || 0);
+                  }}
+                  style={styles.numberInput}
                   placeholder="230000"
                 />
               </div>
@@ -847,18 +1160,20 @@ const QuotationForm = () => {
                   type="number"
                   value={solarPanel.quantity}
                   onChange={(e) => setSolarPanel({...solarPanel, quantity: parseInt(e.target.value) || 1})}
-                  style={styles.input}
+                  style={styles.numberInput}
                   min="1"
                 />
               </div>
               <div style={styles.inputGroup}>
                 <label style={styles.label}>Price per Watt (Rs)</label>
                 <input
-                  type="number"
-                  step="0.1"
+                  type="text"
                   value={solarPanel.pricePerWatt}
-                  onChange={(e) => setSolarPanel({...solarPanel, pricePerWatt: parseFloat(e.target.value) || 0})}
-                  style={styles.input}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[^0-9.]/g, '');
+                    setSolarPanel({...solarPanel, pricePerWatt: parseFloat(value) || 0});
+                  }}
+                  style={styles.numberInput}
                   placeholder="32.5"
                 />
               </div>
@@ -885,10 +1200,13 @@ const QuotationForm = () => {
               <div style={styles.inputGroup}>
                 <label style={styles.label}>Price per Stand (Rs)</label>
                 <input
-                  type="number"
+                  type="text"
                   value={stand.pricePerStand}
-                  onChange={(e) => setStand({...stand, pricePerStand: parseInt(e.target.value) || 0})}
-                  style={styles.input}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[^0-9]/g, '');
+                    setStand({...stand, pricePerStand: parseInt(value) || 0});
+                  }}
+                  style={styles.numberInput}
                   placeholder="8000"
                 />
               </div>
@@ -902,46 +1220,61 @@ const QuotationForm = () => {
               <div style={styles.inputGroup}>
                 <label style={styles.label}>Safety Equipment (Rs)</label>
                 <input
-                  type="number"
+                  type="text"
                   value={safety}
-                  onChange={(e) => setSafety(parseInt(e.target.value) || 0)}
-                  style={styles.input}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[^0-9]/g, '');
+                    setSafety(parseInt(value) || 0);
+                  }}
+                  style={styles.numberInput}
                 />
               </div>
               <div style={styles.inputGroup}>
                 <label style={styles.label}>Transportation (Rs)</label>
                 <input
-                  type="number"
+                  type="text"
                   value={transport}
-                  onChange={(e) => setTransport(parseInt(e.target.value) || 0)}
-                  style={styles.input}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[^0-9]/g, '');
+                    setTransport(parseInt(value) || 0);
+                  }}
+                  style={styles.numberInput}
                 />
               </div>
               <div style={styles.inputGroup}>
                 <label style={styles.label}>Labour Cost (Rs)</label>
                 <input
-                  type="number"
+                  type="text"
                   value={labour}
-                  onChange={(e) => setLabour(parseInt(e.target.value) || 0)}
-                  style={styles.input}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[^0-9]/g, '');
+                    setLabour(parseInt(value) || 0);
+                  }}
+                  style={styles.numberInput}
                 />
               </div>
               <div style={styles.inputGroup}>
                 <label style={styles.label}>Engineering Cost (Rs)</label>
                 <input
-                  type="number"
+                  type="text"
                   value={engineer}
-                  onChange={(e) => setEngineer(parseInt(e.target.value) || 0)}
-                  style={styles.input}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[^0-9]/g, '');
+                    setEngineer(parseInt(value) || 0);
+                  }}
+                  style={styles.numberInput}
                 />
               </div>
               <div style={styles.inputGroup}>
                 <label style={styles.label}>Greenmeter Cost (Rs)</label>
                 <input
-                  type="number"
+                  type="text"
                   value={Greenmeter}
-                  onChange={(e) => setGreenmeter(parseInt(e.target.value) || 0)}
-                  style={styles.input}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[^0-9]/g, '');
+                    setGreenmeter(parseInt(value) || 0);
+                  }}
+                  style={styles.numberInput}
                 />
               </div>
             </div>
@@ -1006,7 +1339,7 @@ const QuotationForm = () => {
   );
 };
 
-// PDF Styles for the quotation preview - OPTIMIZED FOR 2 PAGES
+// PDF Styles for the quotation preview
 const pdfStyles = {
   container: {
     fontFamily: "'Segoe UI', Arial, sans-serif",
@@ -1380,6 +1713,15 @@ const styles = {
     fontSize: '1rem',
     transition: 'border-color 0.3s ease',
   },
+  numberInput: {
+    padding: '12px 16px',
+    border: '2px solid #e0e0e0',
+    borderRadius: '10px',
+    fontSize: '1rem',
+    transition: 'border-color 0.3s ease',
+    MozAppearance: 'textfield', // Firefox
+    WebkitAppearance: 'none', // Safari and Chrome
+  },
   checkboxGroup: {
     marginTop: '15px',
   },
@@ -1544,6 +1886,16 @@ const styles = {
     fontSize: '0.85rem',
     fontWeight: '600',
   },
+  deleteButton: {
+    background: 'linear-gradient(135deg, #f44336, #d32f2f)',
+    color: 'white',
+    border: 'none',
+    borderRadius: '8px',
+    padding: '8px 15px',
+    cursor: 'pointer',
+    fontSize: '0.85rem',
+    fontWeight: '600',
+  },
   emptyState: {
     textAlign: 'center',
     padding: '60px 20px',
@@ -1572,17 +1924,6 @@ const styles = {
     cursor: 'pointer',
     fontSize: '0.85rem',
     fontWeight: '600',
-  },
-  deleteButton: {
-    background: 'linear-gradient(135deg, #f44336, #d32f2f)',
-    color: 'white',
-    border: 'none',
-    borderRadius: '8px',
-    padding: '8px 15px',
-    cursor: 'pointer',
-    fontSize: '0.85rem',
-    fontWeight: '600',
-    flex: 1,
   },
 };
 
