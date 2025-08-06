@@ -678,7 +678,7 @@ export default function Services() {
     animation: 'pulse 3s ease-in-out infinite',
     zIndex: 1                      // ensure it sits above the card
   }}>
-    📋
+    
   </div>
 
             <h3 style={{
