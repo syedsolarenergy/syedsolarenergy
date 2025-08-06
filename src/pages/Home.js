@@ -58,7 +58,7 @@ const cssVariables = `
 
   .grid-reviews {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
     gap: var(--grid-gap);
     width: 100%;
   }
@@ -1290,14 +1290,21 @@ export default function Home() {
             </div>
 
             <p style={{
-              color: '#333',
-              fontSize: 'clamp(0.85rem, 2.2vw, 1rem)',
-              lineHeight: 1.6,
-              marginBottom: 'clamp(12px, 3vw, 16px)',
-              minHeight: 'clamp(80px, 12vw, 100px)'
-            }}>
-              "{review.review}"
-            </p>
+  color: '#333',
+  lineHeight: 1.6,
+  marginBottom: 'clamp(12px, 2.5vw, 16px)',
+  fontSize: 'clamp(0.875rem, 1.8vw, 1rem)',
+  fontStyle: 'italic',
+
+  /* clamp to 6 lines */
+  display: '-webkit-box',
+  WebkitBoxOrient: 'vertical',
+  WebkitLineClamp: 6,
+  overflow: 'hidden',
+}}>
+  "{review.review}"
+</p>
+
 
             <div style={{
               display: 'flex',
