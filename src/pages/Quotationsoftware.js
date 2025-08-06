@@ -22,18 +22,19 @@ const supabase = {
 };
 
 const QuotationForm = () => {
-  // Hide any external navbar when component mounts
+  // Hide only top-level navbar elements, not sidebar navigation
   React.useEffect(() => {
-    // Hide common navbar selectors
+    // More specific navbar selectors to avoid hiding sidebar
     const navbarSelectors = [
-      'nav',
-      '.navbar',
-      '.nav-bar',
-      '.navigation',
-      '.header-nav',
-      '.top-nav',
-      '.main-nav',
-      '[role="navigation"]'
+      'header nav',
+      '.top-navbar',
+      '.main-navbar',
+      '.app-navbar',
+      '.site-header',
+      '.header-navigation',
+      '[data-navbar="true"]',
+      '.navbar-fixed-top',
+      '.navbar-static-top'
     ];
     
     const hiddenElements = [];
@@ -41,13 +42,31 @@ const QuotationForm = () => {
     navbarSelectors.forEach(selector => {
       const elements = document.querySelectorAll(selector);
       elements.forEach(element => {
-        // Only hide if it's not part of our quotation component
-        if (!element.closest('[data-quotation-app]')) {
+        // Only hide if it's not part of our quotation component AND not a sidebar
+        if (!element.closest('[data-quotation-app]') && 
+            !element.closest('aside') && 
+            !element.closest('.sidebar') &&
+            !element.closest('[class*="sidebar"]') &&
+            !element.closest('.professional-sidebar')) {
           const originalDisplay = element.style.display;
           element.style.display = 'none';
           hiddenElements.push({ element, originalDisplay });
         }
       });
+    });
+    
+    // Hide common header elements that might contain navbar
+    const headerElements = document.querySelectorAll('header');
+    headerElements.forEach(header => {
+      // Only hide headers that are likely top navigation, not sidebar headers
+      if (!header.closest('[data-quotation-app]') && 
+          !header.closest('aside') && 
+          !header.closest('.sidebar') &&
+          header.getBoundingClientRect().top < 100) { // Only top headers
+        const originalDisplay = header.style.display;
+        header.style.display = 'none';
+        hiddenElements.push({ element: header, originalDisplay });
+      }
     });
     
     // Cleanup function to restore navbar when component unmounts
