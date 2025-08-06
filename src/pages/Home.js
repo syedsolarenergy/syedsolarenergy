@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
+import Footer from "../components/Footer";
 import Slider from "react-slick";
 import { supabase } from "../supabaseClient";
 import "slick-carousel/slick/slick.css";
@@ -230,6 +231,384 @@ const WhatsAppPopup = () => {
   );
 };
 
+// Enhanced Special Offer Popup Component with 5-second delay
+const SpecialOfferPopup = () => {
+  const [isVisible, setIsVisible] = useState(false);
+  const [timeLeft, setTimeLeft] = useState({
+    hours: 23,
+    minutes: 59,
+    seconds: 59
+  });
+
+  useEffect(() => {
+    // 5-second delay before showing the popup
+    const showTimer = setTimeout(() => {
+      setIsVisible(true);
+    }, 5000);
+
+    // Auto-hide timer (15 seconds after showing)
+    const autoHideTimer = setTimeout(() => {
+      setIsVisible(false);
+    }, 20000); // 5s delay + 15s visible
+
+    const countdownTimer = setInterval(() => {
+      setTimeLeft(prev => {
+        let newSeconds = prev.seconds - 1;
+        let newMinutes = prev.minutes;
+        let newHours = prev.hours;
+
+        if (newSeconds < 0) {
+          newSeconds = 59;
+          newMinutes -= 1;
+        }
+        if (newMinutes < 0) {
+          newMinutes = 59;
+          newHours -= 1;
+        }
+        if (newHours < 0) {
+          newHours = 23;
+          newMinutes = 59;
+          newSeconds = 59;
+        }
+
+        return {
+          hours: newHours,
+          minutes: newMinutes,
+          seconds: newSeconds
+        };
+      });
+    }, 1000);
+
+    return () => {
+      clearTimeout(showTimer);
+      clearTimeout(autoHideTimer);
+      clearInterval(countdownTimer);
+    };
+  }, []);
+
+  if (!isVisible) return null;
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: 'rgba(0, 0, 0, 0.85)',
+        backdropFilter: 'blur(8px)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 2000,
+        padding: 'clamp(15px, 4vw, 20px)',
+        animation: 'fadeIn 0.5s ease-out'
+      }}
+    >
+      <div
+        style={{
+          background: `
+            linear-gradient(135deg, #FF6B35 0%, #F7931E 25%, #FF9800 50%, #FFB74D 75%, #FFCC02 100%),
+            radial-gradient(circle at 30% 30%, rgba(255,255,255,0.2) 0%, transparent 50%),
+            radial-gradient(circle at 70% 70%, rgba(255,255,255,0.1) 0%, transparent 50%)
+          `,
+          backgroundSize: '300% 300%, 100% 100%, 100% 100%',
+          animation: 'gradientShift 4s ease infinite, popupEntrance 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+          borderRadius: 'var(--border-radius)',
+          padding: 'clamp(20px, 5vw, 30px)',
+          maxWidth: 'min(450px, 90vw)',
+          maxHeight: '85vh',
+          width: '100%',
+          textAlign: 'center',
+          position: 'relative',
+          boxShadow: `
+            0 25px 80px rgba(0,0,0,0.4),
+            0 0 0 1px rgba(255,255,255,0.2),
+            inset 0 1px 0 rgba(255,255,255,0.3)
+          `,
+          color: 'white',
+          border: '2px solid rgba(255,255,255,0.2)',
+          overflow: 'auto'
+        }}
+      >
+        {/* Enhanced close button */}
+        <button
+          onClick={() => setIsVisible(false)}
+          style={{
+            position: 'absolute',
+            top: 'clamp(-8px, -1.5vw, -10px)',
+            right: 'clamp(-8px, -1.5vw, -10px)',
+            background: 'rgba(255,255,255,0.9)',
+            backdropFilter: 'blur(10px)',
+            border: '2px solid #FF6B35',
+            borderRadius: '50%',
+            width: 'clamp(30px, 6vw, 35px)',
+            height: 'clamp(30px, 6vw, 35px)',
+            fontSize: 'clamp(14px, 3vw, 18px)',
+            cursor: 'pointer',
+            color: '#FF6B35',
+            fontWeight: 'bold',
+            transition: 'all 0.3s ease',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 10,
+            boxShadow: '0 4px 15px rgba(0,0,0,0.3)'
+          }}
+          onMouseEnter={(e) => {
+            if (window.innerWidth > 768) {
+              e.target.style.background = '#FF6B35';
+              e.target.style.color = 'white';
+              e.target.style.transform = 'scale(1.1) rotate(90deg)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.background = 'rgba(255,255,255,0.9)';
+            e.target.style.color = '#FF6B35';
+            e.target.style.transform = 'scale(1) rotate(0deg)';
+          }}
+        >
+          ×
+        </button>
+
+        {/* Header with emojis */}
+        <div style={{ 
+          fontSize: 'clamp(32px, 8vw, 40px)', 
+          marginBottom: 'clamp(12px, 3vw, 15px)',
+          display: 'flex',
+          justifyContent: 'center',
+          gap: 'clamp(8px, 2vw, 10px)',
+          animation: 'bounce 2s ease-in-out infinite'
+        }}>
+          <span style={{ animation: 'pulse 2s ease-in-out infinite' }}>🔥</span>
+          <span style={{ animation: 'pulse 2s ease-in-out infinite 0.3s' }}>⚡</span>
+        </div>
+        
+        <h2 style={{
+          margin: '0 0 clamp(6px, 1.5vw, 8px) 0',
+          fontSize: 'clamp(20px, 5vw, 26px)',
+          fontWeight: 'bold',
+          textShadow: '3px 3px 6px rgba(0,0,0,0.4)',
+          background: 'linear-gradient(45deg, #ffffff, #fff9c4)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          backgroundClip: 'text'
+        }}>
+          MEGA SOLAR DEAL!
+        </h2>
+
+        <div style={{
+          background: 'rgba(255,255,255,0.2)',
+          borderRadius: 'clamp(10px, 2vw, 12px)',
+          padding: 'clamp(8px, 2vw, 10px)',
+          marginBottom: 'clamp(10px, 2.5vw, 12px)',
+          border: '1px solid rgba(255,255,255,0.3)'
+        }}>
+          <p style={{
+            fontSize: 'clamp(14px, 3.5vw, 16px)',
+            margin: '0',
+            fontWeight: 'bold',
+            textShadow: '2px 2px 4px rgba(0,0,0,0.3)'
+          }}>
+            🎯 30% OFF + FREE Installation
+          </p>
+        </div>
+
+        {/* Compact countdown timer */}
+        <div style={{
+          background: 'rgba(0,0,0,0.3)',
+          borderRadius: 'clamp(12px, 2.5vw, 15px)',
+          padding: 'clamp(12px, 3vw, 15px)',
+          marginBottom: 'clamp(16px, 4vw, 20px)',
+          border: '2px solid rgba(255,255,255,0.2)',
+          backdropFilter: 'blur(10px)'
+        }}>
+          <div style={{ 
+            fontSize: 'clamp(10px, 2.5vw, 12px)', 
+            marginBottom: 'clamp(8px, 2vw, 10px)', 
+            opacity: 0.9,
+            fontWeight: 'bold',
+            textTransform: 'uppercase'
+          }}>
+            ⏰ Expires in:
+          </div>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            gap: 'clamp(10px, 2.5vw, 12px)',
+            fontSize: 'clamp(16px, 4vw, 20px)',
+            fontWeight: 'bold'
+          }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{
+                background: 'linear-gradient(145deg, rgba(255,255,255,0.25), rgba(255,255,255,0.1))',
+                borderRadius: 'clamp(6px, 1.5vw, 8px)',
+                padding: 'clamp(6px, 1.5vw, 8px) clamp(8px, 2vw, 10px)',
+                minWidth: 'clamp(35px, 8vw, 40px)',
+                border: '1px solid rgba(255,255,255,0.3)'
+              }}>
+                {String(timeLeft.hours).padStart(2, '0')}
+              </div>
+              <div style={{ fontSize: 'clamp(8px, 2vw, 10px)', marginTop: '4px' }}>HRS</div>
+            </div>
+            <div style={{ fontSize: 'clamp(20px, 5vw, 24px)', alignSelf: 'center', opacity: 0.7 }}>:</div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{
+                background: 'linear-gradient(145deg, rgba(255,255,255,0.25), rgba(255,255,255,0.1))',
+                borderRadius: 'clamp(6px, 1.5vw, 8px)',
+                padding: 'clamp(6px, 1.5vw, 8px) clamp(8px, 2vw, 10px)',
+                minWidth: 'clamp(35px, 8vw, 40px)',
+                border: '1px solid rgba(255,255,255,0.3)'
+              }}>
+                {String(timeLeft.minutes).padStart(2, '0')}
+              </div>
+              <div style={{ fontSize: 'clamp(8px, 2vw, 10px)', marginTop: '4px' }}>MIN</div>
+            </div>
+            <div style={{ fontSize: 'clamp(20px, 5vw, 24px)', alignSelf: 'center', opacity: 0.7 }}>:</div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{
+                background: 'linear-gradient(145deg, rgba(255,255,255,0.25), rgba(255,255,255,0.1))',
+                borderRadius: 'clamp(6px, 1.5vw, 8px)',
+                padding: 'clamp(6px, 1.5vw, 8px) clamp(8px, 2vw, 10px)',
+                minWidth: 'clamp(35px, 8vw, 40px)',
+                border: '1px solid rgba(255,255,255,0.3)',
+                animation: 'pulse 1s ease-in-out infinite'
+              }}>
+                {String(timeLeft.seconds).padStart(2, '0')}
+              </div>
+              <div style={{ fontSize: 'clamp(8px, 2vw, 10px)', marginTop: '4px' }}>SEC</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Compact action buttons */}
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 'clamp(8px, 2vw, 10px)',
+          alignItems: 'center'
+        }}>
+          {/* Primary CTA Button */}
+          <button
+            onClick={() => window.open('https://wa.me/923075506695?text=Hi! I am interested in the 30% OFF solar installation offer. Please provide more details.', '_blank')}
+            style={{
+              background: 'linear-gradient(145deg, #ffffff, #f0f0f0)',
+              color: '#FF6600',
+              border: 'none',
+              padding: 'clamp(12px, 3vw, 14px) clamp(24px, 6vw, 28px)',
+              borderRadius: 'clamp(20px, 4vw, 25px)',
+              fontSize: 'clamp(12px, 3vw, 14px)',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+              boxShadow: '0 6px 20px rgba(0,0,0,0.3)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px',
+              width: '100%',
+              maxWidth: 'min(280px, 90vw)'
+            }}
+            onMouseEnter={(e) => {
+              if (window.innerWidth > 768) {
+                e.target.style.transform = 'scale(1.05) translateY(-2px)';
+                e.target.style.boxShadow = '0 8px 25px rgba(0,0,0,0.4)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.transform = 'scale(1) translateY(0)';
+              e.target.style.boxShadow = '0 6px 20px rgba(0,0,0,0.3)';
+            }}
+          >
+            🚀 Claim via WhatsApp
+          </button>
+
+          {/* Secondary action buttons */}
+          <div style={{
+            display: 'flex',
+            gap: 'clamp(6px, 1.5vw, 8px)',
+            justifyContent: 'center',
+            flexWrap: 'wrap'
+          }}>
+            <button
+              onClick={() => window.location.href = '/quotation'}
+              style={{
+                background: 'rgba(255,255,255,0.2)',
+                color: 'white',
+                border: '1px solid rgba(255,255,255,0.4)',
+                padding: 'clamp(6px, 1.5vw, 8px) clamp(12px, 3vw, 16px)',
+                borderRadius: 'clamp(16px, 3vw, 20px)',
+                fontSize: 'clamp(10px, 2.5vw, 12px)',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                backdropFilter: 'blur(10px)',
+                minWidth: 'clamp(70px, 15vw, 90px)'
+              }}
+              onMouseEnter={(e) => {
+                if (window.innerWidth > 768) {
+                  e.target.style.background = 'rgba(255,255,255,0.3)';
+                  e.target.style.transform = 'scale(1.05)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.background = 'rgba(255,255,255,0.2)';
+                e.target.style.transform = 'scale(1)';
+              }}
+            >
+              📋 Quote
+            </button>
+            
+            <button
+              onClick={() => window.location.href = '/loadcalculator'}
+              style={{
+                background: 'rgba(255,255,255,0.2)',
+                color: 'white',
+                border: '1px solid rgba(255,255,255,0.4)',
+                padding: 'clamp(6px, 1.5vw, 8px) clamp(12px, 3vw, 16px)',
+                borderRadius: 'clamp(16px, 3vw, 20px)',
+                fontSize: 'clamp(10px, 2.5vw, 12px)',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                backdropFilter: 'blur(10px)',
+                minWidth: 'clamp(70px, 15vw, 90px)'
+              }}
+              onMouseEnter={(e) => {
+                if (window.innerWidth > 768) {
+                  e.target.style.background = 'rgba(255,255,255,0.3)';
+                  e.target.style.transform = 'scale(1.05)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.background = 'rgba(255,255,255,0.2)';
+                e.target.style.transform = 'scale(1)';
+              }}
+            >
+              🧮 Calculator
+            </button>
+          </div>
+
+          {/* Compact trust indicators */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 'clamp(8px, 2vw, 12px)',
+            marginTop: 'clamp(6px, 1.5vw, 8px)',
+            fontSize: 'clamp(8px, 2vw, 10px)',
+            opacity: 0.9,
+            flexWrap: 'wrap',
+            justifyContent: 'center'
+          }}>
+            <span>✅ Free Consultation</span>
+            <span>🛡️ 25-Yr Warranty</span>
+            <span>⭐ 1000+ Customers</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Enhanced Counter Component
 const Counter = ({ value, label, color = "#FF6B35" }) => {
   const [count, setCount] = useState(0);
@@ -441,160 +820,106 @@ const SectionHeader = ({ title, subtitle = "" }) => (
   </div>
 );
 
-// Enhanced Footer Component
-const Footer = () => (
-  <footer style={{
-    background: 'linear-gradient(145deg, #1a1a1a, #2a2a2a)',
-    color: 'white',
-    padding: 'clamp(40px, 8vw, 60px) 0',
-    position: 'relative',
-    overflow: 'hidden'
-  }}>
-    <div className="universal-container">
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(min(300px, 100%), 1fr))',
-        gap: 'clamp(30px, 6vw, 50px)'
-      }}>
-        <div>
-          <h3 style={{ 
-            color: '#FF6B35', 
-            fontSize: 'clamp(1.5rem, 4vw, 2rem)',
-            marginBottom: 'clamp(20px, 3vw, 25px)'
-          }}>
-            Syed Solar Energy
-          </h3>
-          <p style={{ 
-            lineHeight: '1.8', 
-            maxWidth: '400px',
-            opacity: 0.85
-          }}>
-            Providing cutting-edge solar energy solutions for homes and businesses across Pakistan since 2010.
-          </p>
-        </div>
-        
-        <div>
-          <h4 style={{ 
-            color: '#F7931E', 
-            fontSize: 'clamp(1.2rem, 3vw, 1.5rem)',
-            marginBottom: 'clamp(15px, 2.5vw, 20px)'
-          }}>
-            Quick Links
-          </h4>
-          <ul style={{ listStyle: 'none', padding: 0 }}>
-            {['Home', 'About Us', 'Services', 'Projects', 'Contact'].map(item => (
-              <li key={item} style={{ marginBottom: 'clamp(10px, 2vw, 15px)' }}>
-                <a href="#" style={{
-                  color: 'white',
-                  textDecoration: 'none',
-                  fontSize: 'var(--text-base)',
-                  transition: 'all 0.3s ease',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px'
-                }}>
-                  <span style={{ color: '#FF6B35' }}>›</span> {item}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
-        
-        <div>
-          <h4 style={{ 
-            color: '#F7931E', 
-            fontSize: 'clamp(1.2rem, 3vw, 1.5rem)',
-            marginBottom: 'clamp(15px, 2.5vw, 20px)'
-          }}>
-            Contact Us
-          </h4>
-          <ul style={{ listStyle: 'none', padding: 0 }}>
-            <li style={{ marginBottom: 'clamp(10px, 2vw, 15px)', display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ fontSize: 'clamp(20px, 3vw, 24px)', color: '#FF6B35' }}>📍</div>
-              <span>123 Solar Avenue, Energy City, Pakistan</span>
-            </li>
-            <li style={{ marginBottom: 'clamp(10px, 2vw, 15px)', display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ fontSize: 'clamp(20px, 3vw, 24px)', color: '#FF6B35' }}>📞</div>
-              <span>+92 307 550 6695</span>
-            </li>
-            <li style={{ marginBottom: 'clamp(10px, 2vw, 15px)', display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ fontSize: 'clamp(20px, 3vw, 24px)', color: '#FF6B35' }}>✉️</div>
-              <span>info@syedsolarenergy.com</span>
-            </li>
-          </ul>
-        </div>
-      </div>
-      
-      <div style={{ 
-        borderTop: '1px solid rgba(255,255,255,0.1)', 
-        marginTop: 'clamp(40px, 8vw, 60px)',
-        paddingTop: 'clamp(20px, 4vw, 30px)',
-        textAlign: 'center',
-        fontSize: 'var(--text-small)',
-        opacity: 0.7
-      }}>
-        © {new Date().getFullYear()} Syed Solar Energy. All rights reserved.
-      </div>
-    </div>
-  </footer>
-);
-
 export default function Home() {
-  const [counters] = useState([
-    { id: 1, value: "2500", label: "Installations", color: "#FF6B35" },
-    { id: 2, value: "98", label: "Satisfaction Rate", color: "#F7931E" },
-    { id: 3, value: "15", label: "Years Experience", color: "#4CAF50" },
-    { id: 4, value: "500", label: "Commercial Projects", color: "#2196F3" }
-  ]);
+  const [trendingOffers, setTrendingOffers] = useState([]);
+  const [events, setEvents] = useState([]);
+  const [partners, setPartners] = useState([]);
+  const [customers, setCustomers] = useState([]);
+  const [features, setFeatures] = useState([]);
+  const [sections, setSections] = useState([]);
+  const [counters, setCounters] = useState([]);
+  const [reviews, setReviews] = useState([]);
+  const [displaySettings, setDisplaySettings] = useState([]);
 
-  const [reviews] = useState([
-    { 
-      id: 1, 
-      name: "Ahmed Khan", 
-      designation: "Homeowner", 
-      review: "Switching to solar with Syed Solar was the best decision I made. My electricity bills have reduced by 80% and the installation was seamless.", 
-      stars: 5 
-    },
-    { 
-      id: 2, 
-      name: "Fatima Ali", 
-      designation: "Business Owner", 
-      review: "The team was professional and knowledgeable. They helped us design a custom solution that perfectly fits our factory's energy needs.", 
-      stars: 5 
-    },
-    { 
-      id: 3, 
-      name: "Bilal Hassan", 
-      designation: "School Administrator", 
-      review: "Our school has been running on solar power for 2 years now. The system is reliable and we've saved thousands on energy costs.", 
-      stars: 4 
+  const [eventsMode, setEventsMode] = useState("grid");
+  const [partnersMode, setPartnersMode] = useState("grid");
+  const [customersMode, setCustomersMode] = useState("grid");
+    // track screen width for responsive layout
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+
+  // Real-time subscription setup
+  const setupRealtimeSubscription = useCallback(() => {
+    const tables = [
+      'homepage_sections', 'homepage_events', 'homepage_partners',
+      'homepage_customers', 'homepage_features', 'homepage_reviews',
+      'homepage_counters', 'display_settings'
+    ];
+
+    tables.forEach(table => {
+      supabase
+        .channel(`${table}_changes`)
+        .on('postgres_changes', 
+          { event: '*', schema: 'public', table },
+          () => {
+            console.log(`${table} updated, refreshing data...`);
+            fetchData();
+          }
+        )
+        .subscribe();
+    });
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      const [
+        { data: offers },
+        { data: ev },
+        { data: pr },
+        { data: cu },
+        { data: ft },
+        { data: sec },
+        { data: cnt },
+        { data: rev },
+        { data: displaySettingsData }
+      ] = await Promise.all([
+        supabase.from("trending_offers").select("*").order("created_at", { ascending: false }),
+        supabase.from("homepage_events").select("*").order("date", { ascending: false }),
+        supabase.from("homepage_partners").select("*").order("name", { ascending: true }),
+        supabase.from("homepage_customers").select("*").order("name", { ascending: true }),
+        supabase.from("homepage_features").select("*").order("display_order", { ascending: true }),
+        supabase.from("homepage_sections").select("*").order("display_order", { ascending: true }),
+        supabase.from("homepage_counters").select("*").order("display_order", { ascending: true }),
+        supabase.from("homepage_reviews").select("*").order("id", { ascending: true }),
+        supabase.from("display_settings").select("*")
+      ]);
+
+      setTrendingOffers(offers?.filter(o => o.is_active !== false) || []);
+      setEvents(ev?.filter(e => e.is_active !== false) || []);
+      setPartners(pr?.filter(p => p.is_active !== false) || []);
+      setCustomers(cu?.filter(c => c.is_active !== false) || []);
+      setFeatures(ft?.filter(f => f.is_active !== false) || []);
+      setSections(sec?.filter(s => s.is_active !== false) || []);
+      setCounters(cnt?.filter(c => c.is_active !== false) || []);
+      setReviews(rev?.filter(r => r.is_active !== false) || []);
+      setDisplaySettings(displaySettingsData || []);
+
+      // Set display modes
+      if (displaySettingsData) {
+        const eventsSettings = displaySettingsData.find(s => s.section_name === "homepage_events");
+        const partnersSettings = displaySettingsData.find(s => s.section_name === "homepage_partners");
+        const customersSettings = displaySettingsData.find(s => s.section_name === "homepage_customers");
+
+        setEventsMode(eventsSettings?.display_mode || "grid");
+        setPartnersMode(partnersSettings?.display_mode || "grid");
+        setCustomersMode(customersSettings?.display_mode || "grid");
+      }
+    } catch (error) {
+      console.error("Error fetching homepage data:", error);
     }
-  ]);
+  };
 
-  const [features] = useState([
-    { 
-      id: 1, 
-      title: "Premium Quality Panels", 
-      description: "We use only the highest efficiency solar panels with 25-year performance warranties to ensure maximum energy production." 
-    },
-    { 
-      id: 2, 
-      title: "Custom Solutions", 
-      description: "Every system is designed specifically for your property and energy needs to maximize efficiency and savings." 
-    },
-    { 
-      id: 3, 
-      title: "Professional Installation", 
-      description: "Our certified technicians ensure flawless installation with minimal disruption to your daily routine." 
-    },
-    { 
-      id: 4, 
-      title: "Maintenance Support", 
-      description: "Comprehensive maintenance packages to keep your system running at peak efficiency for decades." 
-    }
-  ]);
+  useEffect(() => {
+    fetchData();
+    setupRealtimeSubscription();
+  }, [setupRealtimeSubscription]);
 
-  // Enhanced slider settings
+  // Enhanced slider settings with better mobile support
   const sliderSettings = {
     dots: true,
     infinite: true,
@@ -635,6 +960,56 @@ export default function Home() {
     ]
   };
 
+  const renderSection = (items, title, mode, renderItem) => {
+    if (!items || items.length === 0) return null;
+    
+    return (
+      <section style={{ 
+        padding: 'var(--section-padding) 0', 
+        background: `
+          linear-gradient(135deg, rgba(255, 107, 53, 0.05) 0%, rgba(247, 147, 30, 0.05) 50%, rgba(255, 152, 0, 0.05) 100%),
+          url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60"><defs><pattern id="dots" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="1" fill="rgba(255,107,53,0.1)"/></pattern></defs><rect width="60" height="60" fill="url(%23dots)"/></svg>')
+        `,
+        position: 'relative'
+      }}>
+        {/* Floating decorative elements */}
+        <div style={{
+          position: 'absolute',
+          top: '10%',
+          left: '5%',
+          width: 'clamp(60px, 12vw, 100px)',
+          height: 'clamp(60px, 12vw, 100px)',
+          background: 'linear-gradient(45deg, rgba(255, 107, 53, 0.1), rgba(247, 147, 30, 0.1))',
+          borderRadius: '50%',
+          animation: 'float 6s ease-in-out infinite'
+        }}></div>
+        <div style={{
+          position: 'absolute',
+          bottom: '15%',
+          right: '10%',
+          width: 'clamp(50px, 10vw, 80px)',
+          height: 'clamp(50px, 10vw, 80px)',
+          background: 'linear-gradient(45deg, rgba(247, 147, 30, 0.1), rgba(255, 152, 0, 0.1))',
+          borderRadius: '50%',
+          animation: 'float 8s ease-in-out infinite reverse'
+        }}></div>
+
+        <div className="universal-container" style={{ position: 'relative', zIndex: 2 }}>
+          <SectionHeader title={title} />
+          {mode === "slider" ? (
+            <div style={{ maxWidth: 'min(1000px, 90vw)', margin: '0 auto' }}>
+              <Slider {...sliderSettings}>{items.map(renderItem)}</Slider>
+            </div>
+          ) : (
+            <div className="grid-auto">{items.map(renderItem)}</div>
+          )}
+        </div>
+      </section>
+    );
+  };
+
+  const heroSection = sections.find(s => s.section_name === "hero_section");
+
   return (
     <>
       <style>{cssVariables}</style>
@@ -647,8 +1022,9 @@ export default function Home() {
           radial-gradient(circle at 40% 80%, rgba(255, 152, 0, 0.08) 0%, transparent 50%),
           linear-gradient(135deg, #f8faff 0%, #fff3e0 25%, #ffe0b2 50%, #ffcc80 75%, #ffb74d 100%)
         `,
-        overflowX: 'hidden'
+        overflowX: 'hidden' // Prevent horizontal overflow
       }}>
+
         {/* Enhanced Hero Section with Professional Image */}
         <section style={{ 
           padding: 'var(--section-padding) 0', 
@@ -694,7 +1070,7 @@ export default function Home() {
                   fontWeight: 'bold',
                   marginBottom: 'clamp(12px, 2.5vw, 18px)'
                 }}>
-                  PAKISTAN'S LEADING SOLAR PROVIDER
+                  {heroSection?.badge_text || "PAKISTAN'S LEADING SOLAR PROVIDER"}
                 </div>
                 
                 <h1 style={{ 
@@ -708,7 +1084,7 @@ export default function Home() {
                   WebkitTextFillColor: 'transparent',
                   backgroundClip: 'text'
                 }}>
-                  Power Your Future with Solar Energy
+                  {heroSection?.title || "Power Your Future with Solar Energy"}
                 </h1>
                 
                 <p style={{ 
@@ -719,7 +1095,7 @@ export default function Home() {
                   textShadow: '1px 1px 2px rgba(0,0,0,0.2)',
                   maxWidth: 'min(600px, 90vw)'
                 }}>
-                  Clean • Efficient • Sustainable
+                  {heroSection?.subtitle || "Clean • Efficient • Sustainable"}
                 </p>
                 
                 <p style={{ 
@@ -729,7 +1105,7 @@ export default function Home() {
                   lineHeight: '1.7',
                   maxWidth: 'min(600px, 90vw)'
                 }}>
-                  Transform your home and business with our premium solar energy systems. Join thousands of satisfied customers who have made the switch to renewable energy.
+                  {heroSection?.content_text || "Transform your home and business with our premium solar energy systems. Join thousands of satisfied customers who have made the switch to renewable energy."}
                 </p>
                 
                 <div style={{ 
@@ -768,7 +1144,7 @@ export default function Home() {
                       e.target.style.boxShadow = '0 12px 32px rgba(255, 107, 53, 0.3)';
                     }}
                   >
-                    <span>Get Started</span> 🚀
+                    <span>{heroSection?.button_text || "Get Started"}</span> 🚀
                   </button>
                   
                   <button
@@ -805,7 +1181,7 @@ export default function Home() {
               {/* Professional Solar Image */}
               <div className="hero-image">
                 <img 
-                  src="https://images.unsplash.com/photo-1509391366360-2e959784a276?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80" 
+                  src={heroSection?.image_url || "https://images.unsplash.com/photo-1509391366360-2e959784a276?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80"} 
                   alt="Professional Solar Energy Solutions"
                 />
               </div>
@@ -840,7 +1216,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Enhanced Customer Reviews - Universal Screen Support */}
+        {/* Enhanced Customer Reviews */}
         <section style={{ 
           padding: 'var(--section-padding) 0', 
           background: `
@@ -866,20 +1242,35 @@ export default function Home() {
                       flexWrap: 'wrap',
                       gap: 'clamp(12px, 2vw, 15px)'
                     }}>
-                      <div style={{
-                        width: 'clamp(50px, 10vw, 60px)',
-                        height: 'clamp(50px, 10vw, 60px)',
-                        borderRadius: '50%',
-                        background: 'linear-gradient(45deg, #FF6B35, #F7931E)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: 'white',
-                        fontWeight: 'bold',
-                        fontSize: 'clamp(1.2rem, 3vw, 1.5rem)'
-                      }}>
-                        {review.name.charAt(0)}
-                      </div>
+                      {review.avatar_url ? (
+                        <img 
+                          src={review.avatar_url} 
+                          alt={review.name}
+                          style={{
+                            width: 'clamp(50px, 10vw, 60px)',
+                            height: 'clamp(50px, 10vw, 60px)',
+                            borderRadius: '50%',
+                            objectFit: 'cover',
+                            border: '3px solid #FF6B35',
+                            flexShrink: 0
+                          }}
+                        />
+                      ) : (
+                        <div style={{
+                          width: 'clamp(50px, 10vw, 60px)',
+                          height: 'clamp(50px, 10vw, 60px)',
+                          borderRadius: '50%',
+                          background: 'linear-gradient(45deg, #FF6B35, #F7931E)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: 'white',
+                          fontWeight: 'bold',
+                          fontSize: 'clamp(1.2rem, 3vw, 1.5rem)'
+                        }}>
+                          {review.name.charAt(0)}
+                        </div>
+                      )}
                       <div style={{ flex: 1, minWidth: 'min(150px, 100%)' }}>
                         <h4 style={{ 
                           margin: 0, 
@@ -927,158 +1318,396 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Enhanced Features Section */}
-        <section style={{ 
-          padding: 'var(--section-padding) 0', 
-          background: `
-            linear-gradient(135deg, rgba(255, 107, 53, 0.06) 0%, rgba(247, 147, 30, 0.06) 100%),
-            url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80"><defs><pattern id="hexagon" width="40" height="35" patternUnits="userSpaceOnUse"><polygon points="20,5 35,15 35,25 20,35 5,25 5,15" fill="none" stroke="rgba(255,107,53,0.1)" stroke-width="1"/></pattern></defs><rect width="80" height="80" fill="url(%23hexagon)"/></svg>')
-          `,
-          position: 'relative',
-          overflow: 'hidden'
-        }}>
-          <div className="universal-container" style={{ position: 'relative', zIndex: 2 }}>
-            <div style={{ textAlign: 'center', marginBottom: 'clamp(60px, 10vw, 80px)' }}>
-              <h2 style={{ 
-                fontSize: 'clamp(32px, 6vw, 48px)', 
-                fontWeight: 'bold', 
-                marginBottom: 'clamp(16px, 3vw, 20px)',
-                background: 'linear-gradient(45deg, #FF6B35, #F7931E)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-                position: 'relative'
-              }}>
-                Why Choose Syed Solar Energy?
+        {/* Dynamic Sections */}
+        {renderSection(events, "Latest Events", eventsMode, event => (
+          <Card3D key={event.id}>
+            {event.image_url && (
+              <div style={{ position: 'relative', overflow: 'hidden' }}>
+                <img 
+                  src={event.image_url} 
+                  alt={event.title} 
+                  style={{
+                    width: '100%',
+                    height: 'clamp(180px, 25vw, 220px)',
+                    objectFit: 'cover',
+                    transition: 'transform 0.4s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (window.innerWidth > 768) {
+                      e.target.style.transform = 'scale(1.1)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.transform = 'scale(1)';
+                  }}
+                />
                 <div style={{
                   position: 'absolute',
-                  bottom: 'clamp(-12px, -2vw, -15px)',
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  width: 'clamp(120px, 20vw, 150px)',
-                  height: 'clamp(4px, 0.8vw, 5px)',
+                  top: 'clamp(12px, 2vw, 15px)',
+                  right: 'clamp(12px, 2vw, 15px)',
                   background: 'linear-gradient(45deg, #FF6B35, #F7931E)',
-                  borderRadius: '3px'
-                }}></div>
-              </h2>
-              <p style={{
-                fontSize: 'clamp(16px, 3vw, 20px)',
-                color: '#666',
-                maxWidth: 'min(600px, 90vw)',
-                margin: '0 auto',
-                lineHeight: '1.6'
-              }}>
-                Experience the difference with Pakistan's leading solar energy provider
-              </p>
-            </div>
-            
-            <div className="grid-features">
-              {features.map((feature, index) => (
-                <Card3D key={feature.id} style={{
-                  animation: `fadeInUp 0.8s ease-out ${index * 0.2}s both`
+                  color: 'white',
+                  padding: 'clamp(6px, 1.5vw, 8px) clamp(12px, 2.5vw, 15px)',
+                  borderRadius: 'clamp(16px, 3vw, 20px)',
+                  fontSize: 'clamp(10px, 2vw, 12px)',
+                  fontWeight: 'bold',
+                  textTransform: 'uppercase',
+                  letterSpacing: '1px'
                 }}>
-                  <div style={{ 
-                    padding: 'clamp(40px, 6vw, 50px) var(--card-padding)', 
-                    textAlign: 'center', 
-                    minHeight: 'clamp(280px, 35vw, 320px)', 
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    justifyContent: 'center',
-                    position: 'relative'
-                  }}>
-                    <div style={{
-                      position: 'absolute',
-                      top: 'clamp(16px, 3vw, 20px)',
-                      right: 'clamp(16px, 3vw, 20px)',
-                      width: 'clamp(40px, 8vw, 60px)',
-                      height: 'clamp(40px, 8vw, 60px)',
-                      background: 'linear-gradient(45deg, rgba(255, 107, 53, 0.1), rgba(247, 147, 30, 0.1))',
-                      borderRadius: '50%',
-                      animation: 'pulse 3s ease-in-out infinite'
-                    }}></div>
+                  Event
+                </div>
+                <div style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  background: 'linear-gradient(transparent, rgba(0,0,0,0.7))',
+                  height: 'clamp(60px, 10vw, 80px)'
+                }}></div>
+              </div>
+            )}
+            <div style={{ padding: 'var(--card-padding)' }}>
+              <h3 style={{ 
+                color: '#FF6B35', 
+                fontSize: 'clamp(18px, 3.5vw, 22px)', 
+                fontWeight: 'bold',
+                marginBottom: 'clamp(12px, 2.5vw, 15px)',
+                lineHeight: '1.3'
+              }}>
+                {event.title}
+              </h3>
+              <p style={{ 
+                color: '#666', 
+                lineHeight: '1.6',
+                marginBottom: 'clamp(16px, 3vw, 20px)',
+                fontSize: 'var(--text-base)'
+              }}>
+                {event.description}
+              </p>
+              {event.date && (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  color: '#999',
+                  fontSize: 'clamp(12px, 2.5vw, 14px)',
+                  background: '#fff8f0',
+                  padding: 'clamp(8px, 2vw, 10px) clamp(12px, 2.5vw, 15px)',
+                  borderRadius: 'clamp(8px, 1.5vw, 10px)',
+                  border: '1px solid rgba(255, 107, 53, 0.1)'
+                }}>
+                  <span style={{ marginRight: '8px', fontSize: 'clamp(14px, 2.5vw, 16px)' }}>📅</span>
+                  {new Date(event.date).toLocaleDateString('en-US', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  })}
+                </div>
+              )}
+            </div>
+          </Card3D>
+        ))}
 
+        {renderSection(partners, "Our Partners", partnersMode, partner => (
+          <Card3D key={partner.id}>
+            <div style={{ 
+              padding: 'var(--card-padding)', 
+              textAlign: 'center', 
+              minHeight: 'clamp(180px, 25vw, 200px)', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              justifyContent: 'center' 
+            }}>
+              <div style={{
+                height: 'clamp(80px, 12vw, 100px)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 'clamp(16px, 3vw, 20px)',
+                background: 'linear-gradient(135deg, #fff8f0, #ffffff)',
+                borderRadius: 'clamp(12px, 2.5vw, 15px)',
+                padding: 'clamp(16px, 3vw, 20px)'
+              }}>
+                <img 
+                  src={partner.logo_url} 
+                  alt={partner.name} 
+                  style={{
+                    maxHeight: 'clamp(60px, 10vw, 80px)',
+                    maxWidth: '100%',
+                    objectFit: 'contain',
+                    transition: 'all 0.3s ease',
+                    filter: 'grayscale(20%)'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (window.innerWidth > 768) {
+                      e.target.style.filter = 'grayscale(0%) brightness(1.1)';
+                      e.target.style.transform = 'scale(1.05)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.filter = 'grayscale(20%)';
+                    e.target.style.transform = 'scale(1)';
+                  }}
+                />
+              </div>
+              <h4 style={{ 
+                color: '#333', 
+                fontSize: 'clamp(16px, 3vw, 18px)',
+                fontWeight: 'bold',
+                margin: '0 0 clamp(8px, 2vw, 10px) 0'
+              }}>
+                {partner.name}
+              </h4>
+              {partner.description && (
+                <p style={{ 
+                  color: '#666', 
+                  fontSize: 'var(--text-small)', 
+                  margin: 0,
+                  lineHeight: '1.5'
+                }}>
+                  {partner.description}
+                </p>
+              )}
+            </div>
+          </Card3D>
+        ))}
+
+        {renderSection(customers, "Our Platinum Customers", customersMode, customer => (
+          <Card3D key={customer.id}>
+            <div style={{ 
+              padding: 'var(--card-padding)', 
+              textAlign: 'center', 
+              minHeight: 'clamp(180px, 25vw, 200px)', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              justifyContent: 'center' 
+            }}>
+              <div style={{
+                height: 'clamp(80px, 12vw, 100px)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 'clamp(16px, 3vw, 20px)',
+                background: 'linear-gradient(135deg, #fff7e6, #ffffff)',
+                borderRadius: 'clamp(12px, 2.5vw, 15px)',
+                padding: 'clamp(16px, 3vw, 20px)',
+                border: '2px solid #F7931E'
+              }}>
+                <img 
+                  src={customer.logo_url} 
+                  alt={customer.name} 
+                  style={{
+                    maxHeight: 'clamp(60px, 10vw, 80px)',
+                    maxWidth: '100%',
+                    objectFit: 'contain',
+                    transition: 'all 0.3s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (window.innerWidth > 768) {
+                      e.target.style.filter = 'brightness(1.1)';
+                      e.target.style.transform = 'scale(1.05)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.filter = 'brightness(1)';
+                    e.target.style.transform = 'scale(1)';
+                  }}
+                />
+              </div>
+              <h4 style={{ 
+                color: '#333', 
+                fontSize: 'clamp(16px, 3vw, 18px)',
+                fontWeight: 'bold',
+                marginBottom: 'clamp(8px, 2vw, 10px)'
+              }}>
+                {customer.name}
+              </h4>
+              {customer.testimonial && (
+                <p style={{ 
+                  color: '#666', 
+                  fontSize: 'var(--text-small)', 
+                  fontStyle: 'italic',
+                  margin: 0,
+                  lineHeight: '1.5'
+                }}>
+                  "{customer.testimonial}"
+                </p>
+              )}
+            </div>
+          </Card3D>
+        ))}
+
+        {/* Enhanced Features Section */}
+        {features.length > 0 && (
+          <section style={{ 
+            padding: 'var(--section-padding) 0', 
+            background: `
+              linear-gradient(135deg, rgba(255, 107, 53, 0.06) 0%, rgba(247, 147, 30, 0.06) 100%),
+              url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80"><defs><pattern id="hexagon" width="40" height="35" patternUnits="userSpaceOnUse"><polygon points="20,5 35,15 35,25 20,35 5,25 5,15" fill="none" stroke="rgba(255,107,53,0.1)" stroke-width="1"/></pattern></defs><rect width="80" height="80" fill="url(%23hexagon)"/></svg>')
+            `,
+            position: 'relative',
+            overflow: 'hidden'
+          }}>
+            <div className="universal-container" style={{ position: 'relative', zIndex: 2 }}>
+              <div style={{ textAlign: 'center', marginBottom: 'clamp(60px, 10vw, 80px)' }}>
+                <h2 style={{ 
+                  fontSize: 'clamp(32px, 6vw, 48px)', 
+                  fontWeight: 'bold', 
+                  marginBottom: 'clamp(16px, 3vw, 20px)',
+                  background: 'linear-gradient(45deg, #FF6B35, #F7931E)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                  position: 'relative'
+                }}>
+                  Why Choose Syed Solar Energy?
+                  <div style={{
+                    position: 'absolute',
+                    bottom: 'clamp(-12px, -2vw, -15px)',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    width: 'clamp(120px, 20vw, 150px)',
+                    height: 'clamp(4px, 0.8vw, 5px)',
+                    background: 'linear-gradient(45deg, #FF6B35, #F7931E)',
+                    borderRadius: '3px'
+                  }}></div>
+                </h2>
+                <p style={{
+                  fontSize: 'clamp(16px, 3vw, 20px)',
+                  color: '#666',
+                  maxWidth: 'min(600px, 90vw)',
+                  margin: '0 auto',
+                  lineHeight: '1.6'
+                }}>
+                  Experience the difference with Pakistan's leading solar energy provider
+                </p>
+              </div>
+              
+              <div className="grid-features">
+                {features.map((feature, index) => (
+                  <Card3D key={feature.id} style={{
+                    animation: `fadeInUp 0.8s ease-out ${index * 0.2}s both`
+                  }}>
                     <div style={{ 
-                      marginBottom: 'clamp(24px, 4vw, 30px)',
-                      background: 'linear-gradient(135deg, #fff7e6, #f0f8ff)',
-                      borderRadius: '50%',
-                      width: 'clamp(80px, 12vw, 100px)',
-                      height: 'clamp(80px, 12vw, 100px)',
-                      display: 'flex',
-                      alignItems: 'center',
+                      padding: 'clamp(40px, 6vw, 50px) var(--card-padding)', 
+                      textAlign: 'center', 
+                      minHeight: 'clamp(280px, 35vw, 320px)', 
+                      display: 'flex', 
+                      flexDirection: 'column', 
                       justifyContent: 'center',
-                      margin: '0 auto clamp(24px, 4vw, 30px)',
-                      border: '3px solid #FF6B35',
-                      boxShadow: '0 8px 24px rgba(255, 107, 53, 0.2)',
-                      position: 'relative',
-                      overflow: 'hidden'
+                      position: 'relative'
                     }}>
                       <div style={{
                         position: 'absolute',
-                        top: '0',
-                        left: '0',
-                        right: '0',
-                        bottom: '0',
-                        background: 'linear-gradient(45deg, transparent, rgba(255,255,255,0.3), transparent)',
-                        transform: 'translateX(-100%)',
-                        animation: 'shimmer 3s ease-in-out infinite'
+                        top: 'clamp(16px, 3vw, 20px)',
+                        right: 'clamp(16px, 3vw, 20px)',
+                        width: 'clamp(40px, 8vw, 60px)',
+                        height: 'clamp(40px, 8vw, 60px)',
+                        background: 'linear-gradient(45deg, rgba(255, 107, 53, 0.1), rgba(247, 147, 30, 0.1))',
+                        borderRadius: '50%',
+                        animation: 'pulse 3s ease-in-out infinite'
                       }}></div>
-                      <div style={{
-                        fontSize: 'clamp(32px, 6vw, 40px)',
-                        color: '#FF6B35'
+
+                      {feature.icon_url && (
+                        <div style={{ 
+                          marginBottom: 'clamp(24px, 4vw, 30px)',
+                          background: 'linear-gradient(135deg, #fff7e6, #f0f8ff)',
+                          borderRadius: '50%',
+                          width: 'clamp(80px, 12vw, 100px)',
+                          height: 'clamp(80px, 12vw, 100px)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          margin: '0 auto clamp(24px, 4vw, 30px)',
+                          border: '3px solid #FF6B35',
+                          boxShadow: '0 8px 24px rgba(255, 107, 53, 0.2)',
+                          position: 'relative',
+                          overflow: 'hidden'
+                        }}>
+                          <div style={{
+                            position: 'absolute',
+                            top: '0',
+                            left: '0',
+                            right: '0',
+                            bottom: '0',
+                            background: 'linear-gradient(45deg, transparent, rgba(255,255,255,0.3), transparent)',
+                            transform: 'translateX(-100%)',
+                            animation: 'shimmer 3s ease-in-out infinite'
+                          }}></div>
+                          <img 
+                            src={feature.icon_url} 
+                            alt={feature.title}
+                            style={{
+                              width: 'clamp(48px, 8vw, 60px)',
+                              height: 'clamp(48px, 8vw, 60px)',
+                              objectFit: 'contain',
+                              transition: 'all 0.3s ease',
+                              position: 'relative',
+                              zIndex: 1
+                            }}
+                            onMouseEnter={(e) => {
+                              if (window.innerWidth > 768) {
+                                e.target.style.filter = 'brightness(1.2)';
+                                e.target.style.transform = 'scale(1.1) rotate(5deg)';
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              e.target.style.filter = 'brightness(1)';
+                              e.target.style.transform = 'scale(1) rotate(0deg)';
+                            }}
+                          />
+                        </div>
+                      )}
+                      <h4 style={{ 
+                        color: '#FF6B35', 
+                        fontSize: 'clamp(20px, 4vw, 26px)',
+                        fontWeight: 'bold',
+                        marginBottom: 'clamp(16px, 3vw, 20px)',
+                        lineHeight: '1.3'
                       }}>
-                        {index === 0 && '☀️'}
-                        {index === 1 && '🔧'}
-                        {index === 2 && '👷‍♂️'}
-                        {index === 3 && '🔧'}
+                        {feature.title}
+                      </h4>
+                      <p style={{ 
+                        color: '#666', 
+                        lineHeight: '1.8',
+                        fontSize: 'var(--text-base)',
+                        margin: 0
+                      }}>
+                        {feature.description}
+                      </p>
+                      
+                      {/* Achievement badge */}
+                      <div style={{
+                        position: 'absolute',
+                        bottom: 'clamp(16px, 3vw, 20px)',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        background: 'linear-gradient(45deg, #FF6B35, #F7931E)',
+                        color: 'white',
+                        padding: 'clamp(6px, 1.5vw, 8px) clamp(12px, 2.5vw, 16px)',
+                        borderRadius: 'clamp(16px, 3vw, 20px)',
+                        fontSize: 'clamp(10px, 2vw, 12px)',
+                        fontWeight: 'bold',
+                        textTransform: 'uppercase',
+                        letterSpacing: '1px'
+                      }}>
+                        ✓ Certified
                       </div>
                     </div>
-                    <h4 style={{ 
-                      color: '#FF6B35', 
-                      fontSize: 'clamp(20px, 4vw, 26px)',
-                      fontWeight: 'bold',
-                      marginBottom: 'clamp(16px, 3vw, 20px)',
-                      lineHeight: '1.3'
-                    }}>
-                      {feature.title}
-                    </h4>
-                    <p style={{ 
-                      color: '#666', 
-                      lineHeight: '1.8',
-                      fontSize: 'var(--text-base)',
-                      margin: 0
-                    }}>
-                      {feature.description}
-                    </p>
-                    
-                    {/* Achievement badge */}
-                    <div style={{
-                      position: 'absolute',
-                      bottom: 'clamp(16px, 3vw, 20px)',
-                      left: '50%',
-                      transform: 'translateX(-50%)',
-                      background: 'linear-gradient(45deg, #FF6B35, #F7931E)',
-                      color: 'white',
-                      padding: 'clamp(6px, 1.5vw, 8px) clamp(12px, 2.5vw, 16px)',
-                      borderRadius: 'clamp(16px, 3vw, 20px)',
-                      fontSize: 'clamp(10px, 2vw, 12px)',
-                      fontWeight: 'bold',
-                      textTransform: 'uppercase',
-                      letterSpacing: '1px'
-                    }}>
-                      ✓ Certified
-                    </div>
-                  </div>
-                </Card3D>
-              ))}
+                  </Card3D>
+                ))}
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+        )
+      }
 
         {/* Enhanced Footer */}
         <Footer />
 
         {/* Popups */}
         <WhatsAppPopup />
+        <SpecialOfferPopup />
 
         {/* Enhanced animations and styles */}
         <style>
@@ -1110,6 +1739,24 @@ export default function Home() {
               100% { opacity: 1; backdrop-filter: blur(8px); }
             }
 
+            @keyframes popupEntrance {
+              0% {
+                opacity: 0;
+                transform: scale(0.3) translateY(-50px) rotate(-10deg);
+                filter: blur(10px);
+              }
+              50% {
+                opacity: 0.8;
+                transform: scale(1.05) translateY(10px) rotate(2deg);
+                filter: blur(2px);
+              }
+              100% {
+                opacity: 1;
+                transform: scale(1) translateY(0) rotate(0deg);
+                filter: blur(0);
+              }
+            }
+
             @keyframes shimmer {
               0% { transform: translateX(-100%); }
               100% { transform: translateX(100%); }
@@ -1126,7 +1773,6 @@ export default function Home() {
               }
             }
 
-            /* Responsive optimizations */
             @media (max-width: 480px) {
               .hero-content {
                 padding: clamp(20px, 5vw, 30px) 0;
@@ -1176,6 +1822,32 @@ export default function Home() {
             @media (min-width: 1920px) {
               .universal-container {
                 max-width: 1600px;
+              }
+            }
+
+            /* High DPI display optimizations */
+            @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 2dppx) {
+              img {
+                image-rendering: -webkit-optimize-contrast;
+                image-rendering: crisp-edges;
+              }
+            }
+
+            /* Dark mode support */
+            @media (prefers-color-scheme: dark) {
+              :root {
+                --text-color: #e0e0e0;
+                --bg-color: #1a1a1a;
+              }
+            }
+
+            /* Reduced motion preferences */
+            @media (prefers-reduced-motion: reduce) {
+              * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
               }
             }
 
