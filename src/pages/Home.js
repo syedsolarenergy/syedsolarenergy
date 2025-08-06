@@ -1295,22 +1295,14 @@ export default function Home() {
   marginBottom: 'clamp(12px, 2.5vw, 16px)',
   fontSize: 'clamp(0.875rem, 1.8vw, 1rem)',
   fontStyle: 'italic',
-
-  /* clamp to 6 lines */
-  display: '-webkit-box',
-  WebkitBoxOrient: 'vertical',
-  WebkitLineClamp: 6,
-  overflow: 'hidden',
 }}>
   "{review.review}"
 </p>
-
-
             <div style={{
               display: 'flex',
               justifyContent: 'center',
               color: '#FFD700',
-              fontSize: 'clamp(14px, 3vw, 18px)'
+              fontSize: 'clamp(0.75rem, 1.6vw, 0.9rem)',
             }}>
               {"★".repeat(review.stars)}{"☆".repeat(5 - review.stars)}
             </div>
