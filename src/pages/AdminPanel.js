@@ -119,7 +119,7 @@ export default function AdminPanel() {
 
   // Login function
   const login = () => {
-    if (username === "admin" && password === "admin123") {
+    if (username === "admin" && password === "Zub@12345") {
       setLoggedIn(true);
     } else {
       alert("Invalid credentials!");

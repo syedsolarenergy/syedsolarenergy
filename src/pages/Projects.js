@@ -894,7 +894,7 @@ export default function Projects() {
             }}>
               {[
                 { number: '2000+', label: 'Projects' },
-                { number: '99.9%', label: 'Satisfaction' },
+                { number: '100%', label: 'Satisfaction' },
                 { number: '10+', label: 'Years Installation Warranty' }
               ].map((stat, index) => (
                 <div key={index} style={{

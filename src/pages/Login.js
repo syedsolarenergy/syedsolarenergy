@@ -8,8 +8,8 @@ const logo = "logo.png"; // Adjust path as needed
 // --- Ensure default users in localStorage ---
 if (!localStorage.getItem("users")) {
   const defaultUsers = [
-    { username: "admin", password: "admin123", email: "admin@syedsolar.com", role: "admin" },
-    { username: "zubair", password: "12345", email: "zubair@syedsolar.com", role: "user" },
+    { username: "admin", password: "Zub@12345", email: "sales@syedsolarenergy.com", role: "admin" },
+    { username: "zubair", password: "Zub@12345", email: "zkafridi317@gmail.com", role: "user" },
   ];
   localStorage.setItem("users", JSON.stringify(defaultUsers));
 }

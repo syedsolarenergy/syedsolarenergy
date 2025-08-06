@@ -198,7 +198,7 @@ const WhatsAppPopup = () => {
         maxWidth: 'clamp(250px, 40vw, 280px)',
         minWidth: 'min(220px, 90vw)'
       }}
-      onClick={() => window.open('https://wa.me/923044678929?text=Hello! I need help with solar energy solutions.', '_blank')}
+      onClick={() => window.open('https://wa.me/923075596695?text=Hello! I need help with solar energy solutions.', '_blank')}
       onMouseEnter={(e) => {
         if (window.innerWidth > 768) {
           e.currentTarget.style.transform = 'translateY(-5px)';
@@ -522,7 +522,7 @@ const SpecialOfferPopup = () => {
         }}>
           {/* Primary CTA Button */}
           <button
-            onClick={() => window.open('https://wa.me/923075506695?text=Hi! I am interested in the 30% OFF solar installation offer. Please provide more details.', '_blank')}
+            onClick={() => window.open('https://wa.me/923075596695?text=Hi! I am interested in the 30% OFF solar installation offer. Please provide more details.', '_blank')}
             style={{
               background: 'linear-gradient(145deg, #ffffff, #f0f0f0)',
               color: '#FF6600',
@@ -1145,13 +1145,7 @@ export default function Home() {
                   flexWrap: 'wrap'
                 }}>
                   <button
-                    onClick={() => {
-                      if (heroSection?.button_link) {
-                        window.location.href = heroSection.button_link;
-                      } else {
-                        window.location.href = '/quotation';
-                      }
-                    }}
+                  onClick={() => window.open('https://wa.me/923075596695?text=Hi! I would like to learn more about your solar energy solutions. Can you provide more information?', '_blank')}
                     style={{
                       background: 'linear-gradient(45deg, #FF6B35, #F7931E)',
                       color: 'white',
@@ -1185,7 +1179,7 @@ export default function Home() {
                   </button>
                   
                   <button
-                    onClick={() => window.open('https://wa.me/923075506695?text=Hi! I would like to learn more about your solar energy solutions. Can you provide more information?', '_blank')}
+                    onClick={() => window.open('https://wa.me/923075596695?text=Hi! I would like to learn more about your solar energy solutions. Can you provide more information?', '_blank')}
                     style={{
                       background: 'transparent',
                       color: '#FF6B35',

@@ -25,7 +25,7 @@ const SystemSuggestionPopup = ({ totalLoad, onClose }) => {
     const message = encodeURIComponent(
       `Hi Syed Solar! I calculated my load (${totalLoad} Watts) and need a quote for a ${suggestedSystem}kW solar system.`
     );
-    window.open(`https://wa.me/923075596695?text=${message}`, '_blank');
+    window.open(`https://syedsolarenergy.com/quotation`,);
   };
 
   return (
