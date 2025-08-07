@@ -88,28 +88,28 @@ const QuotationSoftware = () => {
         panel_brand: quotationData.solarPanel.company,
         panel_watt: quotationData.solarPanel.watts,
         panel_quantity: quotationData.solarPanel.quantity,
-        panel_total: getPanelPrice() * quotationData.solarPanel.quantity,
+        panel_total: getPanelPrice(quotationData.solarPanel) * quotationData.solarPanel.quantity,
         inverter_type: quotationData.inverter.company || null,
         inverter_size: `${quotationData.inverter.kw}kW` || null,
         inverter_total: quotationData.inverter.quantity * quotationData.inverter.pricePerUnit,
-        battery_type: batteryType || null,
+        battery_type: quotationData.batteryType || null,
         battery_model: quotationData.batteryModel || null,
         battery_quantity: quotationData.batteryQuantity || null,
         battery_total: (quotationData.batteryQuantity || 0) * (quotationData.batteryPrice || 0),
         stand_type: quotationData.stand.type,
-        stand_quantity: getStandQty(),
-        stand_total: getStandQty() * quotationData.stand.pricePerStand,
+        stand_quantity: getStandQty(quotationData.solarPanel.quantity, quotationData.stand.type),
+        stand_total: getStandQty(quotationData.solarPanel.quantity, quotationData.stand.type) * quotationData.stand.pricePerStand,
         safety_charges: quotationData.safety,
         transport_charges: quotationData.transport,
         installation_charges: quotationData.labour,
-        green_meter: isGreenmeterIncluded,
-        green_meter_charges: quotationData.greenmeter || 0,
+        green_meter: quotationData.isGreenmeterIncluded,
+        green_meter_charges: quotationData.isGreenmeterIncluded ? quotationData.greenmeter : 0,
         total_amount: quotationData.total,
         quotation_date: new Date().toISOString(),
         staff_name: quotationData.staff || null,
         location: quotationData.location || null,
         quotation_id: quotationData.id,
-        engineer_charges: quotationData.engineer || 0,
+        engineer_charges: quotationData.isEngineerIncluded ? quotationData.engineer : 0,
         follow_up_status: 'pending',
         created_at: new Date().toISOString()
       };
@@ -153,7 +153,8 @@ const QuotationSoftware = () => {
           quantity: 1,
           pricePerUnit: item.inverter_total || 0
         },
-        batteryModel: item.battery_model,
+        batteryType: item.battery_type || '',
+        batteryModel: item.battery_model || '',
         batteryQuantity: item.battery_quantity || 0,
         batteryPrice: item.battery_quantity > 0 ? (item.battery_total / item.battery_quantity) : 0,
         solarPanel: {
@@ -174,7 +175,9 @@ const QuotationSoftware = () => {
         total: item.total_amount,
         date: item.created_at,
         followUpStatus: item.follow_up_status || 'pending',
-        quotationDate: item.quotation_date
+        quotationDate: item.quotation_date,
+        isGreenmeterIncluded: item.green_meter,
+        isEngineerIncluded: item.engineer_charges > 0
       })) || [];
     } catch (err) {
       console.error("Load from Supabase error:", err);
@@ -311,7 +314,7 @@ const QuotationSoftware = () => {
     return [];
   };
   
-  const getPanelPrice = () => parseFloat(solarPanel.pricePerWatt) * parseInt(solarPanel.watts || 0);
+  const getPanelPrice = (panel = solarPanel) => parseFloat(panel.pricePerWatt) * parseInt(panel.watts || 0);
   const getStandQty = (qty = solarPanel.quantity, type = stand.type) => 
     type === 'L2 (2 panels)' ? Math.ceil(qty / 2) : qty;
   
@@ -335,7 +338,7 @@ const QuotationSoftware = () => {
   // CRUD operations
   const saveQuotation = async () => {
     if (!customer.name || !customer.contact || !staffName || !systemType) {
-      alert("Please fill in all required fields");
+      alert("Please fill in all required fields: Customer Name, Contact, Staff Name, and System Type");
       return;
     }
     
@@ -357,12 +360,12 @@ const QuotationSoftware = () => {
         solarPanel,
         stand,
         isGreenmeterIncluded,
-        greenmeter: isGreenmeterIncluded ? greenmeter : 0,
+        greenmeter,
         safety,
         transport,
         labour,
         isEngineerIncluded,
-        engineer: isEngineerIncluded ? engineer : 0,
+        engineer,
         total: getTotal(),
         date: new Date().toISOString(),
         followUpStatus: editingQuotation?.followUpStatus || "pending",
@@ -411,11 +414,7 @@ const QuotationSoftware = () => {
   const deleteQuotation = async (quotationId) => {
     try {
       // Delete from Supabase
-      try {
-        await deleteQuotationFromSupabase(quotationId);
-      } catch (supabaseError) {
-        console.warn("Failed to delete from Supabase:", supabaseError);
-      }
+      await deleteQuotationFromSupabase(quotationId);
 
       // Update local state
       const updatedQuotations = quotations.filter(q => q.id !== quotationId);
@@ -471,25 +470,16 @@ const QuotationSoftware = () => {
                 display: flex; 
                 align-items: center; 
                 padding: 30px;
-                background: linear-gradient(135deg, #1a3a6c, #2c5282);
+                background: linear-gradient(135deg, #FF6B35, #F7931E);
                 color: white;
               }
               .logo-container {
                 flex: 0 0 100px;
                 padding-right: 20px;
-                border-right: 2px solid rgba(255,255,255,0.3);
               }
               .logo {
                 width: 100px;
                 height: 100px;
-                background: #fff;
-                border-radius: 10px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 40px;
-                color: #2c5282;
-                font-weight: bold;
               }
               .company-info { 
                 padding-left: 20px;
@@ -507,7 +497,7 @@ const QuotationSoftware = () => {
                 opacity: 0.9;
               }
               .quotation-title { 
-                background: linear-gradient(135deg, #e53e3e, #c53030); 
+                background: linear-gradient(135deg, #e65100, #ff9800); 
                 color: white; 
                 padding: 15px; 
                 text-align: center; 
@@ -527,10 +517,10 @@ const QuotationSoftware = () => {
                 background: #fff;
               }
               .customer-section h3 { 
-                color: #2c5282; 
+                color: #ff6b35; 
                 margin-bottom: 15px; 
                 font-size: 18px; 
-                border-bottom: 2px solid #e53e3e;
+                border-bottom: 2px solid #ff9800;
                 padding-bottom: 8px;
                 display: inline-block;
               }
@@ -553,7 +543,7 @@ const QuotationSoftware = () => {
                 margin: 20px 0;
               }
               .details-table th { 
-                background: #2c5282; 
+                background: #ff9800; 
                 color: white; 
                 padding: 12px 15px; 
                 text-align: left; 
@@ -565,7 +555,7 @@ const QuotationSoftware = () => {
                 border-bottom: 1px solid #eee; 
               }
               .details-table tr:nth-child(even) { 
-                background: #f8f9fa; 
+                background: #fff8f0; 
               }
               .item-name { 
                 font-weight: bold; 
@@ -579,27 +569,27 @@ const QuotationSoftware = () => {
               }
               .price { 
                 font-weight: bold; 
-                color: #c53030; 
+                color: #e65100; 
                 text-align: right; 
               }
               .total-row { 
-                background: #e6fffa !important; 
+                background: #fff3e0 !important; 
                 font-weight: bold; 
                 font-size: 16px; 
               }
               .total-row td { 
-                border-top: 2px solid #2c5282; 
-                color: #2c5282; 
+                border-top: 2px solid #ff9800; 
+                color: #e65100; 
                 font-weight: bold;
                 padding: 15px;
               }
               .notes-section { 
                 padding: 25px;
-                background: #f8f9fa;
+                background: #fff8f0;
                 border-top: 1px solid #eee;
               }
               .notes-section h4 { 
-                color: #2c5282; 
+                color: #ff6b35; 
                 margin-bottom: 15px; 
                 font-size: 16px; 
               }
@@ -615,10 +605,10 @@ const QuotationSoftware = () => {
                 box-shadow: 0 3px 10px rgba(0,0,0,0.08);
               }
               .note-block h5 {
-                color: #e53e3e;
+                color: #ff6b35;
                 margin: 0 0 10px 0;
                 padding-bottom: 5px;
-                border-bottom: 1px dashed #e2e8f0;
+                border-bottom: 1px dashed #ffe0b2;
               }
               .note-block ul { 
                 padding-left: 20px; 
@@ -630,14 +620,14 @@ const QuotationSoftware = () => {
               .footer { 
                 text-align: center; 
                 padding: 20px;
-                background: #2c5282; 
+                background: #ff9800; 
                 color: white; 
                 font-size: 14px; 
               }
               .signature {
                 margin-top: 40px;
                 padding-top: 10px;
-                border-top: 1px solid #e2e8f0;
+                border-top: 1px solid #ffe0b2;
                 text-align: right;
               }
               .signature p {
@@ -677,7 +667,7 @@ const QuotationSoftware = () => {
       <div class="container">
         <div class="header">
           <div class="logo-container">
-            <div class="logo">SSE</div>
+            <img src="/logo.png" alt="Syed Solar Energy Logo" class="logo" />
           </div>
           <div class="company-info">
             <h1>Syed Solar Energy Pvt Ltd</h1>
