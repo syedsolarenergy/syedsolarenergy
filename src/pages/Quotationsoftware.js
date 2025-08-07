@@ -78,10 +78,23 @@ const QuotationSoftware = () => {
 
   // Database operations
 async function saveQuotationToSupabase(quotationData) {
+  const VALID_STATUSES = ['pending','contacted','completed','cancelled'];
+const status = VALID_STATUSES.includes(quotationData.followUpStatus)
+  ? quotationData.followUpStatus
+  : 'pending';
+
+const supabaseData = {
+  // …  
+  follow_up_status: status,
+  // …
+};
+
     try {
       // only the columns that actually exist in your "quotations" table
       const supabaseData = {
-        quotation_id: quotationData.id,
+        quotation_date: quotationData.quotationDate,
+
+        quotation_id:    quotationData.id,
         customer_name:   quotationData.customer.name,
         customer_contact:quotationData.customer.contact,
         customer_email:  quotationData.customer.email || null,
@@ -111,13 +124,17 @@ async function saveQuotationToSupabase(quotationData) {
         staff_name:      quotationData.staff || null,
         location:        quotationData.location || null,
         follow_up_status:quotationData.followUpStatus || 'pending',
+        follow_up_status: status,
         created_at:      new Date().toISOString()
       };
+      console.log('📤 supabaseData going in:', supabaseData)
+      // after you build supabaseData:
+console.log("👉 follow_up_status going to supabase:", supabaseData.follow_up_status);
 
       const { data, error } = await supabase
         .from("quotations")
         .insert([supabaseData])
-        
+
         .select();               // return all columns of the new row
 
       if (error) {
@@ -197,6 +214,17 @@ async function loadQuotationsFromSupabase() {
   }
 
    async function updateQuotationInSupabase(quotationId, updatedData) {
+    const VALID_STATUSES = ['pending','contacted','completed','cancelled'];
+const status = VALID_STATUSES.includes(updatedData.followUpStatus)
+  ? updatedData.followUpStatus
+  : 'pending';
+
+const supabaseData = {
+  // …  
+  follow_up_status: status,
+  // …
+};
+
     try {
       // build the same payload shape as for insert, minus created_at
       const supabaseData = {
@@ -234,12 +262,13 @@ async function loadQuotationsFromSupabase() {
         follow_up_status:updatedData.followUpStatus || 'pending',
         updated_at:      new Date().toISOString()
       };
+// after you build supabaseData:
+console.log("👉 follow_up_status going to supabase:", supabaseData.follow_up_status);
 
       const { data, error } = await supabase
         .from("quotations")
         .update(supabaseData)
         .eq("quotation_id", quotationId) 
-       // .eq("id", quotationId)        // ← use `id`, not `quotation_id`
         .select();
 
       if (error) {
@@ -396,16 +425,22 @@ async function loadQuotationsFromSupabase() {
       };
 
       // Save to Supabase
-      try {
-        if (editingQuotation) {
-          await updateQuotationInSupabase(quotationId, newQuotation);
-        } else {
-          await saveQuotationToSupabase(newQuotation);
-        }
-      } catch (supabaseError) {
-        console.warn("Failed to save to Supabase, saving locally only:", supabaseError);
-        newQuotation.localOnly = true;
-      }
+      // try saving to Supabase and let any error bubble out
+    if (editingQuotation) {
+     await updateQuotationInSupabase(quotationId, newQuotation);
+   } else {
+      await saveQuotationToSupabase(newQuotation);
+    }
+     // try {
+      //  if (editingQuotation) {
+      //    await updateQuotationInSupabase(quotationId, newQuotation);
+      //  } else {
+      //    await saveQuotationToSupabase(newQuotation);
+     //   }
+     // } catch (supabaseError) {
+     //   console.warn("Failed to save to Supabase, saving locally only:", supabaseError);
+     //   newQuotation.localOnly = true;
+     // }
 
       // Update local state and storage
       let updatedQuotations;
