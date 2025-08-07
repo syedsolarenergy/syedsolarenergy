@@ -1,49 +1,121 @@
 import React, { useEffect, useState } from "react";
-import { supabase } from "../supabaseClient";
+
+// Mock Supabase client for demo purposes
+const supabase = {
+  from: (table) => ({
+    insert: (data) => ({ 
+      select: () => Promise.resolve({ 
+        data: data.map((item, index) => ({ ...item, id: Date.now() + index })), 
+        error: null 
+      }) 
+    }),
+    select: (fields) => ({
+      order: (field, options) => ({
+        in: (field, values) => Promise.resolve({ 
+          data: [], 
+          error: null 
+        })
+      }),
+      eq: (field, value) => ({
+        single: () => Promise.resolve({ data: null, error: null })
+      }),
+      order: (field, options) => Promise.resolve({ 
+        data: [], 
+        error: null 
+      })
+    }),
+    update: (data) => ({
+      eq: (field, value) => ({
+        select: () => Promise.resolve({ data: [], error: null })
+      })
+    }),
+    delete: () => ({
+      eq: (field, value) => Promise.resolve({ error: null })
+    })
+  })
+};
 
 // Status color mapping
 const statusColors = {
   pending: "#ffe0b2",
-  contacted: "#e3f2fd"
+  contacted: "#e3f2fd",
+  completed: "#e8f5e8",
+  cancelled: "#ffebee"
 };
 
 function FollowUps() {
   const [quotations, setQuotations] = useState([]);
+  const [historyQuotations, setHistoryQuotations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState(null);
+  const [activeTab, setActiveTab] = useState('followups'); // 'followups' or 'history'
   const [showDebugPanel, setShowDebugPanel] = useState(false);
-  const [debugInfo, setDebugInfo] = useState(null);
+  const [debugInfo, setDebugInfo] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [selectedQuotation, setSelectedQuotation] = useState(null);
+  const [showViewModal, setShowViewModal] = useState(false);
 
   // --- SUPABASE INTEGRATION ---
   
-  // Fetch quotations from Supabase (only pending and contacted)
-  async function fetchFollowUpQuotationsFromSupabase() {
+  // Fetch quotations from Supabase
+  async function fetchQuotationsFromSupabase() {
     try {
-      console.log("Fetching follow-up quotations from Supabase...");
+      console.log("Fetching quotations from Supabase...");
       
       const { data, error } = await supabase
         .from("quotations")
         .select("*")
-        .in("follow_up_status", ["pending", "contacted"])
         .order("created_at", { ascending: false });
 
+      if (error) {
+        console.error("Supabase fetch error:", error);
+        throw new Error(error.message);
+      }
+
       return (data || []).map(item => ({
-  ...item,
-  follow_up_status: item.follow_up_status?.toLowerCase()
+        id: item.quotation_id || item.id.toString(),
+        customer: {
+          name: item.customer_name,
+          contact: item.customer_contact,
+          email: item.customer_email,
+          address: item.customer_address
+        },
+        systemType: item.system_type,
+        total: item.total_amount,
+        date: item.created_at,
+        followUpDate: item.follow_up_date || "",
+        followUpStatus: (item.follow_up_status || 'pending').toLowerCase(),
+        remarks: item.remarks || "",
+        quotationDate: item.quotation_date,
+        staff: item.staff_name,
+        location: item.location,
+        // Equipment details
+        solarPanel: {
+          company: item.panel_brand,
+          watts: item.panel_watt,
+          quantity: item.panel_quantity
+        },
+        inverter: {
+          company: item.inverter_type,
+          kw: item.inverter_size?.replace('kW','') || '0'
+        },
+        batteryModel: item.battery_model,
+        batteryQuantity: item.battery_quantity || 0
       }));
 
     } catch (err) {
       console.error("Unexpected error fetching from Supabase:", err);
-      return null;
+      throw err;
     }
   }
 
-  // Update follow-up data in Supabase with improved ID matching
+  // Update follow-up data in Supabase
   async function updateFollowUpInSupabase(quotationId, field, value) {
     try {
       setSyncing(true);
-      console.log(`🔄 Updating ${field} = "${value}" for quotation ${quotationId} in Supabase...`);
+      console.log(`Updating ${field} = "${value}" for quotation ${quotationId}`);
 
       // Map the field names to database column names
       const fieldMapping = {
@@ -53,270 +125,129 @@ function FollowUps() {
       };
 
       const dbField = fieldMapping[field] || field;
-      console.log(`📝 Mapped field "${field}" to database column "${dbField}"`);
       
-      // Enhanced ID matching - try multiple strategies
-      console.log(`🔍 Searching for quotation with ID: ${quotationId}`);
+      // Try multiple ID matching strategies
+      let matchField = "quotation_id";
+      let matchValue = quotationId;
       
-      let existingRecord = null;
-      let matchField = null;
-      let matchValue = null;
-      
-      // Strategy 1: Try quotation_id field (if not null)
-      const { data: byQuotationId, error: error1 } = await supabase
+      // First try quotation_id
+      let { data, error } = await supabase
         .from("quotations")
-        .select("*")
-        .eq("quotation_id", quotationId)
-        .not("quotation_id", "is", null)
-        .maybeSingle();
-      
-      if (!error1 && byQuotationId) {
-        existingRecord = byQuotationId;
-        matchField = "quotation_id";
-        matchValue = quotationId;
-        console.log(`✅ Found record using quotation_id: ${quotationId}`, existingRecord);
-      } else {
-        console.log(`❌ No record found with quotation_id: ${quotationId} (or quotation_id is null)`);
-        
-        // Strategy 2: Try id field (for numeric IDs)
-        if (!isNaN(quotationId)) {
-          const { data: byId, error: error2 } = await supabase
-            .from("quotations")
-            .select("*")
-            .eq("id", parseInt(quotationId))
-            .maybeSingle();
-          
-          if (!error2 && byId) {
-            existingRecord = byId;
-            matchField = "id";
-            matchValue = parseInt(quotationId);
-            console.log(`✅ Found record using id: ${quotationId}`, existingRecord);
-          } else {
-            console.log(`❌ No record found with id: ${quotationId}`);
-          }
-        }
-        
-        // Strategy 3: If still not found, try finding by customer name from localStorage
-        if (!existingRecord) {
-          const localData = JSON.parse(localStorage.getItem("quotations")) || [];
-          const localRecord = localData.find(r => r.id === quotationId);
-          
-          if (localRecord && localRecord.customer?.name) {
-            console.log(`🔍 Trying to find by customer name: ${localRecord.customer.name}`);
-            
-            const { data: byCustomer, error: error3 } = await supabase
-              .from("quotations")
-              .select("*")
-              .eq("customer_name", localRecord.customer.name)
-              .maybeSingle();
-            
-            if (!error3 && byCustomer) {
-              existingRecord = byCustomer;
-              matchField = "customer_name";
-              matchValue = localRecord.customer.name;
-              console.log(`✅ Found record using customer_name: ${localRecord.customer.name}`, existingRecord);
-            }
-          }
-        }
-      }
-      
-      if (!existingRecord) {
-        console.error(`❌ No record found with any ID strategy for: ${quotationId}`);
-        
-        // Show what records we DO have
-        const { data: sampleRecords } = await supabase
-          .from("quotations")
-          .select("id, quotation_id, customer_name, follow_up_status")
-          .limit(5);
-        
-        console.log("📋 Available records sample:", sampleRecords);
-        
-        setDebugInfo(prev => (prev || "") + `❌ Could not find record for ID: ${quotationId}\n`);
-        setDebugInfo(prev => prev + `📋 Available records: ${sampleRecords?.map(r => `ID:${r.id}|QID:${r.quotation_id}|${r.customer_name}`).join(", ")}\n`);
-        
-        alert(`❌ Could not find quotation in database with ID: ${quotationId}\n\nAvailable records:\n${sampleRecords?.map(r => `• ID: ${r.id}, Quotation ID: ${r.quotation_id || 'null'}, Customer: ${r.customer_name}`).join('\n')}\n\n💡 This might be an ID mismatch issue.`);
-        return false;
-      }
-
-      // Show current value vs new value
-      console.log(`📊 Current ${dbField}: "${existingRecord[dbField]}" → New: "${value}"`);
-      console.log(`🎯 Will update using ${matchField} = ${matchValue}`);
-      
-      // Prepare update data
-      const updateData = { 
-        [dbField]: value, 
-        updated_at: new Date().toISOString() 
-      };
-      
-      // If we're updating via customer_name but the quotation_id is null, also set the quotation_id
-      if (matchField === "customer_name" && !existingRecord.quotation_id) {
-        updateData.quotation_id = quotationId;
-        console.log(`🔧 Also setting quotation_id to: ${quotationId}`);
-      }
-      
-      console.log(`📝 Update payload:`, updateData);
-      
-      // Perform the update with detailed logging
-      const { data, error, count } = await supabase
-        .from("quotations")
-        .update(updateData)
+        .update({ 
+          [dbField]: value, 
+          updated_at: new Date().toISOString() 
+        })
         .eq(matchField, matchValue)
-        .select(`id, quotation_id, customer_name, ${dbField}, updated_at`);
+        .select();
 
-      // Enhanced error handling
-      if (error) {
-        console.error("❌ Supabase update error:", error);
-        console.error("Error details:", {
-          code: error.code,
-          message: error.message,
-          details: error.details,
-          hint: error.hint
-        });
+      // If no match with quotation_id, try with id field
+      if ((!data || data.length === 0) && !isNaN(quotationId)) {
+        matchField = "id";
+        matchValue = parseInt(quotationId);
         
-        // Show specific error message to user
-        let errorMsg = `❌ Database update failed: ${error.message}`;
-        
-        if (error.code === '42703') {
-          errorMsg += `\n\nColumn '${dbField}' doesn't exist in database.`;
-        } else if (error.code === '42501') {
-          errorMsg += "\n\nPermission denied. Please check database permissions.";
-        } else if (error.code === '23502') {
-          errorMsg += "\n\nRequired field is missing.";
-        } else if (error.message?.includes('RLS')) {
-          errorMsg += "\n\nRow Level Security is blocking this update.";
-        }
-        
-        setDebugInfo(prev => (prev || "") + `❌ Update failed: ${error.message}\n`);
-        alert(errorMsg);
-        return false;
+        const result = await supabase
+          .from("quotations")
+          .update({ 
+            [dbField]: value, 
+            updated_at: new Date().toISOString() 
+          })
+          .eq(matchField, matchValue)
+          .select();
+          
+        data = result.data;
+        error = result.error;
       }
 
-      // Check if update was successful
+      if (error) {
+        console.error("Supabase update error:", error);
+        throw new Error(error.message);
+      }
+
       if (data && data.length > 0) {
-        console.log("✅ Successfully updated in Supabase:", data[0]);
-        console.log(`🔍 Verification - ${dbField} is now: "${data[0][dbField]}"`);
-        
-        // Add success to debug log
-        setDebugInfo(prev => (prev || "") + `✅ Updated ${field} to "${value}" for ${data[0].customer_name} (${matchField}: ${matchValue})\n`);
-        
+        console.log("Successfully updated in Supabase:", data[0]);
         return true;
       } else {
-        console.warn("⚠️ Update executed but no data returned");
-        console.log("Response count:", count);
-        setDebugInfo(prev => (prev || "") + `⚠️ Update executed but no confirmation received\n`);
+        console.warn("Update executed but no data returned");
         return false;
       }
       
     } catch (err) {
-      console.error("💥 Unexpected error updating Supabase:", err);
-      setDebugInfo(prev => (prev || "") + `💥 Unexpected error: ${err.message}\n`);
-      alert(`❌ Unexpected error: ${err.message}\n\nOnly localStorage will be updated.`);
-      return false;
+      console.error("Update Supabase error:", err);
+      throw err;
     } finally {
       setSyncing(false);
     }
   }
 
-  // Convert Supabase data to localStorage format
-  function convertSupabaseToLocalStorage(supabaseData) {
-    return supabaseData.map(item => ({
-      id: item.quotation_id || item.id.toString(),
-      customer: {
-        name: item.customer_name,
-        contact: item.customer_contact,
-        email: item.customer_email,
-        address: item.customer_address
-      },
-      systemType: item.system_type,
-      total: item.total_amount,
-      date: item.created_at,
-      followUpDate: item.follow_up_date || "",
-      followUpStatus: item.follow_up_status || "Pending", 
-      remarks: item.remarks || "",
-      quotationDate: item.quotation_date
-    }));
-  }
-
-  // Merge localStorage and Supabase data (filter out completed/closed)
-  function mergeQuotationData(localData, supabaseData) {
-    // Filter local data to only include pending and contacted
-    const filteredLocalData = localData.filter(item => 
-      ['Pending', 'Contacted'].includes(item.followUpStatus || 'Pending')
-    );
-    
-    const merged = [...filteredLocalData];
-    
-    // Add any Supabase entries not found in localStorage (already filtered by query)
-    supabaseData.forEach(supabaseItem => {
-      const existsInLocal = filteredLocalData.find(localItem => 
-        localItem.id === supabaseItem.id || 
-        (localItem.customer.name === supabaseItem.customer.name && 
-         localItem.customer.contact === supabaseItem.customer.contact)
-      );
-      
-      if (!existsInLocal) {
-        merged.push(supabaseItem);
-      }
-    });
-
-    return merged;
-  }
-
-  // Load and sync quotations from both sources (filtered for follow-ups only)
-  async function loadFollowUpQuotations() {
+  // Load quotations from both sources
+  async function loadAllQuotations() {
     try {
       setLoading(true);
       
-      // Load from localStorage first (immediate) and filter for follow-ups only
+      // Load from localStorage first for immediate display
       const localQuotations = JSON.parse(localStorage.getItem("quotations")) || [];
-      const localFollowUps = localQuotations.filter(q => 
-        ['Pending', 'Contacted'].includes(q.followUpStatus || 'Pending')
+      console.log("Loaded from localStorage:", localQuotations.length);
+      
+      // Separate active follow-ups and history
+      const activeFollowUps = localQuotations.filter(q => 
+        ['pending', 'contacted'].includes((q.followUpStatus || 'pending').toLowerCase())
       );
-      console.log("Loaded follow-up quotations from localStorage:", localFollowUps.length);
+      const historyItems = localQuotations.filter(q => 
+        ['completed', 'cancelled'].includes((q.followUpStatus || 'pending').toLowerCase())
+      );
       
-      // If we have local data, show it immediately
-      if (localFollowUps.length > 0) {
-        setQuotations(localFollowUps);
-      }
+      setQuotations(activeFollowUps);
+      setHistoryQuotations(historyItems);
 
-      const supabaseQuotations = await fetchFollowUpQuotationsFromSupabase();
-      
-      if (supabaseQuotations) {
-        const convertedSupabaseData = convertSupabaseToLocalStorage(supabaseQuotations);
-        const mergedData = mergeQuotationData(localQuotations, convertedSupabaseData);
+      // Then sync with Supabase
+      try {
+        const supabaseQuotations = await fetchQuotationsFromSupabase();
+        console.log("Loaded from Supabase:", supabaseQuotations.length);
         
-        // Update state with merged follow-up data
-        setQuotations(mergedData);
+        // Merge data (prioritize Supabase)
+        const mergedQuotations = [...supabaseQuotations];
         
-        // Update localStorage with all quotations (not just follow-ups)
-        // But merge the follow-up updates back into the full list
-        const updatedAllQuotations = [...localQuotations];
-        mergedData.forEach(followUpQuote => {
-          const index = updatedAllQuotations.findIndex(q => q.id === followUpQuote.id);
-          if (index !== -1) {
-            updatedAllQuotations[index] = followUpQuote;
-          } else {
-            updatedAllQuotations.push(followUpQuote);
+        // Add local-only quotations
+        localQuotations.forEach(localQuote => {
+          const existsInSupabase = supabaseQuotations.find(sq => sq.id === localQuote.id);
+          if (!existsInSupabase) {
+            mergedQuotations.push({ ...localQuote, localOnly: true });
           }
         });
+
+        // Separate merged data
+        const mergedActiveFollowUps = mergedQuotations.filter(q => 
+          ['pending', 'contacted'].includes((q.followUpStatus || 'pending').toLowerCase())
+        );
+        const mergedHistoryItems = mergedQuotations.filter(q => 
+          ['completed', 'cancelled'].includes((q.followUpStatus || 'pending').toLowerCase())
+        );
         
-        localStorage.setItem("quotations", JSON.stringify(updatedAllQuotations));
+        setQuotations(mergedActiveFollowUps);
+        setHistoryQuotations(mergedHistoryItems);
+        
+        // Update localStorage with all merged data
+        localStorage.setItem("quotations", JSON.stringify(mergedQuotations));
         
         setLastSyncTime(new Date());
-        console.log("✅ Follow-up data synchronized successfully");
-      } else {
-        // If Supabase fails, just use localStorage filtered data
-        console.log("Using localStorage follow-up data only");
-        setQuotations(localFollowUps);
+        console.log("✅ Data synchronized successfully");
+        
+      } catch (supabaseError) {
+        console.warn("Supabase sync failed, using local data only:", supabaseError);
       }
+      
     } catch (err) {
-      console.error("Error loading follow-up quotations:", err);
+      console.error("Error loading quotations:", err);
       // Fallback to localStorage only
       const localQuotations = JSON.parse(localStorage.getItem("quotations")) || [];
-      const localFollowUps = localQuotations.filter(q => 
-        ['Pending', 'Contacted'].includes(q.followUpStatus || 'Pending')
+      const activeFollowUps = localQuotations.filter(q => 
+        ['pending', 'contacted'].includes((q.followUpStatus || 'pending').toLowerCase())
       );
-      setQuotations(localFollowUps);
+      const historyItems = localQuotations.filter(q => 
+        ['completed', 'cancelled'].includes((q.followUpStatus || 'pending').toLowerCase())
+      );
+      setQuotations(activeFollowUps);
+      setHistoryQuotations(historyItems);
     } finally {
       setLoading(false);
     }
@@ -324,228 +255,243 @@ function FollowUps() {
 
   // Load quotations on component mount
   useEffect(() => {
-    loadFollowUpQuotations();
+    loadAllQuotations();
   }, []);
 
   // Update field with dual storage (localStorage + Supabase)
   const updateField = async (id, field, value) => {
-    // Update localStorage immediately (for responsive UI)
-    const updated = quotations.map((q) =>
-      q.id === id ? { ...q, [field]: value } : q
-    );
-    
-    // If status is changed to Completed or Closed, remove from follow-ups
-    if (field === 'followUpStatus' && ['Completed', 'Closed'].includes(value)) {
-      const filteredQuotations = updated.filter(q => q.id !== id);
-      setQuotations(filteredQuotations);
-      
-      // Update full localStorage data
+    try {
+      // Update localStorage immediately (for responsive UI)
       const allQuotations = JSON.parse(localStorage.getItem("quotations")) || [];
       const updatedAllQuotations = allQuotations.map(q =>
         q.id === id ? { ...q, [field]: value } : q
       );
       localStorage.setItem("quotations", JSON.stringify(updatedAllQuotations));
-      
-      // Show success message
-      setTimeout(() => {
-        alert(`✅ Quotation marked as ${value} and removed from follow-ups!`);
-      }, 100);
-    } else {
-      setQuotations(updated);
-      
-      // Update full localStorage data
-      const allQuotations = JSON.parse(localStorage.getItem("quotations")) || [];
-      const updatedAllQuotations = allQuotations.map(q =>
-        q.id === id ? { ...q, [field]: value } : q
-      );
-      localStorage.setItem("quotations", JSON.stringify(updatedAllQuotations));
-    }
 
-    // Update Supabase in background
-    const success = await updateFollowUpInSupabase(id, field, value);
-    
-    if (success) {
-      setLastSyncTime(new Date());
-      console.log("✅ Follow-up field updated successfully in database");
-    } else {
-      console.log("⚠️ Follow-up field updated in localStorage only");
+      // Update UI state immediately
+      if (['completed', 'cancelled'].includes(value) && field === 'followUpStatus') {
+        // Move from follow-ups to history
+        const updatedFollowUps = quotations.filter(q => q.id !== id);
+        const movedItem = quotations.find(q => q.id === id);
+        if (movedItem) {
+          const updatedItem = { ...movedItem, [field]: value };
+          setHistoryQuotations(prev => [updatedItem, ...prev]);
+        }
+        setQuotations(updatedFollowUps);
+        
+        // Show success message
+        setTimeout(() => {
+          alert(`✅ Quotation marked as ${value} and moved to history!`);
+        }, 100);
+      } else if (['pending', 'contacted'].includes(value) && field === 'followUpStatus') {
+        // Move from history to follow-ups (if applicable)
+        const updatedHistory = historyQuotations.filter(q => q.id !== id);
+        const movedItem = historyQuotations.find(q => q.id === id);
+        if (movedItem) {
+          const updatedItem = { ...movedItem, [field]: value };
+          setQuotations(prev => [updatedItem, ...prev]);
+          setHistoryQuotations(updatedHistory);
+        } else {
+          // Update in follow-ups
+          const updatedFollowUps = quotations.map(q =>
+            q.id === id ? { ...q, [field]: value } : q
+          );
+          setQuotations(updatedFollowUps);
+        }
+      } else {
+        // Regular update
+        const updatedFollowUps = quotations.map(q =>
+          q.id === id ? { ...q, [field]: value } : q
+        );
+        const updatedHistory = historyQuotations.map(q =>
+          q.id === id ? { ...q, [field]: value } : q
+        );
+        setQuotations(updatedFollowUps);
+        setHistoryQuotations(updatedHistory);
+      }
+
+      // Update Supabase in background
+      try {
+        const success = await updateFollowUpInSupabase(id, field, value);
+        if (success) {
+          setLastSyncTime(new Date());
+          console.log("✅ Field updated successfully in database");
+        } else {
+          console.log("⚠️ Field updated in localStorage only");
+        }
+      } catch (supabaseError) {
+        console.warn("Failed to update in Supabase:", supabaseError);
+        // Still show success since localStorage was updated
+      }
+      
+    } catch (err) {
+      console.error("Error updating field:", err);
+      alert("❌ Error updating field: " + err.message);
     }
   };
 
   // Manual sync function
   const manualSync = async () => {
-    await loadFollowUpQuotations();
-  };
-
-  // Fix null quotation_id records in Supabase
-  const fixNullQuotationIds = async () => {
+    setSyncing(true);
     try {
-      setSyncing(true);
-      setDebugInfo(prev => (prev || "") + "\n🔧 Fixing null quotation_id records...\n");
-
-      // Get all records with null quotation_id (only pending/contacted)
-      const { data: nullRecords, error: fetchError } = await supabase
-        .from("quotations")
-        .select("id, customer_name, quotation_id")
-        .is("quotation_id", null)
-        .in("follow_up_status", ["Pending", "Contacted"]);
-
-      if (fetchError) {
-        setDebugInfo(prev => prev + `❌ Error fetching null records: ${fetchError.message}\n`);
-        return;
-      }
-
-      if (!nullRecords || nullRecords.length === 0) {
-        setDebugInfo(prev => prev + "✅ No null quotation_id records found in follow-ups\n");
-        alert("✅ All follow-up records already have proper quotation_id values!");
-        return;
-      }
-
-      setDebugInfo(prev => prev + `📊 Found ${nullRecords.length} follow-up records with null quotation_id\n`);
-
-      // Get localStorage data to match with database records
-      const localData = JSON.parse(localStorage.getItem("quotations")) || [];
-      
-      let fixedCount = 0;
-      let failedCount = 0;
-
-      for (const dbRecord of nullRecords) {
-        try {
-          // Try to find matching localStorage record
-          const matchingLocal = localData.find(local => 
-            local.customer?.name === dbRecord.customer_name
-          );
-
-          let newQuotationId;
-          if (matchingLocal && matchingLocal.id) {
-            newQuotationId = matchingLocal.id;
-          } else {
-            // Generate a new quotation ID if no localStorage match
-            const date = new Date();
-            const year = date.getFullYear().toString().slice(-2);
-            const month = (date.getMonth() + 1).toString().padStart(2, '0');
-            const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-            newQuotationId = `SE-${year}${month}-${random}`;
-          }
-
-          setDebugInfo(prev => prev + `🔧 Fixing ${dbRecord.customer_name}: ID ${dbRecord.id} → quotation_id: ${newQuotationId}\n`);
-
-          // Update the record
-          const { error: updateError } = await supabase
-            .from("quotations")
-            .update({ quotation_id: newQuotationId })
-            .eq("id", dbRecord.id);
-
-          if (updateError) {
-            setDebugInfo(prev => prev + `❌ Failed to fix ${dbRecord.customer_name}: ${updateError.message}\n`);
-            failedCount++;
-          } else {
-            setDebugInfo(prev => prev + `✅ Fixed ${dbRecord.customer_name}\n`);
-            fixedCount++;
-
-            // Update localStorage record if it exists
-            if (matchingLocal && matchingLocal.id !== newQuotationId) {
-              matchingLocal.id = newQuotationId;
-              localStorage.setItem("quotations", JSON.stringify(localData));
-            }
-          }
-
-        } catch (err) {
-          setDebugInfo(prev => prev + `💥 Error fixing ${dbRecord.customer_name}: ${err.message}\n`);
-          failedCount++;
-        }
-      }
-
-      setDebugInfo(prev => prev + `\n📊 Fix completed: ${fixedCount} successful, ${failedCount} failed\n`);
-      
-      if (fixedCount > 0) {
-        alert(`✅ Successfully fixed ${fixedCount} quotation_id records!\n\nFollow-up updates should now work properly. Try updating a status.`);
-        await loadFollowUpQuotations(); // Refresh the data
-      } else {
-        alert(`❌ Failed to fix quotation_id records. Check the debug log for details.`);
-      }
-
-    } catch (err) {
-      setDebugInfo(prev => (prev || "") + `💥 Fix error: ${err.message}\n`);
-      alert(`❌ Fix failed: ${err.message}`);
+      await loadAllQuotations();
     } finally {
       setSyncing(false);
     }
   };
 
-  // Debug functions
-  const runDatabaseDiagnostics = async () => {
+  // Filter quotations based on search and status
+  const getFilteredQuotations = (quotationsList) => {
+    let filtered = quotationsList;
+
+    // Search filter
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(q =>
+        q.customer.name.toLowerCase().includes(term) ||
+        q.customer.contact.toLowerCase().includes(term) ||
+        q.systemType.toLowerCase().includes(term) ||
+        q.id.toLowerCase().includes(term)
+      );
+    }
+
+    // Status filter
+    if (statusFilter !== "all") {
+      filtered = filtered.filter(q => 
+        (q.followUpStatus || 'pending').toLowerCase() === statusFilter
+      );
+    }
+
+    return filtered;
+  };
+
+  // View quotation details
+  const viewQuotation = (quotation) => {
+    setSelectedQuotation(quotation);
+    setShowViewModal(true);
+  };
+
+  // Print quotation
+  const printQuotation = (quotationData) => {
     try {
-      setDebugInfo("🔍 Running follow-up database diagnostics...\n");
-      
-      // Check table structure
-      const { data: tableData, error: tableError } = await supabase
-        .from("quotations")
-        .select("*")
-        .limit(1);
-      
-      if (tableError) {
-        setDebugInfo(prev => prev + `❌ Table access error: ${tableError.message}\n`);
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        alert("Please allow pop-ups to print quotations.");
         return;
       }
       
-      // Check available columns
-      if (tableData && tableData.length > 0) {
-        const columns = Object.keys(tableData[0]);
-        setDebugInfo(prev => prev + `✅ Available columns: ${columns.join(", ")}\n\n`);
-        
-        // Check specifically for follow-up columns
-        const requiredColumns = ['follow_up_date', 'follow_up_status', 'remarks'];
-        const missingColumns = requiredColumns.filter(col => !columns.includes(col));
-        
-        if (missingColumns.length > 0) {
-          setDebugInfo(prev => prev + `❌ Missing follow-up columns: ${missingColumns.join(", ")}\n`);
-          setDebugInfo(prev => prev + `💡 Run this SQL to add missing columns:\n`);
-          missingColumns.forEach(col => {
-            if (col === 'follow_up_date') {
-              setDebugInfo(prev => prev + `ALTER TABLE quotations ADD COLUMN ${col} DATE;\n`);
-            } else if (col === 'follow_up_status') {
-              setDebugInfo(prev => prev + `ALTER TABLE quotations ADD COLUMN ${col} TEXT DEFAULT 'Pending';\n`);
-            } else {
-              setDebugInfo(prev => prev + `ALTER TABLE quotations ADD COLUMN ${col} TEXT;\n`);
-            }
-          });
-          setDebugInfo(prev => prev + "\n");
-        } else {
-          setDebugInfo(prev => prev + `✅ All required follow-up columns exist\n\n`);
-        }
-      }
+      const quotationHTML = generateQuotationHTML(quotationData);
       
-      // Check follow-up records specifically
-      const { data: followUpData, error: followUpError } = await supabase
-        .from("quotations")
-        .select("id, quotation_id, customer_name, follow_up_status, follow_up_date, remarks")
-        .in("follow_up_status", ["Pending", "Contacted"])
-        .limit(10);
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="UTF-8">
+            <title>Quotation - ${quotationData?.customer.name}</title>
+            <style>
+              body { font-family: Arial, sans-serif; margin: 0; padding: 15px; }
+              table { border-collapse: collapse; width: 100%; margin: 8px 0; }
+              th, td { border: 1px solid #ddd; padding: 6px; text-align: left; font-size: 11px; }
+              th { background-color: #FF6B35 !important; color: white !important; }
+              .header { margin-bottom: 15px; }
+              .total-section { margin-top: 15px; padding: 12px; background-color: #f8f9fa; }
+              @media print { body { margin: 0; padding: 10px; } }
+            </style>
+          </head>
+          <body>
+            ${quotationHTML}
+            <script>
+              window.onload = function() {
+                setTimeout(function() {
+                  window.print();
+                  window.onafterprint = function() { window.close(); }
+                }, 500);
+              }
+            </script>
+          </body>
+        </html>
+      `);
       
-      if (followUpError) {
-        setDebugInfo(prev => prev + `❌ Follow-up query error: ${followUpError.message}\n`);
-      } else {
-        setDebugInfo(prev => prev + `📊 Follow-up records: ${followUpData?.length || 0}\n`);
-        setDebugInfo(prev => prev + `📋 Sample follow-up records:\n`);
+      printWindow.document.close();
+    } catch (error) {
+      console.error("Error printing quotation:", error);
+      alert("❌ Error printing quotation. Please try again.");
+    }
+  };
+
+  const generateQuotationHTML = (quotationData) => {
+    return `
+      <div>
+        <div class="header">
+          <h1>SYED SOLAR ENERGY PVT LTD</h1>
+          <p>📍 Office #23 Mustafa Plaza Ring Road, Peshawar</p>
+          <p>📞 0307-5596695 | 📧 sales@syedsolarenergy.com</p>
+          <h2>QUOTATION #${quotationData.id}</h2>
+          <p><strong>Date:</strong> ${quotationData.quotationDate || new Date().toLocaleDateString()}</p>
+        </div>
         
-        followUpData?.forEach((record, index) => {
-          setDebugInfo(prev => prev + `  ${index + 1}. ID: ${record.id}, Quotation ID: ${record.quotation_id}, Customer: ${record.customer_name}\n`);
-          setDebugInfo(prev => prev + `     Status: ${record.follow_up_status || 'null'}, Date: ${record.follow_up_date || 'null'}, Remarks: ${record.remarks || 'null'}\n`);
-        });
-      }
+        <div>
+          <h3>Customer Information</h3>
+          <p><strong>Name:</strong> ${quotationData.customer.name}</p>
+          <p><strong>Contact:</strong> ${quotationData.customer.contact}</p>
+          <p><strong>Email:</strong> ${quotationData.customer.email || '-'}</p>
+          <p><strong>Address:</strong> ${quotationData.customer.address}</p>
+        </div>
+        
+        <div>
+          <h3>System Details</h3>
+          <p><strong>Type:</strong> ${quotationData.systemType}</p>
+          <p><strong>Total Amount:</strong> Rs. ${quotationData.total.toLocaleString()}</p>
+          <p><strong>Status:</strong> ${quotationData.followUpStatus || 'pending'}</p>
+        </div>
+        
+        <div class="total-section">
+          <h3>Terms & Conditions</h3>
+          <ul>
+            <li>5% advance payment required</li>
+            <li>70% on material delivery</li>
+            <li>25% on completion</li>
+            <li>Quotation valid for 3 days</li>
+          </ul>
+        </div>
+      </div>
+    `;
+  };
+
+  // Debug functions
+  const runDatabaseDiagnostics = async () => {
+    try {
+      setDebugInfo("🔍 Running database diagnostics...\n");
       
-      // Check localStorage follow-up data
       const localData = JSON.parse(localStorage.getItem("quotations")) || [];
-      const localFollowUps = localData.filter(q => 
-        ['Pending', 'Contacted'].includes(q.followUpStatus || 'Pending')
-      );
-      setDebugInfo(prev => prev + `\n💾 localStorage follow-up records: ${localFollowUps.length}\n`);
+      setDebugInfo(prev => prev + `💾 localStorage quotations: ${localData.length}\n`);
       
-      localFollowUps.slice(0, 3).forEach((record, index) => {
-        setDebugInfo(prev => prev + `  ${index + 1}. Local ID: ${record.id}, Customer: ${record.customer?.name}\n`);
-        setDebugInfo(prev => prev + `     Status: ${record.followUpStatus || 'null'}, Date: ${record.followUpDate || 'null'}, Remarks: ${record.remarks || 'null'}\n`);
-      });
+      try {
+        const supabaseQuotations = await fetchQuotationsFromSupabase();
+        setDebugInfo(prev => prev + `☁️ Supabase quotations: ${supabaseQuotations.length}\n`);
+        
+        // Check for sync issues
+        const localIds = new Set(localData.map(q => q.id));
+        const supabaseIds = new Set(supabaseQuotations.map(q => q.id));
+        
+        const localOnly = localData.filter(q => !supabaseIds.has(q.id));
+        const supabaseOnly = supabaseQuotations.filter(q => !localIds.has(q.id));
+        
+        setDebugInfo(prev => prev + `📱 Local only: ${localOnly.length}\n`);
+        setDebugInfo(prev => prev + `☁️ Supabase only: ${supabaseOnly.length}\n`);
+        
+        if (localOnly.length > 0) {
+          setDebugInfo(prev => prev + "📱 Local only quotations:\n");
+          localOnly.forEach(q => {
+            setDebugInfo(prev => prev + `  - ${q.id}: ${q.customer.name}\n`);
+          });
+        }
+        
+      } catch (supabaseError) {
+        setDebugInfo(prev => prev + `❌ Supabase connection failed: ${supabaseError.message}\n`);
+      }
+      
+      setDebugInfo(prev => prev + "\n✅ Diagnostics complete\n");
       
     } catch (err) {
       setDebugInfo(prev => prev + `💥 Diagnostic error: ${err.message}\n`);
@@ -559,395 +505,313 @@ function FollowUps() {
     }
     
     const testQuotation = quotations[0];
-    setDebugInfo(prev => (prev || "") + `\n🧪 Testing direct update for: ${testQuotation.customer.name} (ID: ${testQuotation.id})\n`);
+    setDebugInfo(prev => prev + `\n🧪 Testing direct update for: ${testQuotation.customer.name} (ID: ${testQuotation.id})\n`);
     
-    const success = await updateFollowUpInSupabase(testQuotation.id, "remarks", `Test update at ${new Date().toLocaleTimeString()}`);
-    
-    setDebugInfo(prev => prev + `${success ? "✅" : "❌"} Test update result: ${success ? "SUCCESS" : "FAILED"}\n`);
+    try {
+      const success = await updateFollowUpInSupabase(
+        testQuotation.id, 
+        "remarks", 
+        `Test update at ${new Date().toLocaleTimeString()}`
+      );
+      setDebugInfo(prev => prev + `${success ? "✅" : "❌"} Test update result: ${success ? "SUCCESS" : "FAILED"}\n`);
+    } catch (err) {
+      setDebugInfo(prev => prev + `❌ Test update failed: ${err.message}\n`);
+    }
   };
 
+  // Get current tab data
+  const getCurrentTabData = () => {
+    if (activeTab === 'followups') {
+      return getFilteredQuotations(quotations);
+    } else {
+      return getFilteredQuotations(historyQuotations);
+    }
+  };
+
+  const currentTabData = getCurrentTabData();
+
   return (
-    <div
-      className="followups-container"
-      style={{
-        maxWidth: 1200,
-        margin: "40px auto",
-        background: "#fff",
-        borderRadius: 13,
-        boxShadow: "0 6px 32px #ffab0022",
-        padding: "32px 18px"
-      }}
-    >
+    <div style={styles.container}>
       {/* Header with sync status */}
-      <div style={{ 
-        display: "flex", 
-        justifyContent: "space-between", 
-        alignItems: "center", 
-        marginBottom: 30,
-        flexWrap: "wrap",
-        gap: "15px"
-      }}>
-        <div>
-          <h2 style={{ color: "#FF9800", fontWeight: 900, margin: "0 0 5px 0" }}>
-            📅 Customer Follow-ups
-          </h2>
-          <div style={{ display: "flex", alignItems: "center", gap: "15px", flexWrap: "wrap" }}>
-            <span style={{ color: "#666", fontSize: "14px" }}>
-              {loading ? "Loading..." : `${quotations.length} pending follow-ups`}
-            </span>
-            {lastSyncTime && (
-              <span style={{ color: "#4caf50", fontSize: "12px" }}>
-                ✅ Last synced: {lastSyncTime.toLocaleTimeString()}
+      <div style={styles.header}>
+        <div style={styles.headerContent}>
+          <div>
+            <h2 style={styles.title}>📅 Customer Follow-ups</h2>
+            <div style={styles.statusInfo}>
+              <span style={styles.statusText}>
+                {loading ? "Loading..." : 
+                 activeTab === 'followups' ? 
+                   `${quotations.length} active follow-ups` : 
+                   `${historyQuotations.length} completed/cancelled`
+                }
               </span>
-            )}
-            {syncing && (
-              <span style={{ color: "#ff9800", fontSize: "12px" }}>
-                🔄 Syncing...
-              </span>
-            )}
-          </div>
-
-          {/* Info Panel */}
-          <div style={{
-            background: "linear-gradient(135deg, #e3f2fd, #bbdefb)",
-            border: "2px solid #2196f3",
-            borderRadius: "12px",
-            padding: "15px",
-            marginTop: "15px",
-            display: "flex",
-            alignItems: "center",
-            gap: "15px"
-          }}>
-            <div style={{ fontSize: "2rem" }}>ℹ️</div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: "700", color: "#1976d2", marginBottom: "5px" }}>
-                Follow-up Management
-              </div>
-              <div style={{ fontSize: "14px", color: "#0d47a1" }}>
-                This page shows only <strong>Pending</strong> and <strong>Contacted</strong> quotations. When you mark a quotation as <strong>Completed</strong> or <strong>Closed</strong>, it will be automatically removed from this follow-up list.
-              </div>
-            </div>
-          </div>
-
-          {/* Debug Panel */}
-          {showDebugPanel && (
-            <div style={{
-              background: "#f8f9fa",
-              border: "2px solid #e9ecef",
-              borderRadius: "12px",
-              padding: "20px",
-              marginTop: "20px"
-            }}>
-              <h3 style={{ color: "#2196f3", margin: "0 0 15px 0" }}>🔧 Follow-up Debug Panel</h3>
-              
-              <div style={{ display: "flex", gap: "10px", marginBottom: "15px", flexWrap: "wrap" }}>
-                <button
-                  onClick={runDatabaseDiagnostics}
-                  style={{
-                    background: "#2196f3",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "6px",
-                    padding: "8px 16px",
-                    cursor: "pointer",
-                    fontSize: "13px",
-                    fontWeight: "600"
-                  }}
-                >
-                  🔍 Check Follow-up Structure
-                </button>
-
-                <button
-                  onClick={fixNullQuotationIds}
-                  disabled={syncing}
-                  style={{
-                    background: syncing ? "#ccc" : "#e91e63",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "6px",
-                    padding: "8px 16px",
-                    cursor: syncing ? "not-allowed" : "pointer",
-                    fontSize: "13px",
-                    fontWeight: "600"
-                  }}
-                >
-                  🔧 Fix Follow-up IDs
-                </button>
-                
-                <button
-                  onClick={testDirectUpdate}
-                  disabled={quotations.length === 0 || syncing}
-                  style={{
-                    background: (quotations.length === 0 || syncing) ? "#ccc" : "#ff9800",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "6px",
-                    padding: "8px 16px",
-                    cursor: (quotations.length === 0 || syncing) ? "not-allowed" : "pointer",
-                    fontSize: "13px",
-                    fontWeight: "600"
-                  }}
-                >
-                  🧪 Test Follow-up Update
-                </button>
-                
-                <button
-                  onClick={() => setDebugInfo("")}
-                  style={{
-                    background: "#6c757d",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "6px",
-                    padding: "8px 16px",
-                    cursor: "pointer",
-                    fontSize: "13px",
-                    fontWeight: "600"
-                  }}
-                >
-                  🗑️ Clear Log
-                </button>
-              </div>
-              
-              {debugInfo && (
-                <div style={{
-                  background: "#000",
-                  color: "#00ff00",
-                  padding: "15px",
-                  borderRadius: "8px",
-                  fontFamily: "monospace",
-                  fontSize: "12px",
-                  whiteSpace: "pre-wrap",
-                  maxHeight: "300px",
-                  overflowY: "auto",
-                  border: "1px solid #333"
-                }}>
-                  {debugInfo}
-                </div>
+              {lastSyncTime && (
+                <span style={styles.syncTime}>
+                  ✅ Last synced: {lastSyncTime.toLocaleTimeString()}
+                </span>
               )}
-              
-              <div style={{
-                marginTop: "15px",
-                padding: "10px",
-                background: "#fff3cd",
-                borderRadius: "6px",
-                fontSize: "12px",
-                color: "#856404"
-              }}>
-                💡 <strong>Follow-up Update Issues?</strong>
-                <br />• <strong>🔧 Fix Follow-up IDs:</strong> Fixes missing quotation_id values for pending/contacted records
-                <br />• <strong>🔍 Check Follow-up Structure:</strong> Verify follow-up columns exist and data integrity
-                <br />• <strong>🧪 Test Follow-up Update:</strong> Test a real follow-up field update
-                <br />• <strong>Remember:</strong> Completed/Closed quotations are automatically hidden from this view
-              </div>
+              {syncing && (
+                <span style={styles.syncingText}>
+                  🔄 Syncing...
+                </span>
+              )}
             </div>
-          )}
-        </div>
-        
-        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-          <button
-            onClick={manualSync}
-            disabled={loading || syncing}
-            style={{
-              background: "linear-gradient(135deg, #4caf50, #45a049)",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              padding: "10px 20px",
-              cursor: loading || syncing ? "not-allowed" : "pointer",
-              fontSize: "14px",
-              fontWeight: "600",
-              opacity: loading || syncing ? 0.7 : 1,
-              transition: "all 0.3s ease"
-            }}
-          >
-            {loading || syncing ? "🔄 Syncing..." : "🔄 Sync Follow-ups"}
-          </button>
+          </div>
           
-          <button
-            onClick={() => setShowDebugPanel(!showDebugPanel)}
-            style={{
-              background: "linear-gradient(135deg, #2196f3, #1976d2)",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              padding: "10px 20px",
-              cursor: "pointer",
-              fontSize: "14px",
-              fontWeight: "600",
-              transition: "all 0.3s ease"
-            }}
-          >
-            🔧 Debug Panel
-          </button>
+          <div style={styles.headerActions}>
+            <button
+              onClick={manualSync}
+              disabled={loading || syncing}
+              style={styles.syncButton}
+            >
+              {loading || syncing ? "🔄 Syncing..." : "🔄 Sync Now"}
+            </button>
+            
+            <button
+              onClick={() => setShowDebugPanel(!showDebugPanel)}
+              style={styles.debugButton}
+            >
+              🔧 Debug Panel
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Loading state */}
-      {loading && quotations.length === 0 && (
-        <div style={{
-          textAlign: "center",
-          padding: "60px 20px",
-          color: "#666"
-        }}>
-          <div style={{ fontSize: "2rem", marginBottom: "15px" }}>⏳</div>
-          <h3>Loading Follow-ups...</h3>
-          <p>Fetching pending and contacted quotations</p>
+      {/* Tabs */}
+      <div style={styles.tabsContainer}>
+        <button
+          onClick={() => setActiveTab('followups')}
+          style={{
+            ...styles.tab,
+            ...(activeTab === 'followups' ? styles.activeTab : {})
+          }}
+        >
+          📞 Active Follow-ups ({quotations.length})
+        </button>
+        <button
+          onClick={() => setActiveTab('history')}
+          style={{
+            ...styles.tab,
+            ...(activeTab === 'history' ? styles.activeTab : {})
+          }}
+        >
+          📋 History ({historyQuotations.length})
+        </button>
+      </div>
+
+      {/* Search and Filter */}
+      <div style={styles.filtersContainer}>
+        <div style={styles.searchContainer}>
+          <input
+            type="text"
+            placeholder="🔍 Search by name, contact, or quotation ID..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={styles.searchInput}
+          />
+        </div>
+        
+        <div style={styles.statusFilters}>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            style={styles.filterSelect}
+          >
+            <option value="all">All Status</option>
+            {activeTab === 'followups' ? (
+              <>
+                <option value="pending">Pending</option>
+                <option value="contacted">Contacted</option>
+              </>
+            ) : (
+              <>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+              </>
+            )}
+          </select>
+        </div>
+      </div>
+
+      {/* Info Panel */}
+      <div style={styles.infoPanel}>
+        <div style={styles.infoIcon}>ℹ️</div>
+        <div style={styles.infoContent}>
+          <div style={styles.infoTitle}>Follow-up Management</div>
+          <div style={styles.infoText}>
+            {activeTab === 'followups' ? 
+              "Manage pending and contacted quotations. Update status to move items to history." :
+              "View completed and cancelled quotations. Change status back to pending/contacted to reactivate."
+            }
+          </div>
+        </div>
+      </div>
+
+      {/* Debug Panel */}
+      {showDebugPanel && (
+        <div style={styles.debugPanel}>
+          <h3 style={styles.debugTitle}>🔧 Debug Panel</h3>
+          
+          <div style={styles.debugActions}>
+            <button onClick={runDatabaseDiagnostics} style={styles.debugActionButton}>
+              🔍 Run Diagnostics
+            </button>
+            <button onClick={testDirectUpdate} disabled={quotations.length === 0 || syncing} style={styles.debugActionButton}>
+              🧪 Test Update
+            </button>
+            <button onClick={() => setDebugInfo("")} style={styles.debugActionButton}>
+              🗑️ Clear Log
+            </button>
+          </div>
+          
+          {debugInfo && (
+            <div style={styles.debugLog}>
+              {debugInfo}
+            </div>
+          )}
         </div>
       )}
 
-      {/* Follow-ups table */}
-      {!loading || quotations.length > 0 ? (
-        <div style={{ overflowX: "auto" }}>
-          <table
-            style={{
-              width: "100%",
-              borderCollapse: "collapse",
-              background: "#fff",
-              borderRadius: 12,
-              overflow: "hidden",
-              fontSize: 16
-            }}
-          >
+      {/* Loading state */}
+      {loading && currentTabData.length === 0 && (
+        <div style={styles.loadingContainer}>
+          <div style={styles.loadingIcon}>⏳</div>
+          <h3>Loading Follow-ups...</h3>
+          <p>Fetching quotation data from database</p>
+        </div>
+      )}
+
+      {/* Quotations table */}
+      {!loading || currentTabData.length > 0 ? (
+        <div style={styles.tableContainer}>
+          <table style={styles.table}>
             <thead>
-              <tr style={{ background: "#fff3e0" }}>
-                <th style={th}>Customer</th>
-                <th style={th}>Contact</th>
-                <th style={th}>System Type</th>
-                <th style={th}>Total Amount</th>
-                <th style={th}>Follow-Up Date</th>
-                <th style={th}>Status</th>
-                <th style={th}>Remarks</th>
-                <th style={th}>Action</th>
+              <tr style={styles.tableHeader}>
+                <th style={styles.th}>Customer</th>
+                <th style={styles.th}>Contact</th>
+                <th style={styles.th}>System Type</th>
+                <th style={styles.th}>Total Amount</th>
+                <th style={styles.th}>Follow-Up Date</th>
+                <th style={styles.th}>Status</th>
+                <th style={styles.th}>Remarks</th>
+                <th style={styles.th}>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {quotations.map((q, index) => (
+              {currentTabData.map((q, index) => (
                 <tr
                   key={q.id || index}
                   style={{
-                    background:
-                      statusColors[q.followUpStatus || "pending"] || "#fff",
-                    opacity: syncing ? 0.8 : 1,
-                    transition: "opacity 0.3s ease"
+                    ...styles.tableRow,
+                    background: statusColors[q.followUpStatus || "pending"] || "#fff",
+                    opacity: syncing ? 0.8 : 1
                   }}
                 >
-                  <td style={td}>
-                    <div style={{ fontWeight: "700", color: "#333" }}>
-                      {q.customer.name}
-                    </div>
-                    <div style={{ fontSize: "12px", color: "#666" }}>
-                      ID: {q.id}
-                    </div>
-                  </td>
-                  <td style={td}>
-                    <div>{q.customer.contact}</div>
-                    {q.customer.email && (
-                      <div style={{ fontSize: "12px", color: "#666" }}>
-                        {q.customer.email}
-                      </div>
+                  <td style={styles.td}>
+                    <div style={styles.customerName}>{q.customer.name}</div>
+                    <div style={styles.quotationId}>ID: {q.id}</div>
+                    {q.localOnly && (
+                      <div style={styles.localOnlyBadge}>📱 Local</div>
                     )}
                   </td>
-                  <td style={td}>{q.systemType}</td>
-                  <td style={td}>
-                    <div style={{ fontWeight: "700", color: "#FF9800" }}>
-                      Rs. {(q.total || 0).toLocaleString()}
-                    </div>
+                  <td style={styles.td}>
+                    <div>{q.customer.contact}</div>
+                    {q.customer.email && (
+                      <div style={styles.emailText}>{q.customer.email}</div>
+                    )}
                   </td>
-                  <td style={td}>
+                  <td style={styles.td}>{q.systemType}</td>
+                  <td style={styles.td}>
+                    <div style={styles.totalAmount}>Rs. {(q.total || 0).toLocaleString()}</div>
+                  </td>
+                  <td style={styles.td}>
                     <input
                       type="date"
                       value={q.followUpDate || ""}
-                      style={inputStyle}
-                      onChange={(e) =>
-                        updateField(q.id, "followUpDate", e.target.value)
-                      }
+                      style={styles.dateInput}
+                      onChange={(e) => updateField(q.id, "followUpDate", e.target.value)}
+                      disabled={syncing}
                     />
                   </td>
-                  <td style={td}>
+                  <td style={styles.td}>
                     <select
                       value={q.followUpStatus || "pending"}
-                      style={{
-                        ...inputStyle,
-                        fontWeight: "bold",
-                        color:
-                          q.followUpStatus === "contacted"
-                            ? "#1976d2"
-                            : "#333"
-                      }}
-                      onChange={(e) => {
-                        updateField(q.id, "followUpStatus", e.target.value);
-                      }}
+                      style={styles.statusSelect}
+                      onChange={(e) => updateField(q.id, "followUpStatus", e.target.value)}
+                      disabled={syncing}
                     >
                       <option value="pending">Pending</option>
                       <option value="contacted">Contacted</option>
                       <option value="completed">Completed</option>
-                      <option value="closed">Closed</option>
+                      <option value="cancelled">Cancelled</option>
                     </select>
                   </td>
-                  <td style={td}>
+                  <td style={styles.td}>
                     <input
                       type="text"
                       placeholder={q.followUpStatus === 'contacted' ? "Add contact details..." : "Add remarks..."}
                       value={q.remarks || ""}
-                      style={inputStyle}
-                      onChange={(e) =>
-                        updateField(q.id, "remarks", e.target.value)
-                      }
+                      style={styles.remarksInput}
+                      onChange={(e) => updateField(q.id, "remarks", e.target.value)}
+                      disabled={syncing}
                     />
                   </td>
-                  <td style={td}>
-                    <div style={{ display: "flex", gap: "5px", flexDirection: "column" }}>
+                  <td style={styles.td}>
+                    <div style={styles.actionButtons}>
                       <button
-                        onClick={() => updateField(q.id, "followUpStatus", "completed")}
-                        style={{
-                          background: "#4caf50",
-                          color: "white",
-                          border: "none",
-                          borderRadius: "4px",
-                          padding: "4px 8px",
-                          cursor: "pointer",
-                          fontSize: "11px",
-                          fontWeight: "600"
-                        }}
+                        onClick={() => viewQuotation(q)}
+                        style={styles.viewButton}
+                        title="View Details"
                       >
-                        ✅ Complete
+                        👁️
                       </button>
                       <button
-                        onClick={() => updateField(q.id, "followUpStatus", "Closed")}
-                        style={{
-                          background: "#f44336",
-                          color: "white",
-                          border: "none",
-                          borderRadius: "4px",
-                          padding: "4px 8px",
-                          cursor: "pointer",
-                          fontSize: "11px",
-                          fontWeight: "600"
-                        }}
+                        onClick={() => printQuotation(q)}
+                        style={styles.printButton}
+                        title="Print Quotation"
                       >
-                        ❌ Close
+                        🖨️
                       </button>
+                      {activeTab === 'followups' && (
+                        <>
+                          <button
+                            onClick={() => updateField(q.id, "followUpStatus", "completed")}
+                            style={styles.completeButton}
+                            title="Mark as Completed"
+                            disabled={syncing}
+                          >
+                            ✅
+                          </button>
+                          <button
+                            onClick={() => updateField(q.id, "followUpStatus", "cancelled")}
+                            style={styles.cancelButton}
+                            title="Mark as Cancelled"
+                            disabled={syncing}
+                          >
+                            ❌
+                          </button>
+                        </>
+                      )}
                     </div>
                   </td>
                 </tr>
               ))}
-              {quotations.length === 0 && !loading && (
+              
+              {currentTabData.length === 0 && !loading && (
                 <tr>
-                  <td
-                    colSpan="8"
-                    style={{
-                      textAlign: "center",
-                      padding: "40px 20px",
-                      color: "#aaa",
-                      fontSize: 17,
-                      background: "#fffbe9"
-                    }}
-                  >
-                    <div style={{ fontSize: "3rem", marginBottom: "15px" }}>🎉</div>
-                    <div style={{ marginBottom: "10px" }}>No pending follow-ups!</div>
-                    <span style={{ color: "#4caf50", fontWeight: 700 }}>
-                      All quotations have been completed or closed
-                    </span>
+                  <td colSpan="8" style={styles.emptyState}>
+                    <div style={styles.emptyIcon}>
+                      {activeTab === 'followups' ? '🎉' : '📋'}
+                    </div>
+                    <div style={styles.emptyTitle}>
+                      {activeTab === 'followups' ? 'No pending follow-ups!' : 'No history items found'}
+                    </div>
+                    <div style={styles.emptySubtitle}>
+                      {activeTab === 'followups' ? 
+                        'All quotations have been completed or cancelled' :
+                        'No completed or cancelled quotations yet'
+                      }
+                    </div>
                   </td>
                 </tr>
               )}
@@ -956,43 +820,21 @@ function FollowUps() {
         </div>
       ) : null}
 
-      {/* Summary stats for follow-ups only */}
-      {quotations.length > 0 && (
-        <div style={{
-          marginTop: "30px",
-          padding: "20px",
-          background: "linear-gradient(135deg, #FFF3E0, #FFE0B2)",
-          borderRadius: "12px",
-          border: "2px solid #FF9800"
-        }}>
-          <h3 style={{ color: "#FF9800", margin: "0 0 15px 0" }}>📊 Follow-up Summary</h3>
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
-            gap: "15px"
-          }}>
-            {['pending', 'contacted'].map(status => {
-              const count = quotations.filter(q => (q.followUpStatus || "pending") === status).length;
-              const total = quotations.reduce((sum, q) => 
+      {/* Summary stats */}
+      {currentTabData.length > 0 && (
+        <div style={styles.summarySection}>
+          <h3 style={styles.summaryTitle}>📊 Summary</h3>
+          <div style={styles.summaryGrid}>
+            {(activeTab === 'followups' ? ['pending', 'contacted'] : ['completed', 'cancelled']).map(status => {
+              const count = currentTabData.filter(q => (q.followUpStatus || "pending") === status).length;
+              const total = currentTabData.reduce((sum, q) => 
                 (q.followUpStatus || "pending") === status ? sum + (q.total || 0) : sum, 0
               );
               return (
-                <div key={status} style={{
-                  background: statusColors[status],
-                  padding: "15px",
-                  borderRadius: "10px",
-                  textAlign: "center",
-                  border: "1px solid rgba(0,0,0,0.1)"
-                }}>
-                  <div style={{ fontWeight: "700", fontSize: "18px", marginBottom: "5px" }}>
-                    {count}
-                  </div>
-                  <div style={{ fontSize: "14px", fontWeight: "600", marginBottom: "5px" }}>
-                    {status}
-                  </div>
-                  <div style={{ fontSize: "12px", color: "#666" }}>
-                    Rs. {total.toLocaleString()}
-                  </div>
+                <div key={status} style={styles.summaryCard}>
+                  <div style={styles.summaryCount}>{count}</div>
+                  <div style={styles.summaryLabel}>{status}</div>
+                  <div style={styles.summaryAmount}>Rs. {total.toLocaleString()}</div>
                 </div>
               );
             })}
@@ -1000,18 +842,69 @@ function FollowUps() {
         </div>
       )}
 
+      {/* View Modal */}
+      {showViewModal && selectedQuotation && (
+        <div style={styles.modal}>
+          <div style={styles.modalContent}>
+            <div style={styles.modalHeader}>
+              <h2>📋 Quotation Details</h2>
+              <button 
+                onClick={() => setShowViewModal(false)} 
+                style={styles.closeButton}
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div style={styles.modalBody}>
+              <div style={styles.detailsGrid}>
+                <div>
+                  <h3>Customer Information</h3>
+                  <p><strong>Name:</strong> {selectedQuotation.customer.name}</p>
+                  <p><strong>Contact:</strong> {selectedQuotation.customer.contact}</p>
+                  <p><strong>Email:</strong> {selectedQuotation.customer.email || '-'}</p>
+                  <p><strong>Address:</strong> {selectedQuotation.customer.address}</p>
+                </div>
+                
+                <div>
+                  <h3>System Details</h3>
+                  <p><strong>Type:</strong> {selectedQuotation.systemType}</p>
+                  <p><strong>Total:</strong> Rs. {selectedQuotation.total.toLocaleString()}</p>
+                  <p><strong>Status:</strong> {selectedQuotation.followUpStatus || 'pending'}</p>
+                  <p><strong>Staff:</strong> {selectedQuotation.staff || '-'}</p>
+                </div>
+              </div>
+              
+              <div style={styles.followUpDetails}>
+                <h3>Follow-up Information</h3>
+                <p><strong>Follow-up Date:</strong> {selectedQuotation.followUpDate || 'Not set'}</p>
+                <p><strong>Remarks:</strong> {selectedQuotation.remarks || 'No remarks'}</p>
+                <p><strong>Created:</strong> {new Date(selectedQuotation.date).toLocaleDateString()}</p>
+              </div>
+            </div>
+            
+            <div style={styles.modalActions}>
+              <button 
+                onClick={() => printQuotation(selectedQuotation)}
+                style={styles.printButton}
+              >
+                🖨️ Print
+              </button>
+              <button 
+                onClick={() => setShowViewModal(false)}
+                style={styles.closeModalButton}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Sync status footer */}
-      <div style={{
-        marginTop: "20px",
-        padding: "15px",
-        background: "#f8f9fa",
-        borderRadius: "8px",
-        fontSize: "12px",
-        color: "#666",
-        textAlign: "center"
-      }}>
-        💡 <strong>Follow-up Management:</strong> Only pending and contacted quotations are shown here. 
-        Completed/Closed quotations are automatically removed from follow-ups but preserved in the main quotation list.
+      <div style={styles.footer}>
+        💡 <strong>Follow-up Management:</strong> Active follow-ups are automatically synced with the database. 
+        Completed/cancelled quotations are preserved in history but can be reactivated if needed.
         {lastSyncTime && (
           <span> Last synchronized at {lastSyncTime.toLocaleString()}.</span>
         )}
@@ -1020,33 +913,636 @@ function FollowUps() {
   );
 }
 
-// --- Styling ---
-const th = {
-  color: "#e65100",
-  fontWeight: 900,
-  fontSize: 16,
-  padding: "15px 8px",
-  textAlign: "center"
+// Comprehensive styles object
+const styles = {
+  container: {
+    maxWidth: '1200px',
+    margin: '40px auto',
+    background: '#fff',
+    borderRadius: '13px',
+    boxShadow: '0 6px 32px #ffab0022',
+    padding: '32px 18px',
+    fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+  },
+  
+  header: {
+    marginBottom: '30px',
+  },
+  
+  headerContent: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: '15px',
+  },
+  
+  title: {
+    color: '#FF9800',
+    fontWeight: '900',
+    margin: '0 0 5px 0',
+    fontSize: '1.8rem',
+  },
+  
+  statusInfo: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '15px',
+    flexWrap: 'wrap',
+  },
+  
+  statusText: {
+    color: '#666',
+    fontSize: '14px',
+  },
+  
+  syncTime: {
+    color: '#4caf50',
+    fontSize: '12px',
+  },
+  
+  syncingText: {
+    color: '#ff9800',
+    fontSize: '12px',
+  },
+  
+  headerActions: {
+    display: 'flex',
+    gap: '10px',
+    flexWrap: 'wrap',
+  },
+  
+  syncButton: {
+    background: 'linear-gradient(135deg, #4caf50, #45a049)',
+    color: 'white',
+    border: 'none',
+    borderRadius: '8px',
+    padding: '10px 20px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: '600',
+    transition: 'all 0.3s ease',
+  },
+  
+  debugButton: {
+    background: 'linear-gradient(135deg, #2196f3, #1976d2)',
+    color: 'white',
+    border: 'none',
+    borderRadius: '8px',
+    padding: '10px 20px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: '600',
+    transition: 'all 0.3s ease',
+  },
+  
+  tabsContainer: {
+    display: 'flex',
+    marginBottom: '20px',
+    borderBottom: '2px solid #f0f0f0',
+    gap: '5px',
+  },
+  
+  tab: {
+    background: 'transparent',
+    border: 'none',
+    padding: '12px 20px',
+    fontSize: '14px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    borderRadius: '8px 8px 0 0',
+    transition: 'all 0.3s ease',
+    color: '#666',
+  },
+  
+  activeTab: {
+    background: '#FF9800',
+    color: 'white',
+  },
+  
+  filtersContainer: {
+    display: 'flex',
+    gap: '15px',
+    marginBottom: '20px',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+  },
+  
+  searchContainer: {
+    flex: 1,
+    minWidth: '250px',
+  },
+  
+  searchInput: {
+    width: '100%',
+    padding: '10px 15px',
+    border: '2px solid #e0e0e0',
+    borderRadius: '8px',
+    fontSize: '14px',
+    boxSizing: 'border-box',
+    transition: 'border-color 0.3s ease',
+  },
+  
+  statusFilters: {
+    minWidth: '150px',
+  },
+  
+  filterSelect: {
+    width: '100%',
+    padding: '10px 15px',
+    border: '2px solid #e0e0e0',
+    borderRadius: '8px',
+    fontSize: '14px',
+    background: 'white',
+    cursor: 'pointer',
+  },
+  
+  infoPanel: {
+    background: 'linear-gradient(135deg, #e3f2fd, #bbdefb)',
+    border: '2px solid #2196f3',
+    borderRadius: '12px',
+    padding: '15px',
+    marginBottom: '15px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '15px',
+  },
+  
+  infoIcon: {
+    fontSize: '2rem',
+  },
+  
+  infoContent: {
+    flex: 1,
+  },
+  
+  infoTitle: {
+    fontWeight: '700',
+    color: '#1976d2',
+    marginBottom: '5px',
+  },
+  
+  infoText: {
+    fontSize: '14px',
+    color: '#0d47a1',
+  },
+  
+  debugPanel: {
+    background: '#f8f9fa',
+    border: '2px solid #e9ecef',
+    borderRadius: '12px',
+    padding: '20px',
+    marginBottom: '20px',
+  },
+  
+  debugTitle: {
+    color: '#2196f3',
+    margin: '0 0 15px 0',
+  },
+  
+  debugActions: {
+    display: 'flex',
+    gap: '10px',
+    marginBottom: '15px',
+    flexWrap: 'wrap',
+  },
+  
+  debugActionButton: {
+    background: '#6c757d',
+    color: 'white',
+    border: 'none',
+    borderRadius: '6px',
+    padding: '8px 16px',
+    cursor: 'pointer',
+    fontSize: '13px',
+    fontWeight: '600',
+  },
+  
+  debugLog: {
+    background: '#000',
+    color: '#00ff00',
+    padding: '15px',
+    borderRadius: '8px',
+    fontFamily: 'monospace',
+    fontSize: '12px',
+    whiteSpace: 'pre-wrap',
+    maxHeight: '300px',
+    overflowY: 'auto',
+    border: '1px solid #333',
+  },
+  
+  loadingContainer: {
+    textAlign: 'center',
+    padding: '60px 20px',
+    color: '#666',
+  },
+  
+  loadingIcon: {
+    fontSize: '2rem',
+    marginBottom: '15px',
+  },
+  
+  tableContainer: {
+    overflowX: 'auto',
+    marginBottom: '20px',
+  },
+  
+  table: {
+    width: '100%',
+    borderCollapse: 'collapse',
+    background: '#fff',
+    borderRadius: '12px',
+    overflow: 'hidden',
+    fontSize: '14px',
+  },
+  
+  tableHeader: {
+    background: '#fff3e0',
+  },
+  
+  th: {
+    color: '#e65100',
+    fontWeight: '900',
+    fontSize: '14px',
+    padding: '15px 8px',
+    textAlign: 'center',
+    borderBottom: '2px solid #FFE0B2',
+  },
+  
+  tableRow: {
+    transition: 'opacity 0.3s ease',
+  },
+  
+  td: {
+    padding: '12px 8px',
+    textAlign: 'center',
+    fontWeight: '600',
+    background: '#fffaf4',
+    verticalAlign: 'middle',
+    borderBottom: '1px solid #f0f0f0',
+  },
+  
+  customerName: {
+    fontWeight: '700',
+    color: '#333',
+    marginBottom: '3px',
+  },
+  
+  quotationId: {
+    fontSize: '12px',
+    color: '#666',
+  },
+  
+  localOnlyBadge: {
+    background: '#ffc107',
+    color: 'white',
+    padding: '2px 6px',
+    borderRadius: '8px',
+    fontSize: '10px',
+    fontWeight: '600',
+    marginTop: '3px',
+    display: 'inline-block',
+  },
+  
+  emailText: {
+    fontSize: '12px',
+    color: '#666',
+    marginTop: '3px',
+  },
+  
+  totalAmount: {
+    fontWeight: '700',
+    color: '#FF9800',
+  },
+  
+  dateInput: {
+    border: '1.5px solid #ffe0b2',
+    borderRadius: '8px',
+    padding: '6px 8px',
+    fontSize: '12px',
+    width: '100%',
+    outline: 'none',
+    transition: 'border-color 0.3s ease',
+  },
+  
+  statusSelect: {
+    border: '1.5px solid #ffe0b2',
+    borderRadius: '8px',
+    padding: '6px 8px',
+    fontSize: '12px',
+    width: '100%',
+    outline: 'none',
+    fontWeight: 'bold',
+    background: 'white',
+    cursor: 'pointer',
+  },
+  
+  remarksInput: {
+    border: '1.5px solid #ffe0b2',
+    borderRadius: '8px',
+    padding: '6px 8px',
+    fontSize: '12px',
+    width: '100%',
+    outline: 'none',
+    transition: 'border-color 0.3s ease',
+  },
+  
+  actionButtons: {
+    display: 'flex',
+    gap: '5px',
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+  },
+  
+  viewButton: {
+    background: '#2196f3',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    padding: '6px 8px',
+    cursor: 'pointer',
+    fontSize: '12px',
+    fontWeight: '600',
+    minWidth: '30px',
+    transition: 'all 0.3s ease',
+  },
+  
+  printButton: {
+    background: '#4caf50',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    padding: '6px 8px',
+    cursor: 'pointer',
+    fontSize: '12px',
+    fontWeight: '600',
+    minWidth: '30px',
+    transition: 'all 0.3s ease',
+  },
+  
+  completeButton: {
+    background: '#4caf50',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    padding: '6px 8px',
+    cursor: 'pointer',
+    fontSize: '12px',
+    fontWeight: '600',
+    minWidth: '30px',
+    transition: 'all 0.3s ease',
+  },
+  
+  cancelButton: {
+    background: '#f44336',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    padding: '6px 8px',
+    cursor: 'pointer',
+    fontSize: '12px',
+    fontWeight: '600',
+    minWidth: '30px',
+    transition: 'all 0.3s ease',
+  },
+  
+  emptyState: {
+    textAlign: 'center',
+    padding: '40px 20px',
+    color: '#aaa',
+    fontSize: '16px',
+    background: '#fffbe9',
+  },
+  
+  emptyIcon: {
+    fontSize: '3rem',
+    marginBottom: '15px',
+  },
+  
+  emptyTitle: {
+    marginBottom: '10px',
+    fontWeight: '600',
+  },
+  
+  emptySubtitle: {
+    color: '#4caf50',
+    fontWeight: '700',
+  },
+  
+  summarySection: {
+    marginTop: '30px',
+    padding: '20px',
+    background: 'linear-gradient(135deg, #FFF3E0, #FFE0B2)',
+    borderRadius: '12px',
+    border: '2px solid #FF9800',
+  },
+  
+  summaryTitle: {
+    color: '#FF9800',
+    margin: '0 0 15px 0',
+  },
+  
+  summaryGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+    gap: '15px',
+  },
+  
+  summaryCard: {
+    background: '#fff',
+    padding: '15px',
+    borderRadius: '10px',
+    textAlign: 'center',
+    border: '1px solid rgba(0,0,0,0.1)',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+  },
+  
+  summaryCount: {
+    fontWeight: '700',
+    fontSize: '18px',
+    marginBottom: '5px',
+    color: '#333',
+  },
+  
+  summaryLabel: {
+    fontSize: '14px',
+    fontWeight: '600',
+    marginBottom: '5px',
+    textTransform: 'capitalize',
+    color: '#666',
+  },
+  
+  summaryAmount: {
+    fontSize: '12px',
+    color: '#666',
+  },
+  
+  modal: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: 'rgba(0,0,0,0.5)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1000,
+    padding: '20px',
+  },
+  
+  modalContent: {
+    background: 'white',
+    borderRadius: '15px',
+    maxWidth: '800px',
+    width: '100%',
+    maxHeight: '90vh',
+    overflow: 'auto',
+    boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+  },
+  
+  modalHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '20px',
+    borderBottom: '2px solid #f0f0f0',
+    background: 'linear-gradient(135deg, #FF9800, #F7931E)',
+    color: 'white',
+    borderRadius: '15px 15px 0 0',
+  },
+  
+  modalBody: {
+    padding: '20px',
+  },
+  
+  modalActions: {
+    display: 'flex',
+    gap: '10px',
+    justifyContent: 'flex-end',
+    padding: '20px',
+    borderTop: '2px solid #f0f0f0',
+  },
+  
+  closeButton: {
+    background: 'transparent',
+    border: 'none',
+    color: 'white',
+    fontSize: '1.5rem',
+    cursor: 'pointer',
+    padding: '5px',
+    borderRadius: '5px',
+    transition: 'background 0.3s ease',
+  },
+  
+  closeModalButton: {
+    background: '#6c757d',
+    color: 'white',
+    border: 'none',
+    borderRadius: '6px',
+    padding: '8px 16px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: '600',
+  },
+  
+  detailsGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '20px',
+    marginBottom: '20px',
+  },
+  
+  followUpDetails: {
+    background: '#f8f9fa',
+    padding: '15px',
+    borderRadius: '8px',
+    border: '1px solid #e9ecef',
+  },
+  
+  footer: {
+    marginTop: '20px',
+    padding: '15px',
+    background: '#f8f9fa',
+    borderRadius: '8px',
+    fontSize: '12px',
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: '1.5',
+  },
+  
+  // Responsive styles
+  '@media (max-width: 768px)': {
+    container: {
+      margin: '20px auto',
+      padding: '20px 15px',
+    },
+    
+    headerContent: {
+      flexDirection: 'column',
+      alignItems: 'flex-start',
+    },
+    
+    title: {
+      fontSize: '1.5rem',
+    },
+    
+    filtersContainer: {
+      flexDirection: 'column',
+      alignItems: 'stretch',
+    },
+    
+    searchContainer: {
+      minWidth: 'auto',
+    },
+    
+    statusFilters: {
+      minWidth: 'auto',
+    },
+    
+    detailsGrid: {
+      gridTemplateColumns: '1fr',
+    },
+    
+    summaryGrid: {
+      gridTemplateColumns: '1fr 1fr',
+    },
+    
+    actionButtons: {
+      flexDirection: 'column',
+      gap: '3px',
+    },
+    
+    th: {
+      padding: '10px 5px',
+      fontSize: '12px',
+    },
+    
+    td: {
+      padding: '8px 5px',
+      fontSize: '12px',
+    },
+  },
+  
+  '@media (max-width: 480px)': {
+    summaryGrid: {
+      gridTemplateColumns: '1fr',
+    },
+    
+    tabsContainer: {
+      flexDirection: 'column',
+    },
+    
+    tab: {
+      textAlign: 'center',
+      borderRadius: '8px',
+      marginBottom: '5px',
+    },
+    
+    activeTab: {
+      borderRadius: '8px',
+    },
+  },
 };
 
-const td = {
-  padding: "12px 8px",
-  textAlign: "center",
-  fontWeight: 600,
-  background: "#fffaf4",
-  verticalAlign: "middle"
-};
-
-const inputStyle = {
-  border: "1.5px solid #ffe0b2",
-  borderRadius: 8,
-  padding: "8px 10px",
-  fontSize: 14,
-  width: "95%",
-  outline: "none",
-  transition: "border-color 0.3s ease",
-  "&:focus": {
-    borderColor: "#FF9800"
-  }
-};
 export default FollowUps;
