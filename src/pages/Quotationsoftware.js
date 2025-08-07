@@ -200,7 +200,7 @@ async function loadQuotationsFromSupabase() {
     try {
       // build the same payload shape as for insert, minus created_at
       const supabaseData = {
-        quotation_id:    quotationData.id,
+        quotation_id:    updatedData.id,
         customer_name:   updatedData.customer.name,
         customer_contact:updatedData.customer.contact,
         customer_email:  updatedData.customer.email || null,
