@@ -431,6 +431,7 @@ console.log("👉 follow_up_status going to supabase:", supabaseData.follow_up_s
    } else {
       await saveQuotationToSupabase(newQuotation);
     }
+    localStorage.removeItem("quotations");
      // try {
       //  if (editingQuotation) {
       //    await updateQuotationInSupabase(quotationId, newQuotation);
@@ -453,7 +454,7 @@ console.log("👉 follow_up_status going to supabase:", supabaseData.follow_up_s
       }
       
       setQuotations(updatedQuotations);
-      saveToLocalStorage(updatedQuotations);
+      //saveToLocalStorage(updatedQuotations);
       
       setCurrentQuotation(newQuotation);
       alert(`✅ Quotation ${editingQuotation ? 'updated' : 'saved'} successfully!`);
