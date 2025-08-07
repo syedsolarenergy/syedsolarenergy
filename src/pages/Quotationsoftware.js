@@ -1,33 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-
-// Mock Supabase client for demo purposes
-const supabase = {
-  from: (table) => ({
-    insert: (data) => ({ 
-      select: () => Promise.resolve({ 
-        data: data.map((item, index) => ({ ...item, id: Date.now() + index })), 
-        error: null 
-      }) 
-    }),
-    select: (fields) => ({
-      order: (field, options) => Promise.resolve({ 
-        data: [], 
-        error: null 
-      }),
-      eq: (field, value) => ({
-        single: () => Promise.resolve({ data: null, error: null })
-      })
-    }),
-    update: (data) => ({
-      eq: (field, value) => ({
-        select: () => Promise.resolve({ data: [], error: null })
-      })
-    }),
-    delete: () => ({
-      eq: (field, value) => Promise.resolve({ error: null })
-    })
-  })
-};
+import { supabase } from './supabaseClient';
 
 const QuotationSoftware = () => {
   // State variables
@@ -54,7 +26,7 @@ const QuotationSoftware = () => {
   const [isEngineerIncluded, setIsEngineerIncluded] = useState(false);
   const [labour, setLabour] = useState(20000);
   const [engineer, setEngineer] = useState(10000);
-  const [greenmeter, setGreenmeter] = useState(10000);
+  const [greenmeter, setGreenmeter] = useState(140000);
   
   // UI states
   const [quotations, setQuotations] = useState([]);
@@ -67,7 +39,7 @@ const QuotationSoftware = () => {
   const [selectedQuotation, setSelectedQuotation] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
-  const [filter, setFilter] = useState('all'); // all, pending, completed, cancelled
+  const [filter, setFilter] = useState('all');
   
   // Ref for PDF generation
   const quotationRef = useRef();
@@ -462,7 +434,7 @@ const QuotationSoftware = () => {
     }
   };
 
-  // Print quotation
+  // Enhanced print quotation with logo
   const printQuotation = (quotationData) => {
     try {
       const printWindow = window.open('', '_blank');
@@ -480,13 +452,171 @@ const QuotationSoftware = () => {
             <meta charset="UTF-8">
             <title>Quotation - ${quotationData?.customer.name}</title>
             <style>
-              body { font-family: Arial, sans-serif; margin: 0; padding: 15px; }
-              table { border-collapse: collapse; width: 100%; margin: 8px 0; }
-              th, td { border: 1px solid #ddd; padding: 6px; text-align: left; font-size: 11px; }
-              th { background-color: #FF6B35 !important; color: white !important; }
-              .header { margin-bottom: 15px; }
-              .total-section { margin-top: 15px; padding: 12px; background-color: #f8f9fa; }
-              @media print { body { margin: 0; padding: 10px; } }
+              * { margin: 0; padding: 0; box-sizing: border-box; }
+              body { 
+                font-family: 'Arial', sans-serif; 
+                background: #fff; 
+                color: #333; 
+                line-height: 1.5; 
+                font-size: 14px;
+                margin: 0;
+                padding: 15px;
+              }
+              .container { 
+                max-width: 800px; 
+                margin: 0 auto; 
+              }
+              .header { 
+                display: flex; 
+                align-items: center; 
+                margin-bottom: 20px; 
+                border-bottom: 3px solid #ff9800; 
+                padding-bottom: 15px; 
+              }
+              .logo { 
+                width: 70px; 
+                height: 70px; 
+                margin-right: 15px; 
+                border-radius: 10px; 
+              }
+              .company-info h1 { 
+                color: #ff9800; 
+                font-size: 22px; 
+                font-weight: bold; 
+                margin-bottom: 5px; 
+              }
+              .company-info p { 
+                color: #666; 
+                font-size: 12px; 
+                margin: 2px 0; 
+              }
+              .quotation-title { 
+                background: linear-gradient(135deg, #ff9800, #ff6b35); 
+                color: white; 
+                padding: 12px 15px; 
+                border-radius: 8px; 
+                font-size: 18px; 
+                font-weight: bold; 
+                text-align: center; 
+                margin: 15px 0; 
+              }
+              .customer-section { 
+                background: #fffbe8; 
+                border-radius: 8px; 
+                padding: 15px; 
+                margin: 15px 0; 
+                border-left: 4px solid #ff9800; 
+              }
+              .customer-section h3 { 
+                color: #e65100; 
+                margin-bottom: 8px; 
+                font-size: 16px; 
+              }
+              .details-table { 
+                width: 100%; 
+                border-collapse: collapse; 
+                margin: 15px 0; 
+                background: #fff; 
+              }
+              .details-table th { 
+                background: #ff9800; 
+                color: white; 
+                padding: 10px; 
+                text-align: left; 
+                font-weight: bold; 
+                font-size: 12px;
+              }
+              .details-table td { 
+                padding: 8px 10px; 
+                border-bottom: 1px solid #eee; 
+                font-size: 11px;
+              }
+              .details-table tr:nth-child(even) { 
+                background: #f9f9f9; 
+              }
+              .item-name { 
+                font-weight: bold; 
+                color: #333; 
+              }
+              .price { 
+                font-weight: bold; 
+                color: #e65100; 
+                text-align: right; 
+              }
+              .total-row { 
+                background: #ffe0b2 !important; 
+                font-weight: bold; 
+                font-size: 14px; 
+              }
+              .total-row td { 
+                border-top: 2px solid #ff9800; 
+                color: #e65100; 
+                font-weight: bold;
+                padding: 12px 10px;
+              }
+              .warranty-section { 
+                background: #f0f8f0; 
+                border-left: 4px solid #28a745; 
+                border-radius: 6px; 
+                padding: 15px; 
+                margin: 20px 0; 
+              }
+              .warranty-section h4 { 
+                color: #28a745; 
+                margin-bottom: 10px; 
+                font-size: 14px; 
+              }
+              .warranty-section ul { 
+                list-style: none; 
+                padding-left: 0; 
+              }
+              .warranty-section li { 
+                padding: 3px 0; 
+                font-size: 12px; 
+                position: relative; 
+                padding-left: 15px; 
+              }
+              .warranty-section li:before { 
+                content: "✓"; 
+                color: #28a745; 
+                font-weight: bold; 
+                position: absolute; 
+                left: 0; 
+              }
+              .terms-section { 
+                background: #fff8e1; 
+                border-left: 4px solid #ffc107; 
+                border-radius: 6px; 
+                padding: 15px; 
+                margin: 20px 0; 
+              }
+              .terms-section h4 { 
+                color: #f57c00; 
+                margin-bottom: 10px; 
+                font-size: 14px; 
+              }
+              .terms-section ul { 
+                list-style: disc; 
+                padding-left: 15px; 
+              }
+              .terms-section li { 
+                padding: 2px 0; 
+                font-size: 12px; 
+              }
+              .footer { 
+                text-align: center; 
+                margin-top: 25px; 
+                padding: 15px; 
+                background: #ff9800; 
+                color: white; 
+                border-radius: 8px; 
+                font-weight: bold; 
+                font-size: 12px; 
+              }
+              @media print { 
+                body { margin: 0; padding: 10px; } 
+                .container { max-width: none; }
+              }
             </style>
           </head>
           <body>
@@ -512,80 +642,150 @@ const QuotationSoftware = () => {
 
   const generateQuotationHTML = (quotationData) => {
     return `
-      <div>
+      <div class="container">
         <div class="header">
-          <h1>SYED SOLAR ENERGY PVT LTD</h1>
-          <p>📍 Office #23 Mustafa Plaza Ring Road, Peshawar</p>
-          <p>📞 0307-5596695 | 📧 sales@syedsolarenergy.com</p>
-          <h2>QUOTATION #${quotationData.id}</h2>
-          <p><strong>Date:</strong> ${quotationData.quotationDate}</p>
+          <img src="/logo.png" alt="Syed Solar Energy Logo" class="logo" />
+          <div class="company-info">
+            <h1>Syed Solar Energy Pvt Ltd</h1>
+            <p>Office #23, Mustafa Plaza, Ring Road Near Imtiaz Mega Center, Peshawar</p>
+            <p><strong>Email:</strong> sales@syedsolarenergy.com | <strong>WhatsApp:</strong> 03044678929</p>
+          </div>
         </div>
-        
-        <div>
+
+        <div class="quotation-title">
+          🌞 Solar Energy Quotation #${quotationData.id}
+        </div>
+
+        <p><strong>Date:</strong> ${quotationData.quotationDate || new Date().toLocaleDateString()}</p>
+
+        <div class="customer-section">
           <h3>Customer Information</h3>
           <p><strong>Name:</strong> ${quotationData.customer.name}</p>
           <p><strong>Contact:</strong> ${quotationData.customer.contact}</p>
-          <p><strong>Email:</strong> ${quotationData.customer.email || '-'}</p>
+          <p><strong>Email:</strong> ${quotationData.customer.email || 'Not provided'}</p>
           <p><strong>Address:</strong> ${quotationData.customer.address}</p>
         </div>
+
+        <h3 style="color: #e65100; margin: 15px 0 10px 0;">System Configuration & Pricing</h3>
         
-        <table>
+        <table class="details-table">
           <thead>
             <tr>
-              <th>Item</th>
-              <th>Quantity</th>
-              <th>Unit Price</th>
-              <th>Total</th>
+              <th style="width: 50%;">Item Description</th>
+              <th style="width: 20%; text-align: center;">Quantity</th>
+              <th style="width: 30%; text-align: right;">Amount (PKR)</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td>Solar Panels (${quotationData.solarPanel.watts}W)</td>
-              <td>${quotationData.solarPanel.quantity}</td>
-              <td>Rs. ${(quotationData.solarPanel.pricePerWatt * quotationData.solarPanel.watts).toLocaleString()}</td>
-              <td>Rs. ${(quotationData.solarPanel.pricePerWatt * quotationData.solarPanel.watts * quotationData.solarPanel.quantity).toLocaleString()}</td>
+              <td class="item-name">
+                Solar Panels<br/>
+                <small>${quotationData.solarPanel.company} ${quotationData.solarPanel.watts}W Premium Grade</small>
+              </td>
+              <td style="text-align: center;">${quotationData.solarPanel.quantity} pcs</td>
+              <td class="price">Rs. ${(quotationData.solarPanel.pricePerWatt * quotationData.solarPanel.watts * quotationData.solarPanel.quantity).toLocaleString()}</td>
             </tr>
+            
             <tr>
-              <td>Inverter (${quotationData.inverter.kw}kW)</td>
-              <td>${quotationData.inverter.quantity}</td>
-              <td>Rs. ${quotationData.inverter.pricePerUnit.toLocaleString()}</td>
-              <td>Rs. ${(quotationData.inverter.quantity * quotationData.inverter.pricePerUnit).toLocaleString()}</td>
+              <td class="item-name">
+                ${quotationData.systemType.includes('Daytime') ? 'Grid-Tie' : 'Hybrid'} Inverter<br/>
+                <small>${quotationData.inverter.company} ${quotationData.inverter.kw}kW</small>
+              </td>
+              <td style="text-align: center;">${quotationData.inverter.quantity} unit</td>
+              <td class="price">Rs. ${(quotationData.inverter.quantity * quotationData.inverter.pricePerUnit).toLocaleString()}</td>
             </tr>
+            
             ${quotationData.batteryQuantity > 0 ? `
             <tr>
-              <td>Battery (${quotationData.batteryModel})</td>
-              <td>${quotationData.batteryQuantity}</td>
-              <td>Rs. ${quotationData.batteryPrice.toLocaleString()}</td>
-              <td>Rs. ${(quotationData.batteryQuantity * quotationData.batteryPrice).toLocaleString()}</td>
+              <td class="item-name">
+                Battery Bank<br/>
+                <small>${quotationData.batteryModel} (${batteryType})</small>
+              </td>
+              <td style="text-align: center;">${quotationData.batteryQuantity} units</td>
+              <td class="price">Rs. ${(quotationData.batteryQuantity * quotationData.batteryPrice).toLocaleString()}</td>
             </tr>
             ` : ''}
+            
             <tr>
-              <td>Safety Equipment</td>
-              <td>1</td>
-              <td>Rs. ${quotationData.safety.toLocaleString()}</td>
-              <td>Rs. ${quotationData.safety.toLocaleString()}</td>
+              <td class="item-name">
+                Mounting Structure<br/>
+                <small>${quotationData.stand.type} Grade</small>
+              </td>
+              <td style="text-align: center;">${getStandQty()} sets</td>
+              <td class="price">Rs. ${(getStandQty() * quotationData.stand.pricePerStand).toLocaleString()}</td>
             </tr>
+            
             <tr>
-              <td>Installation</td>
-              <td>1</td>
-              <td>Rs. ${quotationData.labour.toLocaleString()}</td>
-              <td>Rs. ${quotationData.labour.toLocaleString()}</td>
+              <td class="item-name">Safety & Protection Equipment</td>
+              <td style="text-align: center;">1 set</td>
+              <td class="price">Rs. ${quotationData.safety.toLocaleString()}</td>
             </tr>
-            <tr style="background-color: #ff6600; color: white;">
-              <td colspan="3"><strong>TOTAL AMOUNT</strong></td>
-              <td><strong>Rs. ${quotationData.total.toLocaleString()}</strong></td>
+            
+            <tr>
+              <td class="item-name">Transportation</td>
+              <td style="text-align: center;">-</td>
+              <td class="price">Rs. ${quotationData.transport.toLocaleString()}</td>
+            </tr>
+            
+            <tr>
+              <td class="item-name">Professional Installation</td>
+              <td style="text-align: center;">-</td>
+              <td class="price">Rs. ${quotationData.labour.toLocaleString()}</td>
+            </tr>
+            
+            ${quotationData.engineer > 0 ? `
+            <tr>
+              <td class="item-name">Engineering Supervision</td>
+              <td style="text-align: center;">-</td>
+              <td class="price">Rs. ${quotationData.engineer.toLocaleString()}</td>
+            </tr>
+            ` : ''}
+            
+            ${quotationData.greenmeter > 0 ? `
+            <tr>
+              <td class="item-name">Net Metering (Green Meter)</td>
+              <td style="text-align: center;">1 unit</td>
+              <td class="price">Rs. ${quotationData.greenmeter.toLocaleString()}</td>
+            </tr>
+            ` : ''}
+            
+            <tr class="total-row">
+              <td colspan="2" style="text-align: right; font-size: 16px;">
+                <strong>TOTAL INVESTMENT</strong>
+              </td>
+              <td class="price" style="font-size: 18px;">
+                <strong>Rs. ${quotationData.total.toLocaleString()}</strong>
+              </td>
             </tr>
           </tbody>
         </table>
-        
-        <div class="total-section">
-          <h3>Terms & Conditions</h3>
+
+        <div class="warranty-section">
+          <h4>🛡️ Warranty & Quality Assurance</h4>
           <ul>
-            <li>5% advance payment required</li>
-            <li>70% on material delivery</li>
-            <li>25% on completion</li>
-            <li>Quotation valid for 3 days</li>
+            <li>Solar Panels: 12 years product + 25 years performance warranty</li>
+            <li>Inverters: 5 years comprehensive warranty</li>
+            <li>Batteries: As per manufacturer's warranty policy</li>
+            <li>Installation: 3 months after-sales service warranty</li>
+            <li>Site Survey: Rs. 2,000/- for Peshawar city</li>
           </ul>
+        </div>
+
+        <div class="terms-section">
+          <h4>📋 Terms & Payment Schedule</h4>
+          <ul>
+            <li><strong>Booking:</strong> 5% advance payment</li>
+            <li><strong>Material Arrival:</strong> 70% payment</li>
+            <li><strong>Completion:</strong> 25% final payment</li>
+            <li><strong>Validity:</strong> 3 days only</li>
+            <li><strong>Note:</strong> Prices subject to market changes</li>
+          </ul>
+        </div>
+
+        <div class="footer">
+          Thank you for choosing Syed Solar Energy<br/>
+          📧 sales@syedsolarenergy.com | 📱 03044678929<br/>
+          📍 Office #23, Mustafa Plaza, Ring Road, Peshawar
         </div>
       </div>
     `;

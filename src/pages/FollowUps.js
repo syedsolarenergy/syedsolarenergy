@@ -1,39 +1,5 @@
 import React, { useEffect, useState } from "react";
-
-// Mock Supabase client for demo purposes
-const supabase = {
-  from: (table) => ({
-    insert: (data) => ({ 
-      select: () => Promise.resolve({ 
-        data: data.map((item, index) => ({ ...item, id: Date.now() + index })), 
-        error: null 
-      }) 
-    }),
-    select: (fields) => ({
-      order: (field, options) => ({
-        in: (field, values) => Promise.resolve({ 
-          data: [], 
-          error: null 
-        })
-      }),
-      eq: (field, value) => ({
-        single: () => Promise.resolve({ data: null, error: null })
-      }),
-      order: (field, options) => Promise.resolve({ 
-        data: [], 
-        error: null 
-      })
-    }),
-    update: (data) => ({
-      eq: (field, value) => ({
-        select: () => Promise.resolve({ data: [], error: null })
-      })
-    }),
-    delete: () => ({
-      eq: (field, value) => Promise.resolve({ error: null })
-    })
-  })
-};
+import { supabase } from './supabaseClient';
 
 // Status color mapping
 const statusColors = {
@@ -371,7 +337,7 @@ function FollowUps() {
     setShowViewModal(true);
   };
 
-  // Print quotation
+  // Enhanced print quotation with logo
   const printQuotation = (quotationData) => {
     try {
       const printWindow = window.open('', '_blank');
@@ -389,13 +355,171 @@ function FollowUps() {
             <meta charset="UTF-8">
             <title>Quotation - ${quotationData?.customer.name}</title>
             <style>
-              body { font-family: Arial, sans-serif; margin: 0; padding: 15px; }
-              table { border-collapse: collapse; width: 100%; margin: 8px 0; }
-              th, td { border: 1px solid #ddd; padding: 6px; text-align: left; font-size: 11px; }
-              th { background-color: #FF6B35 !important; color: white !important; }
-              .header { margin-bottom: 15px; }
-              .total-section { margin-top: 15px; padding: 12px; background-color: #f8f9fa; }
-              @media print { body { margin: 0; padding: 10px; } }
+              * { margin: 0; padding: 0; box-sizing: border-box; }
+              body { 
+                font-family: 'Arial', sans-serif; 
+                background: #fff; 
+                color: #333; 
+                line-height: 1.5; 
+                font-size: 14px;
+                margin: 0;
+                padding: 15px;
+              }
+              .container { 
+                max-width: 800px; 
+                margin: 0 auto; 
+              }
+              .header { 
+                display: flex; 
+                align-items: center; 
+                margin-bottom: 20px; 
+                border-bottom: 3px solid #ff9800; 
+                padding-bottom: 15px; 
+              }
+              .logo { 
+                width: 70px; 
+                height: 70px; 
+                margin-right: 15px; 
+                border-radius: 10px; 
+              }
+              .company-info h1 { 
+                color: #ff9800; 
+                font-size: 22px; 
+                font-weight: bold; 
+                margin-bottom: 5px; 
+              }
+              .company-info p { 
+                color: #666; 
+                font-size: 12px; 
+                margin: 2px 0; 
+              }
+              .quotation-title { 
+                background: linear-gradient(135deg, #ff9800, #ff6b35); 
+                color: white; 
+                padding: 12px 15px; 
+                border-radius: 8px; 
+                font-size: 18px; 
+                font-weight: bold; 
+                text-align: center; 
+                margin: 15px 0; 
+              }
+              .customer-section { 
+                background: #fffbe8; 
+                border-radius: 8px; 
+                padding: 15px; 
+                margin: 15px 0; 
+                border-left: 4px solid #ff9800; 
+              }
+              .customer-section h3 { 
+                color: #e65100; 
+                margin-bottom: 8px; 
+                font-size: 16px; 
+              }
+              .details-table { 
+                width: 100%; 
+                border-collapse: collapse; 
+                margin: 15px 0; 
+                background: #fff; 
+              }
+              .details-table th { 
+                background: #ff9800; 
+                color: white; 
+                padding: 10px; 
+                text-align: left; 
+                font-weight: bold; 
+                font-size: 12px;
+              }
+              .details-table td { 
+                padding: 8px 10px; 
+                border-bottom: 1px solid #eee; 
+                font-size: 11px;
+              }
+              .details-table tr:nth-child(even) { 
+                background: #f9f9f9; 
+              }
+              .item-name { 
+                font-weight: bold; 
+                color: #333; 
+              }
+              .price { 
+                font-weight: bold; 
+                color: #e65100; 
+                text-align: right; 
+              }
+              .total-row { 
+                background: #ffe0b2 !important; 
+                font-weight: bold; 
+                font-size: 14px; 
+              }
+              .total-row td { 
+                border-top: 2px solid #ff9800; 
+                color: #e65100; 
+                font-weight: bold;
+                padding: 12px 10px;
+              }
+              .warranty-section { 
+                background: #f0f8f0; 
+                border-left: 4px solid #28a745; 
+                border-radius: 6px; 
+                padding: 15px; 
+                margin: 20px 0; 
+              }
+              .warranty-section h4 { 
+                color: #28a745; 
+                margin-bottom: 10px; 
+                font-size: 14px; 
+              }
+              .warranty-section ul { 
+                list-style: none; 
+                padding-left: 0; 
+              }
+              .warranty-section li { 
+                padding: 3px 0; 
+                font-size: 12px; 
+                position: relative; 
+                padding-left: 15px; 
+              }
+              .warranty-section li:before { 
+                content: "✓"; 
+                color: #28a745; 
+                font-weight: bold; 
+                position: absolute; 
+                left: 0; 
+              }
+              .terms-section { 
+                background: #fff8e1; 
+                border-left: 4px solid #ffc107; 
+                border-radius: 6px; 
+                padding: 15px; 
+                margin: 20px 0; 
+              }
+              .terms-section h4 { 
+                color: #f57c00; 
+                margin-bottom: 10px; 
+                font-size: 14px; 
+              }
+              .terms-section ul { 
+                list-style: disc; 
+                padding-left: 15px; 
+              }
+              .terms-section li { 
+                padding: 2px 0; 
+                font-size: 12px; 
+              }
+              .footer { 
+                text-align: center; 
+                margin-top: 25px; 
+                padding: 15px; 
+                background: #ff9800; 
+                color: white; 
+                border-radius: 8px; 
+                font-weight: bold; 
+                font-size: 12px; 
+              }
+              @media print { 
+                body { margin: 0; padding: 10px; } 
+                .container { max-width: none; }
+              }
             </style>
           </head>
           <body>
@@ -421,38 +545,76 @@ function FollowUps() {
 
   const generateQuotationHTML = (quotationData) => {
     return `
-      <div>
+      <div class="container">
         <div class="header">
-          <h1>SYED SOLAR ENERGY PVT LTD</h1>
-          <p>📍 Office #23 Mustafa Plaza Ring Road, Peshawar</p>
-          <p>📞 0307-5596695 | 📧 sales@syedsolarenergy.com</p>
-          <h2>QUOTATION #${quotationData.id}</h2>
-          <p><strong>Date:</strong> ${quotationData.quotationDate || new Date().toLocaleDateString()}</p>
+          <img src="/logo.png" alt="Syed Solar Energy Logo" class="logo" />
+          <div class="company-info">
+            <h1>Syed Solar Energy Pvt Ltd</h1>
+            <p>Office #23, Mustafa Plaza, Ring Road Near Imtiaz Mega Center, Peshawar</p>
+            <p><strong>Email:</strong> sales@syedsolarenergy.com | <strong>WhatsApp:</strong> 03044678929</p>
+          </div>
         </div>
-        
-        <div>
+
+        <div class="quotation-title">
+          🌞 Solar Energy Quotation #${quotationData.id}
+        </div>
+
+        <p><strong>Date:</strong> ${quotationData.quotationDate || new Date().toLocaleDateString()}</p>
+
+        <div class="customer-section">
           <h3>Customer Information</h3>
           <p><strong>Name:</strong> ${quotationData.customer.name}</p>
           <p><strong>Contact:</strong> ${quotationData.customer.contact}</p>
-          <p><strong>Email:</strong> ${quotationData.customer.email || '-'}</p>
+          <p><strong>Email:</strong> ${quotationData.customer.email || 'Not provided'}</p>
           <p><strong>Address:</strong> ${quotationData.customer.address}</p>
         </div>
+
+        <h3 style="color: #e65100; margin: 15px 0 10px 0;">System Configuration & Pricing</h3>
         
         <div>
           <h3>System Details</h3>
           <p><strong>Type:</strong> ${quotationData.systemType}</p>
           <p><strong>Total Amount:</strong> Rs. ${quotationData.total.toLocaleString()}</p>
           <p><strong>Status:</strong> ${quotationData.followUpStatus || 'pending'}</p>
+          <p><strong>Staff:</strong> ${quotationData.staff || '-'}</p>
+          <p><strong>Location:</strong> ${quotationData.location || '-'}</p>
         </div>
         
-        <div class="total-section">
-          <h3>Terms & Conditions</h3>
+        ${quotationData.solarPanel ? `
+        <div>
+          <h3>Equipment Summary</h3>
+          <p><strong>Solar Panels:</strong> ${quotationData.solarPanel.quantity || '-'}x ${quotationData.solarPanel.company || '-'} ${quotationData.solarPanel.watts || '-'}W</p>
+          <p><strong>Inverter:</strong> ${quotationData.inverter?.company || '-'} ${quotationData.inverter?.kw || '-'}kW</p>
+          ${quotationData.batteryQuantity > 0 ? `<p><strong>Battery:</strong> ${quotationData.batteryQuantity}x ${quotationData.batteryModel}</p>` : ''}
+        </div>
+        ` : ''}
+
+        <div class="warranty-section">
+          <h4>🛡️ Warranty & Quality Assurance</h4>
           <ul>
-            <li>5% advance payment required</li>
-            <li>70% on material delivery</li>
-            <li>25% on completion</li>
-            <li>Quotation valid for 3 days</li>
+            <li>Solar Panels: 12 years product + 25 years performance warranty</li>
+            <li>Inverters: 5 years comprehensive warranty</li>
+            <li>Batteries: As per manufacturer's warranty policy</li>
+            <li>Installation: 3 months after-sales service warranty</li>
+            <li>Site Survey: Rs. 2,000/- for Peshawar city</li>
           </ul>
+        </div>
+
+        <div class="terms-section">
+          <h4>📋 Terms & Payment Schedule</h4>
+          <ul>
+            <li><strong>Booking:</strong> 5% advance payment</li>
+            <li><strong>Material Arrival:</strong> 70% payment</li>
+            <li><strong>Completion:</strong> 25% final payment</li>
+            <li><strong>Validity:</strong> 3 days only</li>
+            <li><strong>Note:</strong> Prices subject to market changes</li>
+          </ul>
+        </div>
+
+        <div class="footer">
+          Thank you for choosing Syed Solar Energy<br/>
+          📧 sales@syedsolarenergy.com | 📱 03044678929<br/>
+          📍 Office #23, Mustafa Plaza, Ring Road, Peshawar
         </div>
       </div>
     `;
