@@ -77,156 +77,171 @@ const QuotationSoftware = () => {
   }, [isEngineerIncluded]);
 
   // Database operations
-  async function saveQuotationToSupabase(quotationData) {
+async function saveQuotationToSupabase(quotationData) {
     try {
+      // only the columns that actually exist in your "quotations" table
       const supabaseData = {
-        customer_name: quotationData.customer.name,
-        customer_contact: quotationData.customer.contact,
-        customer_email: quotationData.customer.email || null,
-        customer_address: quotationData.customer.address,
-        system_type: quotationData.systemType,
-        panel_brand: quotationData.solarPanel.company,
-        panel_watt: quotationData.solarPanel.watts,
-        panel_quantity: quotationData.solarPanel.quantity,
-        panel_total: getPanelPrice(quotationData.solarPanel) * quotationData.solarPanel.quantity,
-        inverter_type: quotationData.inverter.company || null,
-        inverter_size: `${quotationData.inverter.kw}kW` || null,
-        inverter_total: quotationData.inverter.quantity * quotationData.inverter.pricePerUnit,
-        battery_type: quotationData.batteryType || null,
-        battery_model: quotationData.batteryModel || null,
-        battery_quantity: quotationData.batteryQuantity || null,
-        battery_total: (quotationData.batteryQuantity || 0) * (quotationData.batteryPrice || 0),
-        stand_type: quotationData.stand.type,
-        stand_quantity: getStandQty(quotationData.solarPanel.quantity, quotationData.stand.type),
-        stand_total: getStandQty(quotationData.solarPanel.quantity, quotationData.stand.type) * quotationData.stand.pricePerStand,
-        safety_charges: quotationData.safety,
-        transport_charges: quotationData.transport,
-        installation_charges: quotationData.labour,
-        green_meter: quotationData.isGreenmeterIncluded,
-        green_meter_charges: quotationData.isGreenmeterIncluded ? quotationData.greenmeter : 0,
-        total_amount: quotationData.total,
-        quotation_date: new Date().toISOString(),
-        staff_name: quotationData.staff || null,
-        location: quotationData.location || null,
-        quotation_id: quotationData.id,
+        customer_name:   quotationData.customer.name,
+        customer_contact:quotationData.customer.contact,
+        customer_email:  quotationData.customer.email || null,
+        customer_address:quotationData.customer.address,
+        system_type:     quotationData.systemType,
+        panel_brand:     quotationData.solarPanel.company,
+        panel_watt:      quotationData.solarPanel.watts,
+        panel_quantity:  quotationData.solarPanel.quantity,
+        panel_total:     getPanelPrice(quotationData.solarPanel) * quotationData.solarPanel.quantity,
+        inverter_type:   quotationData.inverter.company || null,
+        inverter_size:   `${quotationData.inverter.kw}kW` || null,
+        inverter_total:  quotationData.inverter.quantity * quotationData.inverter.pricePerUnit,
+        battery_type:    quotationData.batteryType || null,
+        battery_model:   quotationData.batteryModel || null,
+        battery_quantity:quotationData.batteryQuantity || 0,
+        battery_total:   quotationData.batteryQuantity * quotationData.batteryPrice,
+        stand_type:      quotationData.stand.type,
+        stand_quantity:  getStandQty(quotationData.solarPanel.quantity, quotationData.stand.type),
+        stand_total:     getStandQty(quotationData.solarPanel.quantity, quotationData.stand.type) * quotationData.stand.pricePerStand,
+        safety_charges:  quotationData.safety,
+        transport_charges:quotationData.transport,
+        installation_charges:quotationData.labour,
         engineer_charges: quotationData.isEngineerIncluded ? quotationData.engineer : 0,
-        follow_up_status: 'pending',
-        created_at: new Date().toISOString()
+        green_meter:     quotationData.isGreenmeterIncluded,
+        green_meter_charges:quotationData.isGreenmeterIncluded ? quotationData.greenmeter : 0,
+        total_amount:    quotationData.total,
+        staff_name:      quotationData.staff || null,
+        location:        quotationData.location || null,
+        follow_up_status:quotationData.followUpStatus || 'pending',
+        created_at:      new Date().toISOString()
       };
 
       const { data, error } = await supabase
         .from("quotations")
         .insert([supabaseData])
-        .select();
+        .select();               // return all columns of the new row
 
-      if (error) throw error;
-      return data[0];
+      if (error) {
+        console.error("Supabase insert error:", error);
+        throw error;
+      }
+      return data[0];            // the full row, including its new `.id`
     } catch (err) {
       console.error("Save to Supabase error:", err);
       throw err;
     }
   }
 
-  async function loadQuotationsFromSupabase() {
+async function loadQuotationsFromSupabase() {
     try {
       const { data, error } = await supabase
         .from("quotations")
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase select error:", error);
+        throw error;
+      }
 
-      return data?.map(item => ({
-        id: item.quotation_id || item.id.toString(),
+      // Map the Supabase row into your internal format
+      return data.map(item => ({
+        id: item.id.toString(),            // use the real PK
         customer: {
-          name: item.customer_name,
+          name:    item.customer_name,
           contact: item.customer_contact,
-          email: item.customer_email,
+          email:   item.customer_email,
           address: item.customer_address
         },
-        staff: item.staff_name,
-        systemType: item.system_type,
-        location: item.location,
+        staff:           item.staff_name,
+        systemType:      item.system_type,
+        location:        item.location,
         inverter: {
           company: item.inverter_type,
-          kw: item.inverter_size?.replace('kW','') || '0',
-          quantity: 1,
-          pricePerUnit: item.inverter_total || 0
+          kw:      item.inverter_size?.replace('kW','') || '0',
+          quantity:1,
+          pricePerUnit: item.inverter_total
         },
-        batteryType: item.battery_type || '',
-        batteryModel: item.battery_model || '',
-        batteryQuantity: item.battery_quantity || 0,
-        batteryPrice: item.battery_quantity > 0 ? (item.battery_total / item.battery_quantity) : 0,
+        batteryType:     item.battery_type || '',
+        batteryModel:    item.battery_model || '',
+        batteryQuantity: item.battery_quantity,
+        batteryPrice:    item.battery_quantity > 0
+                            ? (item.battery_total / item.battery_quantity)
+                            : 0,
         solarPanel: {
           company: item.panel_brand,
-          watts: item.panel_watt,
-          quantity: item.panel_quantity,
-          pricePerWatt: item.panel_quantity > 0 ? (item.panel_total / (item.panel_quantity * parseInt(item.panel_watt))) : 0
+          watts:   item.panel_watt,
+          quantity:item.panel_quantity,
+          pricePerWatt: item.panel_quantity > 0
+                           ? (item.panel_total / (item.panel_quantity * parseInt(item.panel_watt)))
+                           : 0
         },
         stand: {
-          type: item.stand_type,
+          type:          item.stand_type,
           pricePerStand: item.stand_total / (item.stand_quantity || 1)
         },
-        safety: item.safety_charges,
-        transport: item.transport_charges,
-        labour: item.installation_charges,
-        engineer: item.engineer_charges || 0,
-        greenmeter: item.green_meter_charges || 0,
-        total: item.total_amount,
-        date: item.created_at,
+        safety:         item.safety_charges,
+        transport:      item.transport_charges,
+        labour:         item.installation_charges,
+        engineer:       item.engineer_charges || 0,
+        greenmeter:     item.green_meter_charges || 0,
+        total:          item.total_amount,
         followUpStatus: item.follow_up_status || 'pending',
-        quotationDate: item.quotation_date,
+        quotationDate:  item.created_at,
         isGreenmeterIncluded: item.green_meter,
-        isEngineerIncluded: item.engineer_charges > 0
-      })) || [];
+        isEngineerIncluded:   item.engineer_charges > 0
+      }));
     } catch (err) {
       console.error("Load from Supabase error:", err);
       return [];
     }
   }
 
-  async function updateQuotationInSupabase(quotationId, updatedData) {
+   async function updateQuotationInSupabase(quotationId, updatedData) {
     try {
+      // build the same payload shape as for insert, minus created_at
       const supabaseData = {
-        customer_name: updatedData.customer.name,
-        customer_contact: updatedData.customer.contact,
-        customer_email: updatedData.customer.email || null,
-        customer_address: updatedData.customer.address,
-        system_type: updatedData.systemType,
-        panel_brand: updatedData.solarPanel.company,
-        panel_watt: updatedData.solarPanel.watts,
-        panel_quantity: updatedData.solarPanel.quantity,
-        panel_total: updatedData.solarPanel.pricePerWatt * parseInt(updatedData.solarPanel.watts) * updatedData.solarPanel.quantity,
-        inverter_type: updatedData.inverter.company || null,
-        inverter_size: `${updatedData.inverter.kw}kW` || null,
-        inverter_total: updatedData.inverter.quantity * updatedData.inverter.pricePerUnit,
-        battery_type: updatedData.batteryType || null,
-        battery_model: updatedData.batteryModel || null,
-        battery_quantity: updatedData.batteryQuantity || null,
-        battery_total: (updatedData.batteryQuantity || 0) * (updatedData.batteryPrice || 0),
-        stand_type: updatedData.stand.type,
-        stand_quantity: getStandQty(updatedData.solarPanel.quantity, updatedData.stand.type),
-        stand_total: getStandQty(updatedData.solarPanel.quantity, updatedData.stand.type) * updatedData.stand.pricePerStand,
-        safety_charges: updatedData.safety,
-        transport_charges: updatedData.transport,
-        installation_charges: updatedData.labour,
-        green_meter: updatedData.isGreenmeterIncluded,
-        green_meter_charges: updatedData.isGreenmeterIncluded ? updatedData.greenmeter : 0,
-        total_amount: updatedData.total,
-        staff_name: updatedData.staff || null,
-        location: updatedData.location || null,
+        customer_name:   updatedData.customer.name,
+        customer_contact:updatedData.customer.contact,
+        customer_email:  updatedData.customer.email || null,
+        customer_address:updatedData.customer.address,
+        system_type:     updatedData.systemType,
+        panel_brand:     updatedData.solarPanel.company,
+        panel_watt:      updatedData.solarPanel.watts,
+        panel_quantity:  updatedData.solarPanel.quantity,
+        panel_total:     updatedData.solarPanel.pricePerWatt
+                          * updatedData.solarPanel.quantity
+                          * parseInt(updatedData.solarPanel.watts),
+        inverter_type:   updatedData.inverter.company || null,
+        inverter_size:   `${updatedData.inverter.kw}kW` || null,
+        inverter_total:  updatedData.inverter.quantity * updatedData.inverter.pricePerUnit,
+        battery_type:    updatedData.batteryType || null,
+        battery_model:   updatedData.batteryModel || null,
+        battery_quantity:updatedData.batteryQuantity || 0,
+        battery_total:   updatedData.batteryQuantity * updatedData.batteryPrice,
+        stand_type:      updatedData.stand.type,
+        stand_quantity:  getStandQty(updatedData.solarPanel.quantity, updatedData.stand.type),
+        stand_total:     getStandQty(updatedData.solarPanel.quantity, updatedData.stand.type) * updatedData.stand.pricePerStand,
+        safety_charges:  updatedData.safety,
+        transport_charges:updatedData.transport,
+        installation_charges:updatedData.labour,
         engineer_charges: updatedData.isEngineerIncluded ? updatedData.engineer : 0,
-        follow_up_status: updatedData.followUpStatus || 'pending',
-        updated_at: new Date().toISOString()
+        green_meter:     updatedData.isGreenmeterIncluded,
+        green_meter_charges:updatedData.isGreenmeterIncluded ? updatedData.greenmeter : 0,
+        total_amount:    updatedData.total,
+        staff_name:      updatedData.staff || null,
+        location:        updatedData.location || null,
+        follow_up_status:updatedData.followUpStatus || 'pending',
+        updated_at:      new Date().toISOString()
       };
 
       const { data, error } = await supabase
         .from("quotations")
         .update(supabaseData)
-        .eq("quotation_id", quotationId)
+        .eq("id", quotationId)        // ← use `id`, not `quotation_id`
         .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase update error:", error);
+        throw error;
+      }
       return data[0];
     } catch (err) {
       console.error("Update in Supabase error:", err);
@@ -234,14 +249,17 @@ const QuotationSoftware = () => {
     }
   }
 
-  async function deleteQuotationFromSupabase(quotationId) {
+
+   async function deleteQuotationFromSupabase(quotationId) {
     try {
       const { error } = await supabase
         .from("quotations")
         .delete()
-        .eq("quotation_id", quotationId);
-
-      if (error) throw error;
+        .eq("id", quotationId);       // ← use `id`, not `quotation_id`
+      if (error) {
+        console.error("Supabase delete error:", error);
+        throw error;
+      }
       return true;
     } catch (err) {
       console.error("Delete from Supabase error:", err);
