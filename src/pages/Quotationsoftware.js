@@ -478,7 +478,7 @@ console.log("👉 follow_up_status going to supabase:", supabaseData.follow_up_s
       // Update local state
       const updatedQuotations = quotations.filter(q => q.id !== quotationId);
       setQuotations(updatedQuotations);
-      saveToLocalStorage(updatedQuotations);
+      //saveToLocalStorage(updatedQuotations);
       
       alert("✅ Quotation deleted successfully!");
       setConfirmDeleteId(null);
