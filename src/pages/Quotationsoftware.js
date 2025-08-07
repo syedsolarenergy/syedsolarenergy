@@ -81,6 +81,7 @@ async function saveQuotationToSupabase(quotationData) {
     try {
       // only the columns that actually exist in your "quotations" table
       const supabaseData = {
+        quotation_id: quotationData.id,
         customer_name:   quotationData.customer.name,
         customer_contact:quotationData.customer.contact,
         customer_email:  quotationData.customer.email || null,
@@ -116,6 +117,7 @@ async function saveQuotationToSupabase(quotationData) {
       const { data, error } = await supabase
         .from("quotations")
         .insert([supabaseData])
+        
         .select();               // return all columns of the new row
 
       if (error) {
@@ -143,7 +145,7 @@ async function loadQuotationsFromSupabase() {
 
       // Map the Supabase row into your internal format
       return data.map(item => ({
-        id: item.id.toString(),            // use the real PK
+        id:                 item.quotation_id,            // use the real PK
         customer: {
           name:    item.customer_name,
           contact: item.customer_contact,
@@ -198,6 +200,7 @@ async function loadQuotationsFromSupabase() {
     try {
       // build the same payload shape as for insert, minus created_at
       const supabaseData = {
+        quotation_id:    quotationData.id,
         customer_name:   updatedData.customer.name,
         customer_contact:updatedData.customer.contact,
         customer_email:  updatedData.customer.email || null,
@@ -235,7 +238,8 @@ async function loadQuotationsFromSupabase() {
       const { data, error } = await supabase
         .from("quotations")
         .update(supabaseData)
-        .eq("id", quotationId)        // ← use `id`, not `quotation_id`
+        .eq("quotation_id", quotationId) 
+       // .eq("id", quotationId)        // ← use `id`, not `quotation_id`
         .select();
 
       if (error) {
@@ -255,7 +259,8 @@ async function loadQuotationsFromSupabase() {
       const { error } = await supabase
         .from("quotations")
         .delete()
-        .eq("id", quotationId);       // ← use `id`, not `quotation_id`
+        .eq("quotation_id", quotationId);
+        //.eq("id", quotationId);       // ← use `id`, not `quotation_id`
       if (error) {
         console.error("Supabase delete error:", error);
         throw error;
