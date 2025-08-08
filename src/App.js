@@ -37,19 +37,48 @@ import ChangePassword from "./pages/ChangePassword";
 import AdminPanel from "./pages/AdminPanel";
 import EmailVerified from "./pages/email-verified";
 
-
 function AppContent() {
   const location = useLocation();
   const isLoggedIn = !!localStorage.getItem("loggedInUser");
-  const hideNavbarOrSidebar = ["/login", "/forgotpassword"].includes(location.pathname.toLowerCase());
+  
+  // Define routes where navbar should be hidden
+  const authRoutes = ["/login", "/forgotpassword"];
+  
+  // Define software/protected routes where navbar should be hidden
+  const softwareRoutes = [
+    "/dashboard", 
+    "/inventory", 
+    "/repairs", 
+    "/expenses", 
+    "/reports", 
+    "/productspage", 
+    "/admin", 
+    "/followups", 
+    "/staff", 
+    "/quotationsoftware", 
+    "/changepassword"
+  ];
+  
+  // Hide navbar on auth pages OR when logged in and on software pages
+  const hideNavbar = authRoutes.includes(location.pathname.toLowerCase()) || 
+                   (isLoggedIn && softwareRoutes.includes(location.pathname.toLowerCase()));
+  
+  // Hide sidebar on auth pages only
+  const hideSidebar = authRoutes.includes(location.pathname.toLowerCase());
 
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>
-      {/* Sidebar only for logged-in software users */}
-      {isLoggedIn && !hideNavbarOrSidebar && <Sidebar />}
-      <div style={{ flex: 1, marginLeft: isLoggedIn && !hideNavbarOrSidebar ? 220 : 0 }}>
-        {/* Navbar on all pages except login/forgot */}
-        {!hideNavbarOrSidebar && <Navbar />}
+      {/* Sidebar only for logged-in software users (not on auth pages) */}
+      {isLoggedIn && !hideSidebar && <Sidebar />}
+      
+      <div style={{ 
+        flex: 1, 
+        marginLeft: isLoggedIn && !hideSidebar ? 220 : 0,
+        transition: "margin-left 0.3s ease"
+      }}>
+        {/* Navbar on public pages only (not on auth pages or software pages when logged in) */}
+        {!hideNavbar && <Navbar />}
+        
         <Routes>
           {/* Public Website Pages */}
           <Route path="/" element={<Home />} />
@@ -64,7 +93,6 @@ function AppContent() {
           {/* Public Admin Panel (new) */}
           <Route path="/adminpanel" element={<AdminPanel />} />
           <Route path="/email-verified" element={<EmailVerified />} />
-
 
           {/* Auth Pages */}
           <Route path="/login" element={<Login />} />
@@ -84,7 +112,18 @@ function AppContent() {
           <Route path="/changepassword" element={<PrivateRoute><ChangePassword /></PrivateRoute>} />
 
           {/* Fallback Route */}
-          <Route path="*" element={<div style={{ padding: 40 }}>404 - Page Not Found</div>} />
+          <Route path="*" element={
+            <div style={{ 
+              padding: 40, 
+              textAlign: "center",
+              color: "#666",
+              fontSize: "18px",
+              fontWeight: "600"
+            }}>
+              <h2 style={{ color: "#ff6600", marginBottom: "20px" }}>404 - Page Not Found</h2>
+              <p>The page you're looking for doesn't exist.</p>
+            </div>
+          } />
         </Routes>
       </div>
     </div>
