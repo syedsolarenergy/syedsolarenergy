@@ -14,62 +14,62 @@ const sidebarLinks = [
   {
     to: "/dashboard",
     label: "Dashboard",
-    icon: <MdDashboard size={20} />,
+    icon: <MdDashboard size={18} />,
     permission: { category: "dashboard", key: "view" }
   },
   {
     to: "/inventory",
     label: "Inventory",
-    icon: <MdInventory size={20} />,
+    icon: <MdInventory size={18} />,
     permission: { category: "inventory", key: "view" }
   },
   {
     to: "/repairs",
     label: "Repairs",
-    icon: <FaTools size={19} />,
+    icon: <FaTools size={17} />,
     permission: { category: "repairs", key: "view" }
   },
   {
     to: "/expenses",
     label: "Expenses",
-    icon: <TbReportMoney size={19} />,
+    icon: <TbReportMoney size={17} />,
     permission: { category: "expenses", key: "view" }
   },
   {
     to: "/reports",
     label: "Reports",
-    icon: <MdBarChart size={20} />,
+    icon: <MdBarChart size={18} />,
     permission: { category: "reports", key: "view" }
   },
   {
     to: "/productspage",
     label: "Products",
-    icon: <MdStore size={20} />,
+    icon: <MdStore size={18} />,
     permission: { category: "products", key: "view" }
   },
   {
     to: "/admin",
     label: "Admin",
-    icon: <MdAdminPanelSettings size={20} />,
+    icon: <MdAdminPanelSettings size={18} />,
     permission: { category: "userManagement", key: "view" },
     adminOnly: true
   },
   {
     to: "/followups",
     label: "Follow Ups",
-    icon: <MdHistory size={20} />,
+    icon: <MdHistory size={18} />,
     permission: { category: "followups", key: "view" }
   },
   {
     to: "/staff",
     label: "Staff",
-    icon: <MdPeople size={20} />,
+    icon: <MdPeople size={18} />,
     permission: { category: "staff", key: "view" }
   },
   {
     to: "/quotationsoftware",
     label: "Quotations",
-    icon: <FaFileInvoice size={18} />,
+    icon: <FaFileInvoice size={16} />,
     permission: { category: "quotations", key: "view" }
   }
 ];
@@ -170,7 +170,7 @@ export default function Sidebar() {
     <>
       <aside
         style={{
-          width: isCollapsed ? 70 : 250,
+          width: isCollapsed ? 60 : 220,
           background: "linear-gradient(180deg, #fff 0%, #f8f9fa 100%)",
           color: "#333",
           height: "100vh",
@@ -189,38 +189,38 @@ export default function Sidebar() {
       >
         {/* Compact Header */}
         <div style={{
-          padding: isCollapsed ? "15px 10px" : "20px 15px",
+          padding: isCollapsed ? "12px 8px" : "15px 12px",
           background: "linear-gradient(135deg, #FF6B35, #F7931E)",
           color: "white",
           borderBottom: "1px solid rgba(255,255,255,0.2)"
         }}>
           {!isCollapsed ? (
-            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-              <FaUserCircle size={32} />
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <FaUserCircle size={28} />
               <div>
                 <div style={{ 
                   fontWeight: 700, 
-                  fontSize: "14px",
-                  marginBottom: "2px"
+                  fontSize: "13px",
+                  marginBottom: "1px"
                 }}>
                   {userName.split(' ')[0]}
                 </div>
                 <div style={{ 
-                  fontSize: "11px", 
+                  fontSize: "10px", 
                   opacity: 0.9,
                   textTransform: "capitalize",
                   display: "flex",
                   alignItems: "center",
                   gap: "4px"
                 }}>
-                  {isAdmin && <FaCrown size={10} />}
+                  {isAdmin && <FaCrown size={9} />}
                   {userRole}
                 </div>
               </div>
             </div>
           ) : (
             <div style={{ textAlign: "center" }}>
-              <FaUserCircle size={28} />
+              <FaUserCircle size={24} />
             </div>
           )}
         </div>
@@ -230,8 +230,8 @@ export default function Sidebar() {
           flex: 1, 
           display: "flex", 
           flexDirection: "column",
-          padding: "10px 8px",
-          gap: "3px"
+          padding: "8px 6px",
+          gap: "1px"
         }}>
           {sidebarLinks
             .filter(link => canAccess(link))
@@ -246,8 +246,8 @@ export default function Sidebar() {
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    gap: isCollapsed ? 0 : 12,
-                    padding: isCollapsed ? "10px" : "10px 15px",
+                    gap: isCollapsed ? 0 : 10,
+                    padding: isCollapsed ? "8px" : "8px 12px",
                     color: isActive ? "#FF6B35" : "#555",
                     background: isActive
                       ? "linear-gradient(90deg, #fff3e0, #ffe0b2)"
@@ -256,8 +256,8 @@ export default function Sidebar() {
                         : "transparent",
                     fontWeight: isActive ? 600 : 500,
                     textDecoration: "none",
-                    borderRadius: 8,
-                    fontSize: 13,
+                    borderRadius: 6,
+                    fontSize: 12,
                     boxShadow: isActive
                       ? "0 2px 8px rgba(255, 107, 53, 0.2)"
                       : "none",
@@ -267,7 +267,7 @@ export default function Sidebar() {
                     transition: "all 0.2s ease",
                     cursor: "pointer",
                     justifyContent: isCollapsed ? "center" : "flex-start",
-                    minHeight: 36
+                    minHeight: 32
                   }}
                   title={isCollapsed ? link.label : ""}
                 >
@@ -282,7 +282,7 @@ export default function Sidebar() {
                   {!isCollapsed && (
                     <span style={{
                       whiteSpace: "nowrap",
-                      fontSize: "13px",
+                      fontSize: "12px",
                       fontWeight: isActive ? 600 : 500
                     }}>
                       {link.label}
@@ -294,26 +294,26 @@ export default function Sidebar() {
         </nav>
 
         {/* Compact Bottom Section */}
-        <div style={{ padding: "10px 8px" }}>
+        <div style={{ padding: "8px 6px" }}>
           {/* Change Password Button */}
           <NavLink
             to="/changepassword"
             style={{
               display: "flex",
               alignItems: "center",
-              gap: isCollapsed ? 0 : 12,
-              padding: isCollapsed ? "10px" : "10px 15px",
+              gap: isCollapsed ? 0 : 10,
+              padding: isCollapsed ? "8px" : "8px 12px",
               color: "#666",
               background: "transparent",
               fontWeight: 500,
               textDecoration: "none",
-              borderRadius: 8,
-              fontSize: 13,
+              borderRadius: 6,
+              fontSize: 12,
               transition: "all 0.2s ease",
               cursor: "pointer",
               justifyContent: isCollapsed ? "center" : "flex-start",
-              minHeight: 36,
-              marginBottom: "8px"
+              minHeight: 32,
+              marginBottom: "6px"
             }}
             title={isCollapsed ? "Change Password" : ""}
           >
@@ -323,12 +323,12 @@ export default function Sidebar() {
               display: "flex",
               justifyContent: "center"
             }}>
-              <MdLockReset size={20} />
+              <MdLockReset size={18} />
             </span>
             {!isCollapsed && (
               <span style={{
                 whiteSpace: "nowrap",
-                fontSize: "13px"
+                fontSize: "12px"
               }}>
                 Change Password
               </span>
@@ -341,19 +341,19 @@ export default function Sidebar() {
             style={{
               display: "flex",
               alignItems: "center",
-              gap: isCollapsed ? 0 : 12,
-              padding: isCollapsed ? "10px" : "10px 15px",
+              gap: isCollapsed ? 0 : 10,
+              padding: isCollapsed ? "8px" : "8px 12px",
               width: "100%",
               background: "linear-gradient(135deg, #dc3545, #c82333)",
               color: "#fff",
               border: "none",
-              borderRadius: 8,
-              fontSize: 13,
+              borderRadius: 6,
+              fontSize: 12,
               fontWeight: 600,
               cursor: "pointer",
               transition: "all 0.2s ease",
               justifyContent: isCollapsed ? "center" : "flex-start",
-              minHeight: 36
+              minHeight: 32
             }}
             title={isCollapsed ? "Logout" : ""}
             onMouseOver={(e) => {
@@ -365,7 +365,7 @@ export default function Sidebar() {
               e.target.style.transform = "translateY(0)";
             }}
           >
-            <MdLogout size={20} />
+            <MdLogout size={18} />
             {!isCollapsed && <span>Logout</span>}
           </button>
         </div>
@@ -377,10 +377,10 @@ export default function Sidebar() {
         style={{
           position: "fixed",
           top: "50%",
-          left: isCollapsed ? 50 : 230,
+          left: isCollapsed ? 50 : 200,
           transform: "translateY(-50%)",
-          width: 32,
-          height: 48,
+          width: 28,
+          height: 42,
           borderRadius: "0 8px 8px 0",
           background: "linear-gradient(135deg, #FF6B35, #F7931E)",
           border: "none",
@@ -404,7 +404,7 @@ export default function Sidebar() {
           e.target.style.boxShadow = "2px 0 10px rgba(0,0,0,0.1)";
         }}
       >
-        {isCollapsed ? <MdMenuOpen size={16} /> : <MdMenu size={16} />}
+        {isCollapsed ? <MdMenuOpen size={14} /> : <MdMenu size={14} />}
       </button>
 
       {/* Enhanced Styles */}
@@ -462,7 +462,7 @@ export default function Sidebar() {
           /* Responsive design */
           @media (max-width: 768px) {
             aside {
-              width: 70px !important;
+              width: 60px !important;
             }
             .toggle-button {
               left: 50px !important;

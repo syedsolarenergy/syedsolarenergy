@@ -16,14 +16,12 @@ function FollowUps() {
   const [syncing, setSyncing] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState(null);
   const [activeTab, setActiveTab] = useState('followups'); // 'followups' or 'history'
-  const [showDebugPanel, setShowDebugPanel] = useState(false);
-  const [debugInfo, setDebugInfo] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedQuotation, setSelectedQuotation] = useState(null);
   const [showViewModal, setShowViewModal] = useState(false);
 
-  // --- SUPABASE INTEGRATION ---
+  // --- SUPABASE INTEGRATION ONLY ---
   
   // Fetch quotations from Supabase
   async function fetchQuotationsFromSupabase() {
@@ -145,75 +143,30 @@ function FollowUps() {
     }
   }
 
-  // Load quotations from both sources
+  // Load quotations from Supabase only
   async function loadAllQuotations() {
     try {
       setLoading(true);
       
-      // Load from localStorage first for immediate display
-      const localQuotations = JSON.parse(localStorage.getItem("quotations")) || [];
-      console.log("Loaded from localStorage:", localQuotations.length);
+      const supabaseQuotations = await fetchQuotationsFromSupabase();
+      console.log("Loaded from Supabase:", supabaseQuotations.length);
       
       // Separate active follow-ups and history
-      const activeFollowUps = localQuotations.filter(q => 
+      const activeFollowUps = supabaseQuotations.filter(q => 
         ['pending', 'contacted'].includes((q.followUpStatus || 'pending').toLowerCase())
       );
-      const historyItems = localQuotations.filter(q => 
+      const historyItems = supabaseQuotations.filter(q => 
         ['completed', 'cancelled'].includes((q.followUpStatus || 'pending').toLowerCase())
       );
       
       setQuotations(activeFollowUps);
       setHistoryQuotations(historyItems);
-
-      // Then sync with Supabase
-      try {
-        const supabaseQuotations = await fetchQuotationsFromSupabase();
-        console.log("Loaded from Supabase:", supabaseQuotations.length);
-        
-        // Merge data (prioritize Supabase)
-        const mergedQuotations = [...supabaseQuotations];
-        
-        // Add local-only quotations
-        localQuotations.forEach(localQuote => {
-          const existsInSupabase = supabaseQuotations.find(sq => sq.id === localQuote.id);
-          if (!existsInSupabase) {
-            mergedQuotations.push({ ...localQuote, localOnly: true });
-          }
-        });
-
-        // Separate merged data
-        const mergedActiveFollowUps = mergedQuotations.filter(q => 
-          ['pending', 'contacted'].includes((q.followUpStatus || 'pending').toLowerCase())
-        );
-        const mergedHistoryItems = mergedQuotations.filter(q => 
-          ['completed', 'cancelled'].includes((q.followUpStatus || 'pending').toLowerCase())
-        );
-        
-        setQuotations(mergedActiveFollowUps);
-        setHistoryQuotations(mergedHistoryItems);
-        
-        // Update localStorage with all merged data
-        localStorage.setItem("quotations", JSON.stringify(mergedQuotations));
-        
-        setLastSyncTime(new Date());
-        console.log("✅ Data synchronized successfully");
-        
-      } catch (supabaseError) {
-        console.warn("Supabase sync failed, using local data only:", supabaseError);
-      }
+      setLastSyncTime(new Date());
+      console.log("✅ Data loaded successfully");
       
     } catch (err) {
       console.error("Error loading quotations:", err);
-      // Fallback to localStorage only
-      const localQuotations = JSON.parse(localStorage.getItem("quotations")) || [];
-      const activeFollowUps = localQuotations.filter(q => 
-        ['pending', 'contacted'].includes((q.followUpStatus || 'pending').toLowerCase())
-      );
-      const historyItems = localQuotations.filter(q => 
-        ['completed', 'cancelled'].includes((q.followUpStatus || 'pending').toLowerCase())
-      );
-      setQuotations(activeFollowUps);
-      setHistoryQuotations(historyItems);
+      alert("❌ Error loading quotations from database: " + err.message);
     } finally {
       setLoading(false);
     }
@@ -224,70 +177,43 @@ function FollowUps() {
     loadAllQuotations();
   }, []);
 
-  // Update field with dual storage (localStorage + Supabase)
+  // Update field with validation
   const updateField = async (id, field, value) => {
     try {
-      // Update localStorage immediately (for responsive UI)
-      const allQuotations = JSON.parse(localStorage.getItem("quotations")) || [];
-      const updatedAllQuotations = allQuotations.map(q =>
-        q.id === id ? { ...q, [field]: value } : q
-      );
-      localStorage.setItem("quotations", JSON.stringify(updatedAllQuotations));
-
-      // Update UI state immediately
-      if (['completed', 'cancelled'].includes(value) && field === 'followUpStatus') {
-        // Move from follow-ups to history
-        const updatedFollowUps = quotations.filter(q => q.id !== id);
-        const movedItem = quotations.find(q => q.id === id);
-        if (movedItem) {
-          const updatedItem = { ...movedItem, [field]: value };
-          setHistoryQuotations(prev => [updatedItem, ...prev]);
-        }
-        setQuotations(updatedFollowUps);
-        
-        // Show success message
-        setTimeout(() => {
-          alert(`✅ Quotation marked as ${value} and moved to history!`);
-        }, 100);
-      } else if (['pending', 'contacted'].includes(value) && field === 'followUpStatus') {
-        // Move from history to follow-ups (if applicable)
-        const updatedHistory = historyQuotations.filter(q => q.id !== id);
-        const movedItem = historyQuotations.find(q => q.id === id);
-        if (movedItem) {
-          const updatedItem = { ...movedItem, [field]: value };
-          setQuotations(prev => [updatedItem, ...prev]);
-          setHistoryQuotations(updatedHistory);
-        } else {
-          // Update in follow-ups
-          const updatedFollowUps = quotations.map(q =>
-            q.id === id ? { ...q, [field]: value } : q
-          );
-          setQuotations(updatedFollowUps);
-        }
-      } else {
-        // Regular update
-        const updatedFollowUps = quotations.map(q =>
-          q.id === id ? { ...q, [field]: value } : q
-        );
-        const updatedHistory = historyQuotations.map(q =>
-          q.id === id ? { ...q, [field]: value } : q
-        );
-        setQuotations(updatedFollowUps);
-        setHistoryQuotations(updatedHistory);
+      // Find the quotation to check if it's in history
+      const quotation = [...quotations, ...historyQuotations].find(q => q.id === id);
+      
+      // Prevent status updates for history items
+      if (field === 'followUpStatus' && ['completed', 'cancelled'].includes(quotation?.followUpStatus)) {
+        alert("❌ Cannot change status of completed/cancelled quotations");
+        return;
       }
 
-      // Update Supabase in background
-      try {
-        const success = await updateFollowUpInSupabase(id, field, value);
-        if (success) {
-          setLastSyncTime(new Date());
-          console.log("✅ Field updated successfully in database");
-        } else {
-          console.log("⚠️ Field updated in localStorage only");
+      // Validate remarks requirement for status updates
+      if (field === 'followUpStatus' && value !== 'pending') {
+        const currentRemarks = quotation?.remarks || "";
+        if (!currentRemarks.trim()) {
+          alert("❌ Remarks are required when updating status to " + value + ". Please add remarks first.");
+          return;
         }
-      } catch (supabaseError) {
-        console.warn("Failed to update in Supabase:", supabaseError);
-        // Still show success since localStorage was updated
+      }
+
+      // Update Supabase
+      const success = await updateFollowUpInSupabase(id, field, value);
+      
+      if (success) {
+        // Reload data to reflect changes
+        await loadAllQuotations();
+        
+        // Show success message for status changes
+        if (field === 'followUpStatus' && ['completed', 'cancelled'].includes(value)) {
+          alert(`✅ Quotation marked as ${value} and moved to history!`);
+        }
+        
+        setLastSyncTime(new Date());
+        console.log("✅ Field updated successfully");
+      } else {
+        alert("❌ Failed to update field in database");
       }
       
     } catch (err) {
@@ -331,354 +257,10 @@ function FollowUps() {
     return filtered;
   };
 
-  // View quotation details
+  // View quotation details (limited information)
   const viewQuotation = (quotation) => {
     setSelectedQuotation(quotation);
     setShowViewModal(true);
-  };
-
-  // Enhanced print quotation with logo
-  const printQuotation = (quotationData) => {
-    try {
-      const printWindow = window.open('', '_blank');
-      if (!printWindow) {
-        alert("Please allow pop-ups to print quotations.");
-        return;
-      }
-      
-      const quotationHTML = generateQuotationHTML(quotationData);
-      
-      printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta charset="UTF-8">
-            <title>Quotation - ${quotationData?.customer.name}</title>
-            <style>
-              * { margin: 0; padding: 0; box-sizing: border-box; }
-              body { 
-                font-family: 'Arial', sans-serif; 
-                background: #fff; 
-                color: #333; 
-                line-height: 1.5; 
-                font-size: 14px;
-                margin: 0;
-                padding: 15px;
-              }
-              .container { 
-                max-width: 800px; 
-                margin: 0 auto; 
-              }
-              .header { 
-                display: flex; 
-                align-items: center; 
-                margin-bottom: 20px; 
-                border-bottom: 3px solid #ff9800; 
-                padding-bottom: 15px; 
-              }
-              .logo { 
-                width: 70px; 
-                height: 70px; 
-                margin-right: 15px; 
-                border-radius: 10px; 
-              }
-              .company-info h1 { 
-                color: #ff9800; 
-                font-size: 22px; 
-                font-weight: bold; 
-                margin-bottom: 5px; 
-              }
-              .company-info p { 
-                color: #666; 
-                font-size: 12px; 
-                margin: 2px 0; 
-              }
-              .quotation-title { 
-                background: linear-gradient(135deg, #ff9800, #ff6b35); 
-                color: white; 
-                padding: 12px 15px; 
-                border-radius: 8px; 
-                font-size: 18px; 
-                font-weight: bold; 
-                text-align: center; 
-                margin: 15px 0; 
-              }
-              .customer-section { 
-                background: #fffbe8; 
-                border-radius: 8px; 
-                padding: 15px; 
-                margin: 15px 0; 
-                border-left: 4px solid #ff9800; 
-              }
-              .customer-section h3 { 
-                color: #e65100; 
-                margin-bottom: 8px; 
-                font-size: 16px; 
-              }
-              .details-table { 
-                width: 100%; 
-                border-collapse: collapse; 
-                margin: 15px 0; 
-                background: #fff; 
-              }
-              .details-table th { 
-                background: #ff9800; 
-                color: white; 
-                padding: 10px; 
-                text-align: left; 
-                font-weight: bold; 
-                font-size: 12px;
-              }
-              .details-table td { 
-                padding: 8px 10px; 
-                border-bottom: 1px solid #eee; 
-                font-size: 11px;
-              }
-              .details-table tr:nth-child(even) { 
-                background: #f9f9f9; 
-              }
-              .item-name { 
-                font-weight: bold; 
-                color: #333; 
-              }
-              .price { 
-                font-weight: bold; 
-                color: #e65100; 
-                text-align: right; 
-              }
-              .total-row { 
-                background: #ffe0b2 !important; 
-                font-weight: bold; 
-                font-size: 14px; 
-              }
-              .total-row td { 
-                border-top: 2px solid #ff9800; 
-                color: #e65100; 
-                font-weight: bold;
-                padding: 12px 10px;
-              }
-              .warranty-section { 
-                background: #f0f8f0; 
-                border-left: 4px solid #28a745; 
-                border-radius: 6px; 
-                padding: 15px; 
-                margin: 20px 0; 
-              }
-              .warranty-section h4 { 
-                color: #28a745; 
-                margin-bottom: 10px; 
-                font-size: 14px; 
-              }
-              .warranty-section ul { 
-                list-style: none; 
-                padding-left: 0; 
-              }
-              .warranty-section li { 
-                padding: 3px 0; 
-                font-size: 12px; 
-                position: relative; 
-                padding-left: 15px; 
-              }
-              .warranty-section li:before { 
-                content: "✓"; 
-                color: #28a745; 
-                font-weight: bold; 
-                position: absolute; 
-                left: 0; 
-              }
-              .terms-section { 
-                background: #fff8e1; 
-                border-left: 4px solid #ffc107; 
-                border-radius: 6px; 
-                padding: 15px; 
-                margin: 20px 0; 
-              }
-              .terms-section h4 { 
-                color: #f57c00; 
-                margin-bottom: 10px; 
-                font-size: 14px; 
-              }
-              .terms-section ul { 
-                list-style: disc; 
-                padding-left: 15px; 
-              }
-              .terms-section li { 
-                padding: 2px 0; 
-                font-size: 12px; 
-              }
-              .footer { 
-                text-align: center; 
-                margin-top: 25px; 
-                padding: 15px; 
-                background: #ff9800; 
-                color: white; 
-                border-radius: 8px; 
-                font-weight: bold; 
-                font-size: 12px; 
-              }
-              @media print { 
-                body { margin: 0; padding: 10px; } 
-                .container { max-width: none; }
-              }
-            </style>
-          </head>
-          <body>
-            ${quotationHTML}
-            <script>
-              window.onload = function() {
-                setTimeout(function() {
-                  window.print();
-                  window.onafterprint = function() { window.close(); }
-                }, 500);
-              }
-            </script>
-          </body>
-        </html>
-      `);
-      
-      printWindow.document.close();
-    } catch (error) {
-      console.error("Error printing quotation:", error);
-      alert("❌ Error printing quotation. Please try again.");
-    }
-  };
-
-  const generateQuotationHTML = (quotationData) => {
-    return `
-      <div class="container">
-        <div class="header">
-          <img src="/logo.png" alt="Syed Solar Energy Logo" class="logo" />
-          <div class="company-info">
-            <h1>Syed Solar Energy Pvt Ltd</h1>
-            <p>Office #23, Mustafa Plaza, Ring Road Near Imtiaz Mega Center, Peshawar</p>
-            <p><strong>Email:</strong> sales@syedsolarenergy.com | <strong>WhatsApp:</strong> 03044678929</p>
-          </div>
-        </div>
-
-        <div class="quotation-title">
-          🌞 Solar Energy Quotation #${quotationData.id}
-        </div>
-
-        <p><strong>Date:</strong> ${quotationData.quotationDate || new Date().toLocaleDateString()}</p>
-
-        <div class="customer-section">
-          <h3>Customer Information</h3>
-          <p><strong>Name:</strong> ${quotationData.customer.name}</p>
-          <p><strong>Contact:</strong> ${quotationData.customer.contact}</p>
-          <p><strong>Email:</strong> ${quotationData.customer.email || 'Not provided'}</p>
-          <p><strong>Address:</strong> ${quotationData.customer.address}</p>
-        </div>
-
-        <h3 style="color: #e65100; margin: 15px 0 10px 0;">System Configuration & Pricing</h3>
-        
-        <div>
-          <h3>System Details</h3>
-          <p><strong>Type:</strong> ${quotationData.systemType}</p>
-          <p><strong>Total Amount:</strong> Rs. ${quotationData.total.toLocaleString()}</p>
-          <p><strong>Status:</strong> ${quotationData.followUpStatus || 'pending'}</p>
-          <p><strong>Staff:</strong> ${quotationData.staff || '-'}</p>
-          <p><strong>Location:</strong> ${quotationData.location || '-'}</p>
-        </div>
-        
-        ${quotationData.solarPanel ? `
-        <div>
-          <h3>Equipment Summary</h3>
-          <p><strong>Solar Panels:</strong> ${quotationData.solarPanel.quantity || '-'}x ${quotationData.solarPanel.company || '-'} ${quotationData.solarPanel.watts || '-'}W</p>
-          <p><strong>Inverter:</strong> ${quotationData.inverter?.company || '-'} ${quotationData.inverter?.kw || '-'}kW</p>
-          ${quotationData.batteryQuantity > 0 ? `<p><strong>Battery:</strong> ${quotationData.batteryQuantity}x ${quotationData.batteryModel}</p>` : ''}
-        </div>
-        ` : ''}
-
-        <div class="warranty-section">
-          <h4>🛡️ Warranty & Quality Assurance</h4>
-          <ul>
-            <li>Solar Panels: 12 years product + 25 years performance warranty</li>
-            <li>Inverters: 5 years comprehensive warranty</li>
-            <li>Batteries: As per manufacturer's warranty policy</li>
-            <li>Installation: 3 months after-sales service warranty</li>
-            <li>Site Survey: Rs. 2,000/- for Peshawar city</li>
-          </ul>
-        </div>
-
-        <div class="terms-section">
-          <h4>📋 Terms & Payment Schedule</h4>
-          <ul>
-            <li><strong>Booking:</strong> 5% advance payment</li>
-            <li><strong>Material Arrival:</strong> 70% payment</li>
-            <li><strong>Completion:</strong> 25% final payment</li>
-            <li><strong>Validity:</strong> 3 days only</li>
-            <li><strong>Note:</strong> Prices subject to market changes</li>
-          </ul>
-        </div>
-
-        <div class="footer">
-          Thank you for choosing Syed Solar Energy<br/>
-          📧 sales@syedsolarenergy.com | 📱 03044678929<br/>
-          📍 Office #23, Mustafa Plaza, Ring Road, Peshawar
-        </div>
-      </div>
-    `;
-  };
-
-  // Debug functions
-  const runDatabaseDiagnostics = async () => {
-    try {
-      setDebugInfo("🔍 Running database diagnostics...\n");
-      
-      const localData = JSON.parse(localStorage.getItem("quotations")) || [];
-      setDebugInfo(prev => prev + `💾 localStorage quotations: ${localData.length}\n`);
-      
-      try {
-        const supabaseQuotations = await fetchQuotationsFromSupabase();
-        setDebugInfo(prev => prev + `☁️ Supabase quotations: ${supabaseQuotations.length}\n`);
-        
-        // Check for sync issues
-        const localIds = new Set(localData.map(q => q.id));
-        const supabaseIds = new Set(supabaseQuotations.map(q => q.id));
-        
-        const localOnly = localData.filter(q => !supabaseIds.has(q.id));
-        const supabaseOnly = supabaseQuotations.filter(q => !localIds.has(q.id));
-        
-        setDebugInfo(prev => prev + `📱 Local only: ${localOnly.length}\n`);
-        setDebugInfo(prev => prev + `☁️ Supabase only: ${supabaseOnly.length}\n`);
-        
-        if (localOnly.length > 0) {
-          setDebugInfo(prev => prev + "📱 Local only quotations:\n");
-          localOnly.forEach(q => {
-            setDebugInfo(prev => prev + `  - ${q.id}: ${q.customer.name}\n`);
-          });
-        }
-        
-      } catch (supabaseError) {
-        setDebugInfo(prev => prev + `❌ Supabase connection failed: ${supabaseError.message}\n`);
-      }
-      
-      setDebugInfo(prev => prev + "\n✅ Diagnostics complete\n");
-      
-    } catch (err) {
-      setDebugInfo(prev => prev + `💥 Diagnostic error: ${err.message}\n`);
-    }
-  };
-
-  const testDirectUpdate = async () => {
-    if (quotations.length === 0) {
-      alert("No follow-up quotations available to test");
-      return;
-    }
-    
-    const testQuotation = quotations[0];
-    setDebugInfo(prev => prev + `\n🧪 Testing direct update for: ${testQuotation.customer.name} (ID: ${testQuotation.id})\n`);
-    
-    try {
-      const success = await updateFollowUpInSupabase(
-        testQuotation.id, 
-        "remarks", 
-        `Test update at ${new Date().toLocaleTimeString()}`
-      );
-      setDebugInfo(prev => prev + `${success ? "✅" : "❌"} Test update result: ${success ? "SUCCESS" : "FAILED"}\n`);
-    } catch (err) {
-      setDebugInfo(prev => prev + `❌ Test update failed: ${err.message}\n`);
-    }
   };
 
   // Get current tab data
@@ -727,13 +309,6 @@ function FollowUps() {
               style={styles.syncButton}
             >
               {loading || syncing ? "🔄 Syncing..." : "🔄 Sync Now"}
-            </button>
-            
-            <button
-              onClick={() => setShowDebugPanel(!showDebugPanel)}
-              style={styles.debugButton}
-            >
-              🔧 Debug Panel
             </button>
           </div>
         </div>
@@ -802,37 +377,12 @@ function FollowUps() {
           <div style={styles.infoTitle}>Follow-up Management</div>
           <div style={styles.infoText}>
             {activeTab === 'followups' ? 
-              "Manage pending and contacted quotations. Update status to move items to history." :
-              "View completed and cancelled quotations. Change status back to pending/contacted to reactivate."
+              "Manage pending and contacted quotations. Remarks are required when updating status. Status changes move items to history." :
+              "View completed and cancelled quotations. Status updates are disabled for history items."
             }
           </div>
         </div>
       </div>
-
-      {/* Debug Panel */}
-      {showDebugPanel && (
-        <div style={styles.debugPanel}>
-          <h3 style={styles.debugTitle}>🔧 Debug Panel</h3>
-          
-          <div style={styles.debugActions}>
-            <button onClick={runDatabaseDiagnostics} style={styles.debugActionButton}>
-              🔍 Run Diagnostics
-            </button>
-            <button onClick={testDirectUpdate} disabled={quotations.length === 0 || syncing} style={styles.debugActionButton}>
-              🧪 Test Update
-            </button>
-            <button onClick={() => setDebugInfo("")} style={styles.debugActionButton}>
-              🗑️ Clear Log
-            </button>
-          </div>
-          
-          {debugInfo && (
-            <div style={styles.debugLog}>
-              {debugInfo}
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Loading state */}
       {loading && currentTabData.length === 0 && (
@@ -872,9 +422,6 @@ function FollowUps() {
                   <td style={styles.td}>
                     <div style={styles.customerName}>{q.customer.name}</div>
                     <div style={styles.quotationId}>ID: {q.id}</div>
-                    {q.localOnly && (
-                      <div style={styles.localOnlyBadge}>📱 Local</div>
-                    )}
                   </td>
                   <td style={styles.td}>
                     <div>{q.customer.contact}</div>
@@ -890,17 +437,24 @@ function FollowUps() {
                     <input
                       type="date"
                       value={q.followUpDate || ""}
-                      style={styles.dateInput}
+                      style={{
+                        ...styles.dateInput,
+                        opacity: activeTab === 'history' ? 0.6 : 1
+                      }}
                       onChange={(e) => updateField(q.id, "followUpDate", e.target.value)}
-                      disabled={syncing}
+                      disabled={syncing || activeTab === 'history'}
                     />
                   </td>
                   <td style={styles.td}>
                     <select
                       value={q.followUpStatus || "pending"}
-                      style={styles.statusSelect}
+                      style={{
+                        ...styles.statusSelect,
+                        opacity: activeTab === 'history' ? 0.6 : 1,
+                        cursor: activeTab === 'history' ? 'not-allowed' : 'pointer'
+                      }}
                       onChange={(e) => updateField(q.id, "followUpStatus", e.target.value)}
-                      disabled={syncing}
+                      disabled={syncing || activeTab === 'history'}
                     >
                       <option value="pending">Pending</option>
                       <option value="contacted">Contacted</option>
@@ -911,11 +465,19 @@ function FollowUps() {
                   <td style={styles.td}>
                     <input
                       type="text"
-                      placeholder={q.followUpStatus === 'contacted' ? "Add contact details..." : "Add remarks..."}
+                      placeholder={
+                        activeTab === 'history' ? "View only" :
+                        q.followUpStatus === 'contacted' ? "Required: Add contact details..." : 
+                        "Required for status updates..."
+                      }
                       value={q.remarks || ""}
-                      style={styles.remarksInput}
+                      style={{
+                        ...styles.remarksInput,
+                        opacity: activeTab === 'history' ? 0.6 : 1,
+                        borderColor: activeTab === 'followups' && !q.remarks ? '#ff9800' : '#ffe0b2'
+                      }}
                       onChange={(e) => updateField(q.id, "remarks", e.target.value)}
-                      disabled={syncing}
+                      disabled={syncing || activeTab === 'history'}
                     />
                   </td>
                   <td style={styles.td}>
@@ -925,19 +487,18 @@ function FollowUps() {
                         style={styles.viewButton}
                         title="View Details"
                       >
-                        👁️
-                      </button>
-                      <button
-                        onClick={() => printQuotation(q)}
-                        style={styles.printButton}
-                        title="Print Quotation"
-                      >
-                        🖨️
+                        👁️ View
                       </button>
                       {activeTab === 'followups' && (
                         <>
                           <button
-                            onClick={() => updateField(q.id, "followUpStatus", "completed")}
+                            onClick={() => {
+                              if (!q.remarks?.trim()) {
+                                alert("❌ Please add remarks before marking as completed");
+                                return;
+                              }
+                              updateField(q.id, "followUpStatus", "completed")
+                            }}
                             style={styles.completeButton}
                             title="Mark as Completed"
                             disabled={syncing}
@@ -945,7 +506,13 @@ function FollowUps() {
                             ✅
                           </button>
                           <button
-                            onClick={() => updateField(q.id, "followUpStatus", "cancelled")}
+                            onClick={() => {
+                              if (!q.remarks?.trim()) {
+                                alert("❌ Please add remarks before marking as cancelled");
+                                return;
+                              }
+                              updateField(q.id, "followUpStatus", "cancelled")
+                            }}
                             style={styles.cancelButton}
                             title="Mark as Cancelled"
                             disabled={syncing}
@@ -1004,7 +571,7 @@ function FollowUps() {
         </div>
       )}
 
-      {/* View Modal */}
+      {/* View Modal - Limited Information Only */}
       {showViewModal && selectedQuotation && (
         <div style={styles.modal}>
           <div style={styles.modalContent}>
@@ -1021,37 +588,70 @@ function FollowUps() {
             <div style={styles.modalBody}>
               <div style={styles.detailsGrid}>
                 <div>
-                  <h3>Customer Information</h3>
-                  <p><strong>Name:</strong> {selectedQuotation.customer.name}</p>
-                  <p><strong>Contact:</strong> {selectedQuotation.customer.contact}</p>
-                  <p><strong>Email:</strong> {selectedQuotation.customer.email || '-'}</p>
-                  <p><strong>Address:</strong> {selectedQuotation.customer.address}</p>
+                  <h3 style={styles.sectionTitle}>Customer Information</h3>
+                  <div style={styles.infoRow}>
+                    <strong>Name:</strong> {selectedQuotation.customer.name}
+                  </div>
+                  <div style={styles.infoRow}>
+                    <strong>Contact:</strong> {selectedQuotation.customer.contact}
+                  </div>
+                  <div style={styles.infoRow}>
+                    <strong>Email:</strong> {selectedQuotation.customer.email || 'Not provided'}
+                  </div>
+                  <div style={styles.infoRow}>
+                    <strong>Address:</strong> {selectedQuotation.customer.address}
+                  </div>
                 </div>
                 
                 <div>
-                  <h3>System Details</h3>
-                  <p><strong>Type:</strong> {selectedQuotation.systemType}</p>
-                  <p><strong>Total:</strong> Rs. {selectedQuotation.total.toLocaleString()}</p>
-                  <p><strong>Status:</strong> {selectedQuotation.followUpStatus || 'pending'}</p>
-                  <p><strong>Staff:</strong> {selectedQuotation.staff || '-'}</p>
+                  <h3 style={styles.sectionTitle}>System Information</h3>
+                  <div style={styles.infoRow}>
+                    <strong>Type:</strong> {selectedQuotation.systemType}
+                  </div>
+                  <div style={styles.infoRow}>
+                    <strong>Total Amount:</strong> Rs. {selectedQuotation.total.toLocaleString()}
+                  </div>
+                  <div style={styles.infoRow}>
+                    <strong>Status:</strong> 
+                    <span style={{
+                      marginLeft: '8px',
+                      padding: '4px 8px',
+                      borderRadius: '12px',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      textTransform: 'capitalize',
+                      background: statusColors[selectedQuotation.followUpStatus || 'pending']
+                    }}>
+                      {selectedQuotation.followUpStatus || 'pending'}
+                    </span>
+                  </div>
+                  <div style={styles.infoRow}>
+                    <strong>Created:</strong> {new Date(selectedQuotation.date).toLocaleDateString()}
+                  </div>
                 </div>
               </div>
               
               <div style={styles.followUpDetails}>
-                <h3>Follow-up Information</h3>
-                <p><strong>Follow-up Date:</strong> {selectedQuotation.followUpDate || 'Not set'}</p>
-                <p><strong>Remarks:</strong> {selectedQuotation.remarks || 'No remarks'}</p>
-                <p><strong>Created:</strong> {new Date(selectedQuotation.date).toLocaleDateString()}</p>
+                <h3 style={styles.sectionTitle}>Follow-up Information</h3>
+                <div style={styles.infoRow}>
+                  <strong>Follow-up Date:</strong> {selectedQuotation.followUpDate || 'Not set'}
+                </div>
+                <div style={styles.infoRow}>
+                  <strong>Staff:</strong> {selectedQuotation.staff || 'Not specified'}
+                </div>
+                <div style={styles.infoRow}>
+                  <strong>Location:</strong> {selectedQuotation.location || 'Not specified'}
+                </div>
+                <div style={styles.remarksSection}>
+                  <strong>Remarks:</strong>
+                  <div style={styles.remarksText}>
+                    {selectedQuotation.remarks || 'No remarks added'}
+                  </div>
+                </div>
               </div>
             </div>
             
             <div style={styles.modalActions}>
-              <button 
-                onClick={() => printQuotation(selectedQuotation)}
-                style={styles.printButton}
-              >
-                🖨️ Print
-              </button>
               <button 
                 onClick={() => setShowViewModal(false)}
                 style={styles.closeModalButton}
@@ -1063,10 +663,10 @@ function FollowUps() {
         </div>
       )}
 
-      {/* Sync status footer */}
+      {/* Footer */}
       <div style={styles.footer}>
-        💡 <strong>Follow-up Management:</strong> Active follow-ups are automatically synced with the database. 
-        Completed/cancelled quotations are preserved in history but can be reactivated if needed.
+        💡 <strong>Follow-up Management:</strong> Data is synced with Supabase database only. 
+        Remarks are required for status updates. History items cannot be modified.
         {lastSyncTime && (
           <span> Last synchronized at {lastSyncTime.toLocaleString()}.</span>
         )}
@@ -1136,18 +736,6 @@ const styles = {
   
   syncButton: {
     background: 'linear-gradient(135deg, #4caf50, #45a049)',
-    color: 'white',
-    border: 'none',
-    borderRadius: '8px',
-    padding: '10px 20px',
-    cursor: 'pointer',
-    fontSize: '14px',
-    fontWeight: '600',
-    transition: 'all 0.3s ease',
-  },
-  
-  debugButton: {
-    background: 'linear-gradient(135deg, #2196f3, #1976d2)',
     color: 'white',
     border: 'none',
     borderRadius: '8px',
@@ -1249,50 +837,6 @@ const styles = {
     color: '#0d47a1',
   },
   
-  debugPanel: {
-    background: '#f8f9fa',
-    border: '2px solid #e9ecef',
-    borderRadius: '12px',
-    padding: '20px',
-    marginBottom: '20px',
-  },
-  
-  debugTitle: {
-    color: '#2196f3',
-    margin: '0 0 15px 0',
-  },
-  
-  debugActions: {
-    display: 'flex',
-    gap: '10px',
-    marginBottom: '15px',
-    flexWrap: 'wrap',
-  },
-  
-  debugActionButton: {
-    background: '#6c757d',
-    color: 'white',
-    border: 'none',
-    borderRadius: '6px',
-    padding: '8px 16px',
-    cursor: 'pointer',
-    fontSize: '13px',
-    fontWeight: '600',
-  },
-  
-  debugLog: {
-    background: '#000',
-    color: '#00ff00',
-    padding: '15px',
-    borderRadius: '8px',
-    fontFamily: 'monospace',
-    fontSize: '12px',
-    whiteSpace: 'pre-wrap',
-    maxHeight: '300px',
-    overflowY: 'auto',
-    border: '1px solid #333',
-  },
-  
   loadingContainer: {
     textAlign: 'center',
     padding: '60px 20px',
@@ -1355,17 +899,6 @@ const styles = {
     color: '#666',
   },
   
-  localOnlyBadge: {
-    background: '#ffc107',
-    color: 'white',
-    padding: '2px 6px',
-    borderRadius: '8px',
-    fontSize: '10px',
-    fontWeight: '600',
-    marginTop: '3px',
-    display: 'inline-block',
-  },
-  
   emailText: {
     fontSize: '12px',
     color: '#666',
@@ -1420,25 +953,12 @@ const styles = {
     background: '#2196f3',
     color: 'white',
     border: 'none',
-    borderRadius: '4px',
-    padding: '6px 8px',
+    borderRadius: '6px',
+    padding: '8px 12px',
     cursor: 'pointer',
     fontSize: '12px',
     fontWeight: '600',
-    minWidth: '30px',
-    transition: 'all 0.3s ease',
-  },
-  
-  printButton: {
-    background: '#4caf50',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    padding: '6px 8px',
-    cursor: 'pointer',
-    fontSize: '12px',
-    fontWeight: '600',
-    minWidth: '30px',
+    minWidth: '60px',
     transition: 'all 0.3s ease',
   },
   
@@ -1556,7 +1076,7 @@ const styles = {
   modalContent: {
     background: 'white',
     borderRadius: '15px',
-    maxWidth: '800px',
+    maxWidth: '700px',
     width: '100%',
     maxHeight: '90vh',
     overflow: 'auto',
@@ -1575,7 +1095,7 @@ const styles = {
   },
   
   modalBody: {
-    padding: '20px',
+    padding: '25px',
   },
   
   modalActions: {
@@ -1601,25 +1121,59 @@ const styles = {
     background: '#6c757d',
     color: 'white',
     border: 'none',
-    borderRadius: '6px',
-    padding: '8px 16px',
+    borderRadius: '8px',
+    padding: '10px 20px',
     cursor: 'pointer',
     fontSize: '14px',
     fontWeight: '600',
+    transition: 'all 0.3s ease',
   },
   
   detailsGrid: {
     display: 'grid',
     gridTemplateColumns: '1fr 1fr',
-    gap: '20px',
-    marginBottom: '20px',
+    gap: '25px',
+    marginBottom: '25px',
+  },
+  
+  sectionTitle: {
+    color: '#FF9800',
+    fontSize: '16px',
+    fontWeight: '700',
+    marginBottom: '15px',
+    paddingBottom: '8px',
+    borderBottom: '2px solid #ffe0b2',
+  },
+  
+  infoRow: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    marginBottom: '10px',
+    fontSize: '14px',
+    lineHeight: '1.5',
   },
   
   followUpDetails: {
     background: '#f8f9fa',
-    padding: '15px',
+    padding: '20px',
+    borderRadius: '10px',
+    border: '2px solid #e9ecef',
+  },
+  
+  remarksSection: {
+    marginTop: '15px',
+  },
+  
+  remarksText: {
+    background: '#fff',
+    padding: '12px',
     borderRadius: '8px',
-    border: '1px solid #e9ecef',
+    border: '1px solid #ddd',
+    marginTop: '8px',
+    fontSize: '13px',
+    lineHeight: '1.5',
+    color: '#555',
+    minHeight: '40px',
   },
   
   footer: {
@@ -1684,6 +1238,11 @@ const styles = {
       padding: '8px 5px',
       fontSize: '12px',
     },
+    
+    viewButton: {
+      minWidth: '50px',
+      padding: '6px 8px',
+    },
   },
   
   '@media (max-width: 480px)': {
@@ -1703,6 +1262,14 @@ const styles = {
     
     activeTab: {
       borderRadius: '8px',
+    },
+    
+    modalBody: {
+      padding: '15px',
+    },
+    
+    detailsGrid: {
+      gap: '15px',
     },
   },
 };
