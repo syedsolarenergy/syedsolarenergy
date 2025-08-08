@@ -66,7 +66,6 @@ export default function Inventory() {
         loadInventory(); // Reload data on any change
       })
       .subscribe();
-
     return () => {
       supabase.removeChannel(channel);
     };
@@ -123,7 +122,7 @@ export default function Inventory() {
         selling_price: Number(form.selling_price) || 0,
         updated_at: new Date().toISOString()
       };
-
+      
       let result;
       
       if (!editing) {
@@ -138,11 +137,13 @@ export default function Inventory() {
         result = data[0];
         
       } else {
-        // Update existing item
+        // Update existing item - exclude id from update object
+        const { id, ...updateData } = formData;
+        
         const { data, error } = await supabase
           .from("inventory")
-          .update(formData)
-          .eq("id", form.id)
+          .update(updateData)
+          .eq("id", id)
           .select();
         
         if (error) throw error;
@@ -293,7 +294,7 @@ export default function Inventory() {
       
       return matchesSearch && matchesCategory && matchesLowStock;
     });
-
+    
     // Sort items
     filtered.sort((a, b) => {
       let aVal = a[sortBy] || "";
@@ -310,7 +311,7 @@ export default function Inventory() {
         return aVal < bVal ? 1 : -1;
       }
     });
-
+    
     return filtered;
   };
 
@@ -383,7 +384,7 @@ export default function Inventory() {
           </div>
         </div>
       </div>
-
+      
       {/* Statistics Cards */}
       <div style={styles.statsGrid}>
         <StatCard 
@@ -415,7 +416,7 @@ export default function Inventory() {
           color="#f44336"
         />
       </div>
-
+      
       {/* Filters and Controls */}
       <div style={styles.controlsSection}>
         <div style={styles.filtersContainer}>
@@ -473,7 +474,7 @@ export default function Inventory() {
           Showing {paginatedInventory.length} of {filteredInventory.length} items
         </div>
       </div>
-
+      
       {/* Add/Edit Form Modal */}
       {showForm && (
         <div style={styles.modal}>
@@ -535,7 +536,7 @@ export default function Inventory() {
                     rows="3"
                   />
                 </div>
-
+                
                 {/* Inventory Details */}
                 <div style={styles.formSection}>
                   <h3 style={styles.sectionTitle}>📊 Inventory Details</h3>
@@ -573,7 +574,7 @@ export default function Inventory() {
                     style={styles.input}
                   />
                 </div>
-
+                
                 {/* Pricing */}
                 <div style={styles.formSection}>
                   <h3 style={styles.sectionTitle}>💰 Pricing</h3>
@@ -596,7 +597,7 @@ export default function Inventory() {
                     style={styles.input}
                   />
                 </div>
-
+                
                 {/* Additional Details */}
                 <div style={styles.formSection}>
                   <h3 style={styles.sectionTitle}>📝 Additional Details</h3>
@@ -640,7 +641,7 @@ export default function Inventory() {
                   />
                 </div>
               </div>
-
+              
               <div style={styles.formActions}>
                 <button
                   type="button"
@@ -666,7 +667,7 @@ export default function Inventory() {
           </div>
         </div>
       )}
-
+      
       {/* Inventory Table */}
       <div style={styles.tableContainer}>
         {loading ? (
@@ -806,7 +807,7 @@ export default function Inventory() {
           </table>
         )}
       </div>
-
+      
       {/* Pagination */}
       {totalPages > 1 && (
         <div style={styles.pagination}>
@@ -858,9 +859,8 @@ const styles = {
     padding: '24px',
     background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
     minHeight: '100vh',
-    fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+    fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif'",
   },
-
   header: {
     background: 'linear-gradient(135deg, #FF6B35, #F7931E)',
     borderRadius: '16px',
@@ -869,7 +869,6 @@ const styles = {
     color: 'white',
     boxShadow: '0 10px 40px rgba(255, 107, 53, 0.3)',
   },
-
   headerContent: {
     display: 'flex',
     justifyContent: 'space-between',
@@ -877,32 +876,27 @@ const styles = {
     flexWrap: 'wrap',
     gap: '24px',
   },
-
   title: {
     fontSize: '2.2rem',
     fontWeight: '700',
     margin: '0 0 12px 0',
     textShadow: '0 2px 10px rgba(0,0,0,0.2)',
   },
-
   subtitle: {
     fontSize: '1.1rem',
     opacity: '0.9',
     margin: '0 0 8px 0',
     fontWeight: '400',
   },
-
   syncStatus: {
     fontSize: '0.9rem',
     opacity: '0.8',
   },
-
   headerActions: {
     display: 'flex',
     gap: '16px',
     alignItems: 'center',
   },
-
   refreshButton: {
     background: 'rgba(255, 255, 255, 0.2)',
     color: 'white',
@@ -915,7 +909,6 @@ const styles = {
     transition: 'all 0.3s ease',
     backdropFilter: 'blur(10px)',
   },
-
   addButton: {
     background: 'rgba(255, 255, 255, 0.9)',
     color: '#FF6B35',
@@ -928,14 +921,12 @@ const styles = {
     transition: 'all 0.3s ease',
     boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
   },
-
   statsGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
     gap: '20px',
     marginBottom: '32px',
   },
-
   statCard: {
     background: 'white',
     borderRadius: '12px',
@@ -947,34 +938,28 @@ const styles = {
     borderLeft: '4px solid',
     transition: 'transform 0.2s ease',
   },
-
   statIcon: {
     fontSize: '2rem',
   },
-
   statContent: {
     flex: 1,
   },
-
   statValue: {
     fontSize: '1.8rem',
     fontWeight: '700',
     color: '#2c3e50',
     marginBottom: '4px',
   },
-
   statTitle: {
     fontSize: '1rem',
     fontWeight: '600',
     color: '#6c757d',
     marginBottom: '2px',
   },
-
   statSubtitle: {
     fontSize: '0.85rem',
     color: '#adb5bd',
   },
-
   controlsSection: {
     background: 'white',
     borderRadius: '12px',
@@ -982,7 +967,6 @@ const styles = {
     marginBottom: '24px',
     boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
   },
-
   filtersContainer: {
     display: 'flex',
     gap: '16px',
@@ -990,7 +974,6 @@ const styles = {
     flexWrap: 'wrap',
     marginBottom: '16px',
   },
-
   searchInput: {
     flex: 1,
     minWidth: '250px',
@@ -1000,7 +983,6 @@ const styles = {
     fontSize: '1rem',
     transition: 'border-color 0.3s ease',
   },
-
   filterSelect: {
     padding: '12px 16px',
     border: '2px solid #e9ecef',
@@ -1010,7 +992,6 @@ const styles = {
     cursor: 'pointer',
     minWidth: '150px',
   },
-
   sortButton: {
     padding: '12px 16px',
     border: '2px solid #e9ecef',
@@ -1020,7 +1001,6 @@ const styles = {
     fontSize: '1.2rem',
     width: '48px',
   },
-
   checkboxLabel: {
     display: 'flex',
     alignItems: 'center',
@@ -1029,18 +1009,15 @@ const styles = {
     fontWeight: '500',
     cursor: 'pointer',
   },
-
   checkbox: {
     width: '16px',
     height: '16px',
   },
-
   resultsInfo: {
     color: '#6c757d',
     fontSize: '0.9rem',
     fontWeight: '500',
   },
-
   modal: {
     position: 'fixed',
     top: 0,
@@ -1054,7 +1031,6 @@ const styles = {
     zIndex: 1000,
     padding: '20px',
   },
-
   modalContent: {
     background: 'white',
     borderRadius: '16px',
@@ -1064,7 +1040,6 @@ const styles = {
     overflow: 'auto',
     boxShadow: '0 25px 50px rgba(0, 0, 0, 0.3)',
   },
-
   modalHeader: {
     display: 'flex',
     justifyContent: 'space-between',
@@ -1075,7 +1050,6 @@ const styles = {
     color: 'white',
     borderRadius: '16px 16px 0 0',
   },
-
   closeButton: {
     background: 'transparent',
     border: 'none',
@@ -1086,25 +1060,21 @@ const styles = {
     borderRadius: '8px',
     transition: 'background 0.3s ease',
   },
-
   form: {
     padding: '24px',
   },
-
   formGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
     gap: '24px',
     marginBottom: '32px',
   },
-
   formSection: {
     background: '#f8f9fa',
     padding: '20px',
     borderRadius: '12px',
     border: '1px solid #e9ecef',
   },
-
   sectionTitle: {
     fontSize: '1.1rem',
     fontWeight: '700',
@@ -1113,7 +1083,6 @@ const styles = {
     paddingBottom: '8px',
     borderBottom: '2px solid #FFE0CC',
   },
-
   input: {
     width: '100%',
     padding: '12px 16px',
@@ -1124,7 +1093,6 @@ const styles = {
     transition: 'border-color 0.3s ease',
     boxSizing: 'border-box',
   },
-
   textarea: {
     width: '100%',
     padding: '12px 16px',
@@ -1136,14 +1104,12 @@ const styles = {
     resize: 'vertical',
     boxSizing: 'border-box',
   },
-
   formActions: {
     display: 'flex',
     gap: '16px',
     justifyContent: 'flex-end',
     flexWrap: 'wrap',
   },
-
   cancelButton: {
     background: 'linear-gradient(135deg, #9e9e9e, #757575)',
     color: 'white',
@@ -1155,7 +1121,6 @@ const styles = {
     fontWeight: '600',
     transition: 'all 0.3s ease',
   },
-
   submitButton: {
     background: 'linear-gradient(135deg, #4caf50, #45a049)',
     color: 'white',
@@ -1167,7 +1132,6 @@ const styles = {
     fontWeight: '600',
     transition: 'all 0.3s ease',
   },
-
   tableContainer: {
     background: 'white',
     borderRadius: '12px',
@@ -1175,38 +1139,31 @@ const styles = {
     boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
     marginBottom: '24px',
   },
-
   loadingContainer: {
     textAlign: 'center',
     padding: '80px 20px',
     color: '#666',
   },
-
   loadingSpinner: {
     fontSize: '3rem',
     marginBottom: '20px',
   },
-
   emptyState: {
     textAlign: 'center',
     padding: '80px 20px',
     color: '#666',
   },
-
   emptyIcon: {
     fontSize: '4rem',
     marginBottom: '20px',
   },
-
   table: {
     width: '100%',
     borderCollapse: 'collapse',
   },
-
   tableHeader: {
     background: 'linear-gradient(135deg, #FF6B35, #F7931E)',
   },
-
   th: {
     padding: '20px 16px',
     textAlign: 'left',
@@ -1214,21 +1171,17 @@ const styles = {
     fontWeight: '600',
     fontSize: '1rem',
   },
-
   tableRow: {
     borderBottom: '1px solid #e9ecef',
     transition: 'background-color 0.2s ease',
   },
-
   td: {
     padding: '16px',
     verticalAlign: 'top',
   },
-
   itemDetails: {
     minWidth: '200px',
   },
-
   itemName: {
     fontWeight: '600',
     color: '#2c3e50',
@@ -1238,12 +1191,10 @@ const styles = {
     gap: '8px',
     flexWrap: 'wrap',
   },
-
   itemMeta: {
     fontSize: '0.85rem',
     color: '#6c757d',
   },
-
   lowStockBadge: {
     background: '#fff3cd',
     color: '#856404',
@@ -1253,7 +1204,6 @@ const styles = {
     fontWeight: '600',
     border: '1px solid #ffeaa7',
   },
-
   outOfStockBadge: {
     background: '#f8d7da',
     color: '#721c24',
@@ -1263,7 +1213,6 @@ const styles = {
     fontWeight: '600',
     border: '1px solid #f5c6cb',
   },
-
   categoryBadge: {
     background: '#e3f2fd',
     color: '#1976d2',
@@ -1273,30 +1222,25 @@ const styles = {
     fontWeight: '500',
     display: 'inline-block',
   },
-
   stockInfo: {
     display: 'flex',
     flexDirection: 'column',
     gap: '8px',
   },
-
   stockLevel: {
     display: 'flex',
     alignItems: 'center',
     gap: '8px',
     fontSize: '1.1rem',
   },
-
   reorderPoint: {
     fontSize: '0.8rem',
     color: '#6c757d',
   },
-
   stockActions: {
     display: 'flex',
     gap: '4px',
   },
-
   stockButton: {
     background: '#f8f9fa',
     border: '1px solid #dee2e6',
@@ -1306,29 +1250,24 @@ const styles = {
     fontSize: '0.8rem',
     transition: 'all 0.2s ease',
   },
-
   priceInfo: {
     fontSize: '0.9rem',
     lineHeight: '1.4',
   },
-
   totalValue: {
     fontWeight: '600',
     color: '#FF6B35',
     marginTop: '4px',
   },
-
   supplier: {
     fontSize: '0.8rem',
     color: '#6c757d',
     marginTop: '4px',
   },
-
   actionButtons: {
     display: 'flex',
     gap: '8px',
   },
-
   editButton: {
     background: 'linear-gradient(135deg, #2196f3, #1976d2)',
     color: 'white',
@@ -1340,7 +1279,6 @@ const styles = {
     fontWeight: '600',
     transition: 'all 0.3s ease',
   },
-
   deleteButton: {
     background: 'linear-gradient(135deg, #f44336, #d32f2f)',
     color: 'white',
@@ -1352,7 +1290,6 @@ const styles = {
     fontWeight: '600',
     transition: 'all 0.3s ease',
   },
-
   pagination: {
     display: 'flex',
     justifyContent: 'center',
@@ -1363,7 +1300,6 @@ const styles = {
     borderRadius: '12px',
     boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
   },
-
   pageButton: {
     background: 'linear-gradient(135deg, #FF6B35, #F7931E)',
     color: 'white',
@@ -1375,7 +1311,6 @@ const styles = {
     fontWeight: '600',
     transition: 'all 0.3s ease',
   },
-
   pageInfo: {
     color: '#6c757d',
     fontWeight: '500',
