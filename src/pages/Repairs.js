@@ -139,7 +139,7 @@ export default function Repairs() {
           ...form, 
           date: form.date || new Date().toISOString().slice(0, 10) 
         };
-        delete insertRepair.id;
+        delete insertRepair.id; // Remove id for insert
         
         const { data, error } = await supabase
           .from("repairs")
@@ -152,11 +152,13 @@ export default function Repairs() {
         // Update local state immediately
         setRepairs(prev => [result, ...prev]);
       } else {
-        // Update existing repair
+        // Update existing repair - exclude id from update object
+        const { id, ...updateData } = form;
+        
         const { data, error } = await supabase
           .from("repairs")
-          .update({ ...form })
-          .eq("id", form.id)
+          .update(updateData)
+          .eq("id", id)
           .select();
         
         if (error) throw error;
