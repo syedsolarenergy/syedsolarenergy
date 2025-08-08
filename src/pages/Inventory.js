@@ -1,5 +1,4 @@
-// src/pages/Inventory.js
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "../supabaseClient";
 import logo from "../assets/logo.png";
 
@@ -35,6 +34,13 @@ const categories = [
   "Connectors", "Wires", "Relays", "Batteries", "Breakers", "Controllers", "Others"
 ];
 
+const syncStatusConfig = {
+  checking: { text: "Checking...", color: "bg-blue-100 text-blue-800" },
+  syncing: { text: "🔄 Syncing...", color: "bg-orange-100 text-orange-800" },
+  synced: { text: "✅ Synced", color: "bg-green-100 text-green-800" },
+  offline: { text: "❌ Offline", color: "bg-red-100 text-red-800" }
+};
+
 export default function Inventory() {
   const [inventory, setInventory] = useState([]);
   const [form, setForm] = useState(initialForm);
@@ -43,46 +49,40 @@ export default function Inventory() {
   const [syncStatus, setSyncStatus] = useState("checking");
   const [filter, setFilter] = useState("");
   const [showForm, setShowForm] = useState(false);
-  const [suppliers, setSuppliers] = useState([]);
+  const [error, setError] = useState(null);
 
-  useEffect(() => {
-    loadInventory();
-    // Real-time sync (optional, can remove if not needed)
-    const invChannel = supabase
-      .channel("inventory_changes")
-      .on("postgres_changes", { event: "*", schema: "public", table: "inventory" }, () => loadInventory())
-      .subscribe();
-    return () => { supabase.removeChannel(invChannel); };
-    // eslint-disable-next-line
-  }, []);
-
-  async function loadInventory() {
+  const loadInventory = useCallback(async () => {
     setLoading(true);
     setSyncStatus("checking");
     try {
-      // Try online fetch
-      let { data, error } = await supabase
+      const { data, error } = await supabase
         .from("inventory")
         .select("*")
         .order("created_at", { ascending: false });
       if (error) throw error;
       setInventory(data);
-      localStorage.setItem("inventory", JSON.stringify(data));
       setSyncStatus("synced");
     } catch (err) {
-      // Fallback: LocalStorage
-      const local = JSON.parse(localStorage.getItem("inventory") || "[]");
-      setInventory(local);
+      setError("Failed to load inventory: " + err.message);
       setSyncStatus("offline");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-  }
+  }, []);
 
-  // Add or update item
-  async function handleSubmit(e) {
+  useEffect(() => {
+    loadInventory();
+    const invChannel = supabase
+      .channel("inventory_changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "inventory" }, loadInventory)
+      .subscribe();
+    return () => { supabase.removeChannel(invChannel); };
+  }, [loadInventory]);
+
+  const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
     if (!form.name || !form.category) {
-      alert("Please fill all required fields (name, category)");
+      setError("Please fill all required fields (name, category)");
       return;
     }
     try {
@@ -90,13 +90,11 @@ export default function Inventory() {
       let res;
       if (!editing) {
         const insertData = { ...form, quantity: Number(form.quantity) };
-delete insertData.id; // Remove id field if present
-
-const { data, error } = await supabase
-  .from("inventory")
-  .insert([insertData])
-  .select();
-
+        delete insertData.id;
+        const { data, error } = await supabase
+          .from("inventory")
+          .insert([insertData])
+          .select();
         if (error) throw error;
         res = data[0];
       } else {
@@ -108,463 +106,410 @@ const { data, error } = await supabase
         if (error) throw error;
         res = data[0];
       }
-      let updatedList;
-      if (!editing) updatedList = [res, ...inventory];
-      else updatedList = inventory.map(i => (i.id === res.id ? res : i));
-      setInventory(updatedList);
-      localStorage.setItem("inventory", JSON.stringify(updatedList));
+      setInventory(prev => editing 
+        ? prev.map(i => (i.id === res.id ? res : i))
+        : [res, ...prev]
+      );
       setForm(initialForm);
       setEditing(false);
       setShowForm(false);
       setSyncStatus("synced");
+      setError(null);
     } catch (error) {
+      setError("Error saving: " + error.message);
       setSyncStatus("offline");
-      alert("Error saving: " + error.message);
     }
-  }
+  }, [form, editing]);
 
-  // Delete item
-  async function handleDelete(id) {
+  const handleDelete = useCallback(async (id) => {
     if (!window.confirm("Delete this item?")) return;
     try {
       setSyncStatus("syncing");
       await supabase.from("inventory").delete().eq("id", id);
-      const updated = inventory.filter(i => i.id !== id);
-      setInventory(updated);
-      localStorage.setItem("inventory", JSON.stringify(updated));
+      setInventory(prev => prev.filter(i => i.id !== id));
       setSyncStatus("synced");
+      setError(null);
     } catch (error) {
+      setError("Error deleting: " + error.message);
       setSyncStatus("offline");
-      alert("Error deleting: " + error.message);
     }
-  }
+  }, []);
 
-  // Edit item
-  function handleEdit(item) {
+  const handleEdit = useCallback((item) => {
     setForm({
       ...item,
       expiry_date: item.expiry_date ? item.expiry_date.split("T")[0] : "",
     });
     setEditing(true);
     setShowForm(true);
-  }
+    setError(null);
+  }, []);
 
-  // Manual sync button
-  async function manualSync() {
-    await loadInventory();
-  }
-
-  // Add or subtract stock
-  async function adjustStock(item, change) {
+  const adjustStock = useCallback(async (item, change) => {
     let qty = Number(prompt(`Enter quantity to ${change > 0 ? "add" : "subtract"}:`, 1));
     if (!qty || qty <= 0) return;
     if (change < 0 && qty > item.quantity) {
-      alert("Cannot subtract more than available stock.");
+      setError("Cannot subtract more than available stock.");
       return;
     }
-    const updatedQty = item.quantity + change * qty;
     try {
       setSyncStatus("syncing");
+      const updatedQty = item.quantity + change * qty;
       const { data, error } = await supabase
         .from("inventory")
         .update({ quantity: updatedQty })
         .eq("id", item.id)
         .select();
       if (error) throw error;
-      loadInventory();
+      setInventory(prev => prev.map(i => i.id === item.id ? { ...i, quantity: updatedQty } : i));
       setSyncStatus("synced");
+      setError(null);
     } catch (error) {
-      alert("Error updating quantity: " + error.message);
+      setError("Error updating quantity: " + error.message);
       setSyncStatus("offline");
     }
-  }
+  }, []);
 
-  // Styling
-  const lowStock = i => i.quantity <= (i.reorder_point || i.min_quantity);
+  const filteredInventory = useMemo(() => 
+    inventory.filter(item =>
+      filter === "" ||
+      item.name?.toLowerCase().includes(filter.toLowerCase()) ||
+      item.brand?.toLowerCase().includes(filter.toLowerCase()) ||
+      item.model?.toLowerCase().includes(filter.toLowerCase()) ||
+      item.category?.toLowerCase().includes(filter.toLowerCase())
+    ),
+    [inventory, filter]
+  );
 
-  // Render
+  const lowStock = useCallback((item) => 
+    item.quantity <= (item.reorder_point || item.min_quantity),
+    []
+  );
+
   return (
-    <div style={{ background: "#fff6ec", minHeight: "100vh", padding: 24 }}>
-      {/* Sync status bar */}
-      <div style={{ marginBottom: 14 }}>
-        <span style={{
-          background: syncStatus === "synced" ? "#c8e6c9"
-            : syncStatus === "syncing" ? "#fff3e0"
-              : syncStatus === "offline" ? "#ffcdd2"
-                : "#e3f2fd",
-          color: syncStatus === "synced" ? "#2e7d32"
-            : syncStatus === "syncing" ? "#f57c00"
-              : syncStatus === "offline" ? "#c62828"
-                : "#1976d2",
-          padding: "8px 14px",
-          borderRadius: 7,
-          fontWeight: 700,
-          marginRight: 15,
-        }}>
-          {syncStatus === "synced" ? "✅ Synced"
-            : syncStatus === "syncing" ? "🔄 Syncing..."
-              : syncStatus === "offline" ? "❌ Offline (Local Data)"
-                : "Checking..."}
-        </span>
-        <button onClick={manualSync} style={{
-          padding: "8px 16px", border: "none", borderRadius: 6,
-          background: "linear-gradient(90deg,#ff9800,#ffab00)", color: "#fff",
-          fontWeight: 700, cursor: "pointer"
-        }}>Refresh</button>
-      </div>
+    <div className="min-h-screen bg-amber-50 p-6">
+      <div className="container mx-auto max-w-7xl">
+        {/* Sync Status and Actions */}
+        <div className="flex items-center justify-between mb-6">
+          <span className={`inline-block px-4 py-2 rounded-lg font-semibold ${syncStatusConfig[syncStatus].color}`}>
+            {syncStatusConfig[syncStatus].text}
+          </span>
+          <button 
+            onClick={loadInventory}
+            className="px-4 py-2 bg-gradient-to-r from-amber-500 to-yellow-500 text-white rounded-lg font-semibold hover:from-amber-600 hover:to-yellow-600 transition"
+          >
+            Refresh
+          </button>
+        </div>
 
-      <h1 style={{
-        color: "#ff9800",
-        fontWeight: 900,
-        textShadow: "0 1px 6px #fff3e0",
-        marginBottom: 8
-      }}>
-        <img src={logo} alt="logo" style={{ height: 48, marginRight: 8, verticalAlign: "middle" }} />
-        Inventory Management
-      </h1>
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold text-amber-600 flex items-center">
+            <img src={logo} alt="logo" className="h-12 mr-2" />
+            Inventory Management
+          </h1>
+          <button 
+            onClick={() => { setForm(initialForm); setShowForm(true); setEditing(false); setError(null); }}
+            className="px-6 py-3 bg-gradient-to-r from-amber-500 to-yellow-500 text-white rounded-lg font-bold text-lg hover:from-amber-600 hover:to-yellow-600 transition shadow-lg"
+          >
+            + Add New Item
+          </button>
+        </div>
 
-      <button onClick={() => { setForm(initialForm); setShowForm(true); setEditing(false); }} style={{
-        background: "linear-gradient(90deg,#ff9800,#ffab00)",
-        color: "#fff",
-        padding: "10px 26px",
-        borderRadius: 8,
-        border: "none",
-        fontWeight: 800,
-        fontSize: "1.08rem",
-        marginBottom: 18,
-        boxShadow: "0 2px 11px #ffab0022",
-        cursor: "pointer",
-      }}>+ Add New Item</button>
+        {/* Error Message */}
+        {error && (
+          <div className="mb-4 p-4 bg-red-100 text-red-800 rounded-lg">
+            {error}
+            <button 
+              onClick={() => setError(null)} 
+              className="ml-4 text-sm underline"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
 
-      <input
-        type="text"
-        placeholder="Search inventory by name, model, brand, category..."
-        value={filter}
-        onChange={e => setFilter(e.target.value)}
-        style={{
-          width: 350, maxWidth: "100%", margin: "0 0 16px 12px",
-          borderRadius: 7, padding: 8, border: "2px solid #ffecb3"
-        }}
-      />
+        {/* Search Bar */}
+        <input
+          type="text"
+          placeholder="Search inventory by name, model, brand, category..."
+          value={filter}
+          onChange={e => setFilter(e.target.value)}
+          className="w-full max-w-md mb-6 p-3 border-2 border-amber-200 rounded-lg bg-white focus:outline-none focus:border-amber-400"
+        />
 
-      {/* Add/Edit Form */}
-      {showForm && (
-        <form onSubmit={handleSubmit} style={{
-          background: "#fff",
-          borderRadius: 14,
-          boxShadow: "0 3px 16px #ff980018",
-          padding: "22px 20px",
-          margin: "0 0 22px 0",
-          maxWidth: 700,
-        }}>
-          <div style={{ display: "flex", gap: 15 }}>
-            <div style={{ flex: 1 }}>
-              <input
-                placeholder="Component Name *"
-                value={form.name}
-                onChange={e => setForm({ ...form, name: e.target.value })}
-                required
-                style={inputStyle}
-              />
-              <select
-                value={form.category}
-                onChange={e => setForm({ ...form, category: e.target.value })}
-                required
-                style={inputStyle}
+        {/* Add/Edit Form */}
+        {showForm && (
+          <form 
+            onSubmit={handleSubmit}
+            className="bg-white rounded-xl shadow-lg p-6 mb-6 max-w-3xl mx-auto"
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <input
+                  placeholder="Component Name *"
+                  value={form.name}
+                  onChange={e => setForm({ ...form, name: e.target.value })}
+                  required
+                  className="w-full p-3 border-2 border-amber-200 rounded-lg focus:outline-none focus:border-amber-400 mb-3"
+                />
+                <select
+                  value={form.category}
+                  onChange={e => setForm({ ...form, category: e.target.value })}
+                  required
+                  className="w-full p-3 border-2 border-amber-200 rounded-lg focus:outline-none focus:border-amber-400 mb-3"
+                >
+                  <option value="">Select Category *</option>
+                  {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+                <input
+                  placeholder="Brand"
+                  value={form.brand}
+                  onChange={e => setForm({ ...form, brand: e.target.value })}
+                  className="w-full p-3 border-2 border-amber-200 rounded-lg focus:outline-none focus:border-amber-400 mb-3"
+                />
+                <input
+                  placeholder="Model"
+                  value={form.model}
+                  onChange={e => setForm({ ...form, model: e.target.value })}
+                  className="w-full p-3 border-2 border-amber-200 rounded-lg focus:outline-none focus:border-amber-400 mb-3"
+                />
+                <textarea
+                  placeholder="Description"
+                  value={form.description}
+                  onChange={e => setForm({ ...form, description: e.target.value })}
+                  className="w-full p-3 border-2 border-amber-200 rounded-lg focus:outline-none focus:border-amber-400 mb-3 min-h-[80px]"
+                />
+                <input
+                  placeholder="Location"
+                  value={form.location}
+                  onChange={e => setForm({ ...form, location: e.target.value })}
+                  className="w-full p-3 border-2 border-amber-200 rounded-lg focus:outline-none focus:border-amber-400 mb-3"
+                />
+                <input
+                  placeholder="Supplier"
+                  value={form.supplier}
+                  onChange={e => setForm({ ...form, supplier: e.target.value })}
+                  className="w-full p-3 border-2 border-amber-200 rounded-lg focus:outline-none focus:border-amber-400 mb-3"
+                />
+                <input
+                  placeholder="SKU"
+                  value={form.sku}
+                  onChange={e => setForm({ ...form, sku: e.target.value })}
+                  className="w-full p-3 border-2 border-amber-200 rounded-lg focus:outline-none focus:border-amber-400 mb-3"
+                />
+                <input
+                  placeholder="Barcode"
+                  value={form.barcode}
+                  onChange={e => setForm({ ...form, barcode: e.target.value })}
+                  className="w-full p-3 border-2 border-amber-200 rounded-lg focus:outline-none focus:border-amber-400 mb-3"
+                />
+              </div>
+              <div>
+                <input
+                  type="number"
+                  placeholder="Quantity"
+                  value={form.quantity}
+                  onChange={e => setForm({ ...form, quantity: Number(e.target.value) })}
+                  required
+                  min={0}
+                  className="w-full p-3 border-2 border-amber-200 rounded-lg focus:outline-none focus:border-amber-400 mb-3"
+                />
+                <input
+                  type="number"
+                  placeholder="Min. Quantity (Alert)"
+                  value={form.min_quantity}
+                  onChange={e => setForm({ ...form, min_quantity: Number(e.target.value) })}
+                  min={0}
+                  className="w-full p-3 border-2 border-amber-200 rounded-lg focus:outline-none focus:border-amber-400 mb-3"
+                />
+                <input
+                  type="number"
+                  placeholder="Max. Quantity"
+                  value={form.max_quantity}
+                  onChange={e => setForm({ ...form, max_quantity: Number(e.target.value) })}
+                  min={0}
+                  className="w-full p-3 border-2 border-amber-200 rounded-lg focus:outline-none focus:border-amber-400 mb-3"
+                />
+                <input
+                  type="number"
+                  placeholder="Reorder Point"
+                  value={form.reorder_point}
+                  onChange={e => setForm({ ...form, reorder_point: Number(e.target.value) })}
+                  min={0}
+                  className="w-full p-3 border-2 border-amber-200 rounded-lg focus:outline-none focus:border-amber-400 mb-3"
+                />
+                <input
+                  type="number"
+                  placeholder="Unit Price"
+                  value={form.unit_price}
+                  onChange={e => setForm({ ...form, unit_price: Number(e.target.value) })}
+                  min={0}
+                  className="w-full p-3 border-2 border-amber-200 rounded-lg focus:outline-none focus:border-amber-400 mb-3"
+                />
+                <input
+                  type="number"
+                  placeholder="Selling Price"
+                  value={form.selling_price}
+                  onChange={e => setForm({ ...form, selling_price: Number(e.target.value) })}
+                  min={0}
+                  className="w-full p-3 border-2 border-amber-200 rounded-lg focus:outline-none focus:border-amber-400 mb-3"
+                />
+                <textarea
+                  placeholder="Specifications"
+                  value={form.specifications}
+                  onChange={e => setForm({ ...form, specifications: e.target.value })}
+                  className="w-full p-3 border-2 border-amber-200 rounded-lg focus:outline-none focus:border-amber-400 mb-3 min-h-[80px]"
+                />
+                <input
+                  placeholder="Voltage Rating"
+                  value={form.voltage_rating}
+                  onChange={e => setForm({ ...form, voltage_rating: e.target.value })}
+                  className="w-full p-3 border-2 border-amber-200 rounded-lg focus:outline-none focus:border-amber-400 mb-3"
+                />
+                <input
+                  placeholder="Current Rating"
+                  value={form.current_rating}
+                  onChange={e => setForm({ ...form, current_rating: e.target.value })}
+                  className="w-full p-3 border-2 border-amber-200 rounded-lg focus:outline-none focus:border-amber-400 mb-3"
+                />
+                <input
+                  placeholder="Storage Temp"
+                  value={form.storage_temp}
+                  onChange={e => setForm({ ...form, storage_temp: e.target.value })}
+                  className="w-full p-3 border-2 border-amber-200 rounded-lg focus:outline-none focus:border-amber-400 mb-3"
+                />
+                <input
+                  placeholder="Lead Time"
+                  value={form.lead_time}
+                  onChange={e => setForm({ ...form, lead_time: e.target.value })}
+                  className="w-full p-3 border-2 border-amber-200 rounded-lg focus:outline-none focus:border-amber-400 mb-3"
+                />
+                <input
+                  placeholder="Warranty"
+                  value={form.warranty}
+                  onChange={e => setForm({ ...form, warranty: e.target.value })}
+                  className="w-full p-3 border-2 border-amber-200 rounded-lg focus:outline-none focus:border-amber-400 mb-3"
+                />
+                <input
+                  type="date"
+                  placeholder="Expiry Date"
+                  value={form.expiry_date}
+                  onChange={e => setForm({ ...form, expiry_date: e.target.value })}
+                  className="w-full p-3 border-2 border-amber-200 rounded-lg focus:outline-none focus:border-amber-400 mb-3"
+                />
+                <textarea
+                  placeholder="Notes"
+                  value={form.notes}
+                  onChange={e => setForm({ ...form, notes: e.target.value })}
+                  className="w-full p-3 border-2 border-amber-200 rounded-lg focus:outline-none focus:border-amber-400 mb-3 min-h-[60px]"
+                />
+              </div>
+            </div>
+            <div className="mt-4 flex gap-3">
+              <button 
+                type="submit"
+                className="px-6 py-3 bg-gradient-to-r from-amber-500 to-yellow-500 text-white rounded-lg font-bold text-lg hover:from-amber-600 hover:to-yellow-600 transition shadow-md"
               >
-                <option value="">Select Category *</option>
-                {categories.map(c => <option key={c}>{c}</option>)}
-              </select>
-              <input
-                placeholder="Brand"
-                value={form.brand}
-                onChange={e => setForm({ ...form, brand: e.target.value })}
-                style={inputStyle}
-              />
-              <input
-                placeholder="Model"
-                value={form.model}
-                onChange={e => setForm({ ...form, model: e.target.value })}
-                style={inputStyle}
-              />
-              <textarea
-                placeholder="Description"
-                value={form.description}
-                onChange={e => setForm({ ...form, description: e.target.value })}
-                style={{ ...inputStyle, minHeight: 40 }}
-              />
-              <input
-                placeholder="Location"
-                value={form.location}
-                onChange={e => setForm({ ...form, location: e.target.value })}
-                style={inputStyle}
-              />
-              <input
-                placeholder="Supplier"
-                value={form.supplier}
-                onChange={e => setForm({ ...form, supplier: e.target.value })}
-                style={inputStyle}
-              />
-              <input
-                placeholder="SKU"
-                value={form.sku}
-                onChange={e => setForm({ ...form, sku: e.target.value })}
-                style={inputStyle}
-              />
-              <input
-                placeholder="Barcode"
-                value={form.barcode}
-                onChange={e => setForm({ ...form, barcode: e.target.value })}
-                style={inputStyle}
-              />
+                {editing ? "Update Item" : "Add Item"}
+              </button>
+              <button 
+                type="button"
+                onClick={() => { setForm(initialForm); setShowForm(false); setEditing(false); setError(null); }}
+                className="px-6 py-3 bg-amber-100 text-amber-600 border-2 border-amber-300 rounded-lg font-semibold hover:bg-amber-200 transition"
+              >
+                Cancel
+              </button>
             </div>
-            <div style={{ flex: 1 }}>
-              <input
-                type="number"
-                placeholder="Quantity"
-                value={form.quantity}
-                onChange={e => setForm({ ...form, quantity: Number(e.target.value) })}
-                required
-                min={0}
-                style={inputStyle}
-              />
-              <input
-                type="number"
-                placeholder="Min. Quantity (Alert)"
-                value={form.min_quantity}
-                onChange={e => setForm({ ...form, min_quantity: Number(e.target.value) })}
-                min={0}
-                style={inputStyle}
-              />
-              <input
-                type="number"
-                placeholder="Max. Quantity"
-                value={form.max_quantity}
-                onChange={e => setForm({ ...form, max_quantity: Number(e.target.value) })}
-                min={0}
-                style={inputStyle}
-              />
-              <input
-                type="number"
-                placeholder="Reorder Point"
-                value={form.reorder_point}
-                onChange={e => setForm({ ...form, reorder_point: Number(e.target.value) })}
-                min={0}
-                style={inputStyle}
-              />
-              <input
-                type="number"
-                placeholder="Unit Price"
-                value={form.unit_price}
-                onChange={e => setForm({ ...form, unit_price: Number(e.target.value) })}
-                min={0}
-                style={inputStyle}
-              />
-              <input
-                type="number"
-                placeholder="Selling Price"
-                value={form.selling_price}
-                onChange={e => setForm({ ...form, selling_price: Number(e.target.value) })}
-                min={0}
-                style={inputStyle}
-              />
-              <textarea
-                placeholder="Specifications"
-                value={form.specifications}
-                onChange={e => setForm({ ...form, specifications: e.target.value })}
-                style={{ ...inputStyle, minHeight: 40 }}
-              />
-              <input
-                placeholder="Voltage Rating"
-                value={form.voltage_rating}
-                onChange={e => setForm({ ...form, voltage_rating: e.target.value })}
-                style={inputStyle}
-              />
-              <input
-                placeholder="Current Rating"
-                value={form.current_rating}
-                onChange={e => setForm({ ...form, current_rating: e.target.value })}
-                style={inputStyle}
-              />
-              <input
-                placeholder="Storage Temp"
-                value={form.storage_temp}
-                onChange={e => setForm({ ...form, storage_temp: e.target.value })}
-                style={inputStyle}
-              />
-              <input
-                placeholder="Lead Time"
-                value={form.lead_time}
-                onChange={e => setForm({ ...form, lead_time: e.target.value })}
-                style={inputStyle}
-              />
-              <input
-                placeholder="Warranty"
-                value={form.warranty}
-                onChange={e => setForm({ ...form, warranty: e.target.value })}
-                style={inputStyle}
-              />
-              <input
-                type="date"
-                placeholder="Expiry Date"
-                value={form.expiry_date}
-                onChange={e => setForm({ ...form, expiry_date: e.target.value })}
-                style={inputStyle}
-              />
-              <textarea
-                placeholder="Notes"
-                value={form.notes}
-                onChange={e => setForm({ ...form, notes: e.target.value })}
-                style={{ ...inputStyle, minHeight: 30 }}
-              />
-            </div>
-          </div>
-          <div style={{ marginTop: 12, display: "flex", gap: 10 }}>
-            <button type="submit" style={{
-              background: "linear-gradient(90deg,#ff9800,#ffab00)",
-              color: "#fff",
-              border: "none",
-              borderRadius: 8,
-              padding: "12px 30px",
-              fontWeight: 900,
-              fontSize: "1.1rem",
-              cursor: "pointer",
-              boxShadow: "0 4px 12px rgba(255, 152, 0, 0.3)"
-            }}>{editing ? "Update Item" : "Add Item"}</button>
-            <button type="button" onClick={() => { setForm(initialForm); setShowForm(false); setEditing(false); }} style={{
-              background: "#fff3e0",
-              color: "#ff9800",
-              border: "2px solid #ffcc02",
-              borderRadius: 8,
-              padding: "12px 20px",
-              fontWeight: 700,
-              fontSize: "1rem",
-              cursor: "pointer",
-            }}>Cancel</button>
-          </div>
-        </form>
-      )}
+          </form>
+        )}
 
-      {/* Inventory Table */}
-      <div style={{ overflowX: "auto" }}>
-        <table style={{
-          width: "100%",
-          margin: "14px 0 0 0",
-          borderCollapse: "collapse",
-          boxShadow: "0 4px 20px rgba(255, 152, 0, 0.15)",
-          background: "#fff",
-          borderRadius: "12px",
-          overflow: "hidden",
-          minWidth: "1100px"
-        }}>
-          <thead>
-            <tr>
-              <th style={thMain}>Name</th>
-              <th style={thMain}>Category</th>
-              <th style={thMain}>Brand</th>
-              <th style={thMain}>Model</th>
-              <th style={thMain}>Quantity</th>
-              <th style={thMain}>Unit Price</th>
-              <th style={thMain}>Selling Price</th>
-              <th style={thMain}>Location</th>
-              <th style={thMain}>Supplier</th>
-              <th style={thMain}>SKU</th>
-              <th style={thMain}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan={12} style={{ textAlign: "center", padding: 50 }}>Loading inventory...</td>
+        {/* Inventory Table */}
+        <div className="overflow-x-auto">
+          <table className="w-full bg-white rounded-xl shadow-lg border-collapse min-w-[1100px]">
+            <thead>
+              <tr className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white">
+                <th className="p-4 font-bold text-left">Name</th>
+                <th className="p-4 font-bold text-left">Category</th>
+                <th className="p-4 font-bold text-left">Brand</th>
+                <th className="p-4 font-bold text-left">Model</th>
+                <th className="p-4 font-bold text-left">Quantity</th>
+                <th className="p-4 font-bold text-left">Unit Price</th>
+                <th className="p-4 font-bold text-left">Selling Price</th>
+                <th className="p-4 font-bold text-left">Location</th>
+                <th className="p-4 font-bold text-left">Supplier</th>
+                <th className="p-4 font-bold text-left">SKU</th>
+                <th className="p-4 font-bold text-left">Actions</th>
               </tr>
-            ) : (
-              inventory.filter(item =>
-                filter === "" ||
-                item.name?.toLowerCase().includes(filter.toLowerCase()) ||
-                item.brand?.toLowerCase().includes(filter.toLowerCase()) ||
-                item.model?.toLowerCase().includes(filter.toLowerCase()) ||
-                item.category?.toLowerCase().includes(filter.toLowerCase())
-              ).map(item => (
-                <tr key={item.id}>
-                  <td style={tdMain}>{item.name}
-                    {lowStock(item) && (
-                      <span style={{ color: "#b71c1c", fontWeight: 800, marginLeft: 8 }}>⚠️ Low!</span>
-                    )}
-                  </td>
-                  <td style={tdMain}>{item.category}</td>
-                  <td style={tdMain}>{item.brand}</td>
-                  <td style={tdMain}>{item.model}</td>
-                  <td style={{ ...tdMain, fontWeight: item.quantity <= item.reorder_point ? "bold" : 600, color: item.quantity <= item.reorder_point ? "#c62828" : "#1976d2" }}>
-                    {item.quantity}
-                    <button style={{ marginLeft: 6 }} onClick={() => adjustStock(item, -1)} title="Subtract stock">➖</button>
-                    <button style={{ marginLeft: 2 }} onClick={() => adjustStock(item, 1)} title="Add stock">➕</button>
-                  </td>
-                  <td style={tdMain}>Rs. {Number(item.unit_price).toLocaleString()}</td>
-                  <td style={tdMain}>Rs. {Number(item.selling_price).toLocaleString()}</td>
-                  <td style={tdMain}>{item.location}</td>
-                  <td style={tdMain}>{item.supplier}</td>
-                  <td style={tdMain}>{item.sku}</td>
-                  <td style={tdMain}>
-                    <button onClick={() => handleEdit(item)} style={actionBtn}>✏️ Edit</button>
-                    <button onClick={() => handleDelete(item.id)} style={actionBtnRed}>🗑️ Delete</button>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan={12} className="text-center p-12 text-gray-600">
+                    Loading inventory...
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : filteredInventory.length === 0 ? (
+                <tr>
+                  <td colSpan={12} className="text-center p-12 text-gray-600">
+                    No items found
+                  </td>
+                </tr>
+              ) : (
+                filteredInventory.map(item => (
+                  <tr key={item.id} className="border-b-2 border-amber-100 hover:bg-amber-50">
+                    <td className="p-4">
+                      {item.name}
+                      {lowStock(item) && (
+                        <span className="ml-2 text-red-700 font-bold">⚠️ Low!</span>
+                      )}
+                    </td>
+                    <td className="p-4">{item.category}</td>
+                    <td className="p-4">{item.brand}</td>
+                    <td className="p-4">{item.model}</td>
+                    <td className={`p-4 font-semibold ${item.quantity <= item.reorder_point ? 'text-red-600' : 'text-blue-600'}`}>
+                      {item.quantity}
+                      <button 
+                        onClick={() => adjustStock(item, -1)} 
+                        title="Subtract stock"
+                        className="ml-2 px-2 py-1 bg-red-100 text-red-600 rounded hover:bg-red-200"
+                      >
+                        ➖
+                      </button>
+                      <button 
+                        onClick={() => adjustStock(item, 1)} 
+                        title="Add stock"
+                        className="ml-1 px-2 py-1 bg-green-100 text-green-600 rounded hover:bg-green-200"
+                      >
+                        ➕
+                      </button>
+                    </td>
+                    <td className="p-4">Rs. {Number(item.unit_price).toLocaleString()}</td>
+                    <td className="p-4">Rs. {Number(item.selling_price).toLocaleString()}</td>
+                    <td className="p-4">{item.location}</td>
+                    <td className="p-4">{item.supplier}</td>
+                    <td className="p-4">{item.sku}</td>
+                    <td className="p-4">
+                      <button 
+                        onClick={() => handleEdit(item)}
+                        className="px-3 py-1 bg-teal-100 text-teal-800 border border-teal-300 rounded mr-2 hover:bg-teal-200 transition"
+                      >
+                        ✏️ Edit
+                      </button>
+                      <button 
+                        onClick={() => handleDelete(item.id)}
+                        className="px-3 py-1 bg-red-100 text-red-800 border border-red-300 rounded hover:bg-red-200 transition"
+                      >
+                        🗑️ Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
 }
-
-const inputStyle = {
-  display: "block",
-  width: "100%",
-  padding: "10px 12px",
-  borderRadius: 8,
-  border: "2px solid #ffecb3",
-  margin: "0 0 12px 0",
-  fontSize: "1rem",
-  fontWeight: 500,
-  backgroundColor: "#fffef7",
-  transition: "border-color 0.3s ease",
-  outline: "none"
-};
-
-const thMain = {
-  background: "linear-gradient(135deg, #ff9800, #ffb74d)",
-  color: "#fff",
-  fontWeight: 800,
-  padding: "14px 12px",
-  border: "none",
-  fontSize: 15,
-  textShadow: "0 1px 3px rgba(0,0,0,0.3)"
-};
-
-const tdMain = {
-  padding: "12px 12px",
-  borderBottom: "2px solid #ffe0b2",
-  background: "#fffef7",
-  fontSize: 14,
-  fontWeight: 500
-};
-
-const actionBtn = {
-  background: "linear-gradient(135deg, #e0f2f1, #b2dfdb)",
-  color: "#00695c",
-  border: "1px solid #4db6ac",
-  borderRadius: 6,
-  padding: "6px 10px",
-  fontWeight: 600,
-  fontSize: 12,
-  cursor: "pointer",
-  marginRight: 5,
-  transition: "all 0.3s ease"
-};
-const actionBtnRed = {
-  ...actionBtn,
-  background: "linear-gradient(135deg, #ffcdd2, #ef9a9a)",
-  color: "#c62828",
-  border: "1px solid #e57373"
-};

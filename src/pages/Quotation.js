@@ -358,7 +358,7 @@ export default function Quotation() {
         quotation_date: new Date().toISOString(),
         created_at: new Date().toISOString(),
         quotation_id: quotationData.quotation_id,
-        follow_up_status: 'Pending' // Match the default value in the table
+        follow_up_status: 'Pending'
       };
       
       const { data, error } = await supabase
@@ -377,7 +377,7 @@ export default function Quotation() {
     }
   }
   
-  // Enhanced PDF generation with better layout
+  // Enhanced PDF generation with professional VIP styling
   const pdfRef = useRef();
   async function handleGenerateQuotation(e) {
     e.preventDefault();
@@ -467,70 +467,113 @@ export default function Quotation() {
       try {
         // Generate enhanced PDF
         const input = pdfRef.current;
+        
+        // A4 dimensions in mm
+        const a4Width = 210;
+        const a4Height = 297;
+        const margin = 15; // mm
+        
+        // Calculate content dimensions
+        const contentWidth = a4Width - (margin * 2);
+        const contentHeight = a4Height - (margin * 2);
+        
+        // Capture the content with proper dimensions
         const canvas = await html2canvas(input, {
-          scale: 3,
+          scale: 2,
           useCORS: true,
           allowTaint: true,
           backgroundColor: '#ffffff',
           logging: false,
           width: input.scrollWidth,
-          height: input.scrollHeight
+          height: input.scrollHeight,
+          scrollX: 0,
+          scrollY: 0
         });
         
-        // Professional PDF, max 2 pages
+        // Get image data
         const imgData = canvas.toDataURL("image/png", 1.0);
-        const pdf = new jsPDF("p", "pt", "a4");
+        const pdf = new jsPDF({
+          orientation: 'portrait',
+          unit: 'mm',
+          format: 'a4'
+        });
         
-        // 20pt margins
-        const M = 20;
-        const pageW = pdf.internal.pageSize.getWidth();
-        const pageH = pdf.internal.pageSize.getHeight();
-        const usableW = pageW - M*2;
-        const usableH = pageH - M*2;
+        // Calculate scaling to fit content within A4 page
+        const imgWidth = canvas.width;
+        const imgHeight = canvas.height;
         
-        // actual image size
-        const props = pdf.getImageProperties(imgData);
-        let imgW = usableW;
-        let imgH = (props.height * usableW) / props.width;
+        // Convert mm to points (1mm = 2.83465 points)
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const pdfMargin = margin * 2.83465;
         
-        // if it would take >2 pages, shrink to fit exactly 2
-        const pagesNeeded = Math.ceil(imgH / usableH);
-        if (pagesNeeded > 2) {
-          const scale = (usableH * 2) / imgH;
-          imgW *= scale;
-          imgH *= scale;
-        }
+        // Calculate scale to fit width
+        const scale = (pdfWidth - (pdfMargin * 2)) / imgWidth;
+        const scaledWidth = imgWidth * scale;
+        const scaledHeight = imgHeight * scale;
         
-        // draw in up to two pages
-        let yOffset = M;
-        let remaining = imgH;
-        let pageNum = 1;
-        while (remaining > 0) {
-          // position the correct slice
-          const sliceY = M - (imgH - remaining);
-          pdf.addImage(imgData, "PNG", M, sliceY, imgW, imgH);
-          
-          // page number in 8pt font
-          pdf.setFontSize(8);
-          pdf.text(
-            `Page ${pageNum}`,
-            pageW / 2,
-            pageH - M / 2,
-            { align: "center" }
+        // If content fits on one page
+        if (scaledHeight <= pdfHeight - (pdfMargin * 2)) {
+          pdf.addImage(
+            imgData,
+            'PNG',
+            pdfMargin,
+            pdfMargin,
+            scaledWidth,
+            scaledHeight
           );
+        } else {
+          // For multi-page content
+          let remainingHeight = scaledHeight;
+          let sourceY = 0;
+          let pageNum = 1;
           
-          remaining -= usableH;
-          if (remaining > 0 && pageNum < 2) {
-            pdf.addPage();
+          while (remainingHeight > 0) {
+            if (pageNum > 1) {
+              pdf.addPage();
+            }
+            
+            const pageHeight = Math.min(remainingHeight, pdfHeight - (pdfMargin * 2));
+            const sourceHeight = (pageHeight / scaledHeight) * imgHeight;
+            
+            pdf.addImage(
+              imgData,
+              'PNG',
+              pdfMargin,
+              pdfMargin,
+              scaledWidth,
+              pageHeight,
+              undefined,
+              'FAST',
+              0,
+              sourceY,
+              imgWidth,
+              sourceHeight
+            );
+            
+            sourceY += sourceHeight;
+            remainingHeight -= pageHeight;
             pageNum++;
-          } else {
-            break; // Don't create more than 2 pages
           }
         }
         
-        // save with customer name and date
+        // Add page numbers
+        const pageCount = pdf.internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+          pdf.setPage(i);
+          pdf.setFontSize(8);
+          pdf.setTextColor(100);
+          pdf.text(
+            `Page ${i} of ${pageCount}`,
+            pdfWidth / 2,
+            pdfHeight - 10,
+            { align: 'center' }
+          );
+        }
+        
+        // Save the PDF
         pdf.save(
-          `SSE-Quotation-${quotationId}-${customer.name || "Customer"}-${new Date()
+          `VIP-Quotation-${quotationId}-${customer.name || "Customer"}-${new Date()
             .toISOString()
             .split("T")[0]}.pdf`
         );
@@ -541,7 +584,7 @@ export default function Quotation() {
                        (parseInt(panelWatt) * panelQty / 1000).toFixed(1);
         
         const msg = encodeURIComponent(
-          `🌞 Assalam-o-Alaikum! I have generated my solar quotation from Syed Solar Energy website.
+          `🌞 Assalam-o-Alaikum! I have generated my VIP solar quotation from Syed Solar Energy website.
 📋 Quotation Details:
 • Name: ${customer.name}
 • Contact: ${customer.contact}
@@ -577,7 +620,7 @@ JazakAllah! 🤝`
     }, 1000);
   }
   
-  // Enhanced preview rendering
+  // Enhanced preview rendering with professional VIP styling
   function renderQuotationPreview() {
     let data, sysType, sysLabel, previewConfig;
     if (systemType === "auto") {
@@ -597,11 +640,11 @@ JazakAllah! 🤝`
       }
     } else if (systemType === "daytime") {
       sysType = "daytime";
-      sysLabel = "Daytime (Grid-Tied)";
+      sysLabel = "Daytime";
       data = getDaytimeCost(panelQty, standType, inverterQty);
     } else if (systemType === "hybrid") {
       sysType = "hybrid";
-      sysLabel = "Hybrid (Solar + Battery)";
+      sysLabel = "Hybrid";
       data = getHybridCost(panelQty, standType, batteryQty, selectedBattery, inverterQty);
     }
     if (!data) return null;
@@ -639,51 +682,84 @@ JazakAllah! 🤝`
     return (
       <div ref={pdfRef} style={{
         background: "#fff", 
-        width: "100%", 
-        maxWidth: "595px", 
-        minHeight: "842px", 
-        padding: "20px", 
+        width: "210mm", // A4 width
+        minHeight: "297mm", // A4 height
+        padding: "15mm", // A4 margins
         margin: "0 auto",
-        borderRadius: 12, 
-        boxShadow: "0 10px 40px rgba(255, 152, 0, 0.15)", 
+        boxSizing: "border-box",
         fontFamily: "'Segoe UI', 'Roboto', sans-serif", 
         position: "relative",
         fontSize: 14,
-        overflow: "hidden"
+        overflow: "hidden",
+        border: "2px solid #FFD700", // Gold border for VIP look
+        boxShadow: "0 0 20px rgba(255, 215, 0, 0.3)" // Gold glow effect
       }}>
+        {/* VIP Watermark */}
+        <div style={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%) rotate(-45deg)",
+          fontSize: "80px",
+          fontWeight: "bold",
+          color: "rgba(255, 215, 0, 0.1)", // Very light gold
+          zIndex: 0,
+          pointerEvents: "none",
+          whiteSpace: "nowrap"
+        }}>
+          VIP
+        </div>
+        
         {/* Enhanced Header */}
         <div style={{ 
-          background: "linear-gradient(135deg, #ff9800 0%, #ff6600 100%)",
-          margin: "-20px -20px 20px -20px",
-          padding: "20px",
-          borderRadius: "12px 12px 0 0",
-          color: "white"
+          background: "linear-gradient(135deg, #1a237e 0%, #3949ab 100%)", // Professional dark blue
+          margin: "-15mm -15mm 15mm -15mm",
+          padding: "15mm",
+          color: "white",
+          position: "relative",
+          zIndex: 1
         }}>
-          <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", alignItems: "center" }}>
-            <div style={{ marginBottom: isMobile ? 15 : 0 }}>
+          {/* VIP Badge */}
+          <div style={{
+            position: "absolute",
+            top: "10mm",
+            right: "10mm",
+            background: "linear-gradient(135deg, #FFD700, #FFA000)",
+            color: "#1a237e",
+            padding: "3mm 6mm",
+            borderRadius: "20mm",
+            fontWeight: "bold",
+            fontSize: "12mm",
+            boxShadow: "0 4px 10px rgba(0,0,0,0.3)"
+          }}>
+            VIP
+          </div>
+          
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div>
               <img 
                 src={logo} 
                 alt="Syed Solar Logo" 
-                style={{ width: 80, height: "auto", marginBottom: 10 }} 
+                style={{ width: 60, height: "auto", marginBottom: 10 }} 
               />
               <div style={{ fontSize: 24, fontWeight: 900 }}>
                 Syed Solar Energy Pvt Ltd
               </div>
-              <div style={{ fontSize: 13, opacity: 0.9, marginTop: 5 }}>
+              <div style={{ fontSize: 11, opacity: 0.9, marginTop: 5 }}>
                 📍 Office #23, Mustafa Plaza, Ring Road, Peshawar
               </div>
             </div>
-            <div style={{ textAlign: isMobile ? "center" : "right" }}>
-              <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>
-                {sysLabel} Quotation
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 5 }}>
+                VIP Quotation
               </div>
-              <div style={{ fontSize: 13, opacity: 0.9 }}>
+              <div style={{ fontSize: 11, opacity: 0.9 }}>
                 📅 Date: {new Date().toLocaleDateString()}
               </div>
-              <div style={{ fontSize: 16, fontWeight: 700, marginTop: 8 }}>
+              <div style={{ fontSize: 16, fontWeight: 700, marginTop: 5 }}>
                 ⚡ {totalKW}kW Solar System
               </div>
-              <div style={{ fontSize: 13, opacity: 0.9, marginTop: 5 }}>
+              <div style={{ fontSize: 11, opacity: 0.9, marginTop: 3 }}>
                 📋 Quotation ID: #{quotationId}
               </div>
             </div>
@@ -692,16 +768,18 @@ JazakAllah! 🤝`
         
         {/* Customer Details */}
         <div style={{
-          background: "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)",
+          background: "linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%)",
           borderRadius: 8,
-          padding: "15px",
-          marginBottom: 20,
-          border: "1px solid #dee2e6"
+          padding: "10mm",
+          marginBottom: "10mm",
+          border: "1px solid #bdbdbd",
+          position: "relative",
+          zIndex: 1
         }}>
-          <div style={{ fontSize: 16, fontWeight: 700, color: "#495057", marginBottom: 10 }}>
+          <div style={{ fontSize: 16, fontWeight: 700, color: "#1a237e", marginBottom: 10 }}>
             👤 Customer Information
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "10px", fontSize: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8mm", fontSize: 12 }}>
             <div><b>Name:</b> {customer.name || "-"}</div>
             <div><b>Contact:</b> {customer.contact || "-"}</div>
             <div><b>Email:</b> {customer.email || "-"}</div>
@@ -711,20 +789,22 @@ JazakAllah! 🤝`
         
         {/* Enhanced System Configuration */}
         <div style={{
-          background: "linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%)",
+          background: "linear-gradient(135deg, #fff8e1 0%, #ffe0b2 100%)",
           borderRadius: 10,
-          padding: "15px",
-          marginBottom: 20,
-          border: "2px solid #ffcc02"
+          padding: "10mm",
+          marginBottom: "10mm",
+          border: "2px solid #ff9800",
+          position: "relative",
+          zIndex: 1
         }}>
-          <div style={{ fontSize: 16, fontWeight: 700, color: "#ef6c00", marginBottom: 15 }}>
+          <div style={{ fontSize: 16, fontWeight: 700, color: "#ef6c00", marginBottom: 10 }}>
             ⚙️ System Configuration & Pricing
           </div>
           
           <table style={{
             width: "100%",
             borderCollapse: "collapse",
-            fontSize: 14,
+            fontSize: 12,
             backgroundColor: "white",
             borderRadius: 8,
             overflow: "hidden",
@@ -732,41 +812,41 @@ JazakAllah! 🤝`
           }}>
             <thead>
               <tr style={{ backgroundColor: "#ff9800", color: "white" }}>
-                <th style={{ padding: "12px", textAlign: "left" }}>Item</th>
-                <th style={{ padding: "12px", textAlign: "left" }}>Details</th>
-                <th style={{ padding: "12px", textAlign: "right" }}>Amount (PKR)</th>
+                <th style={{ padding: "6mm", textAlign: "left" }}>Item</th>
+                <th style={{ padding: "6mm", textAlign: "left" }}>Details</th>
+                <th style={{ padding: "6mm", textAlign: "right" }}>Amount (PKR)</th>
               </tr>
             </thead>
             <tbody>
               {/* Solar Panels */}
               <tr style={{ backgroundColor: "#f8f9fa" }}>
-                <td style={{ padding: "12px", fontWeight: 600, borderBottom: "1px solid #dee2e6" }}>
+                <td style={{ padding: "6mm", fontWeight: 600, borderBottom: "1px solid #dee2e6" }}>
                   🔆 Solar Panels
                 </td>
-                <td style={{ padding: "12px", borderBottom: "1px solid #dee2e6" }}>
+                <td style={{ padding: "6mm", borderBottom: "1px solid #dee2e6" }}>
                   <div><b>{(systemType === "auto" ? previewConfig.panelQty : panelQty)} panels</b> × {systemType === "auto" ? previewConfig.panelBrand : panelBrand} ({systemType === "auto" ? previewConfig.panelWatt : panelWatt}W)</div>
-                  <div style={{ fontSize: 13, color: "#666", marginTop: 4 }}>
+                  <div style={{ fontSize: 11, color: "#666", marginTop: 4 }}>
                     Unit Price: Rs. {(data.panelUnitPrice || 0).toLocaleString()} | 
                     Price/Watt: Rs. {(panelPrices[systemType === "auto" ? previewConfig.panelBrand : panelBrand]?.[systemType === "auto" ? previewConfig.panelWatt : panelWatt]?.pricePerWatt || 0)}
                   </div>
                 </td>
-                <td style={{ padding: "12px", borderBottom: "1px solid #dee2e6", textAlign: "right", fontWeight: 700, color: "#ff6600" }}>
+                <td style={{ padding: "6mm", borderBottom: "1px solid #dee2e6", textAlign: "right", fontWeight: 700, color: "#ff6600" }}>
                   Rs. {data.panelTotal.toLocaleString()}
                 </td>
               </tr>
               
               {/* Inverter */}
               <tr style={{ backgroundColor: "white" }}>
-                <td style={{ padding: "12px", fontWeight: 600, borderBottom: "1px solid #dee2e6" }}>
+                <td style={{ padding: "6mm", fontWeight: 600, borderBottom: "1px solid #dee2e6" }}>
                   🔄 {sysType === "daytime" ? "Daytime" : "Hybrid"} Inverter
                 </td>
-                <td style={{ padding: "12px", borderBottom: "1px solid #dee2e6" }}>
+                <td style={{ padding: "6mm", borderBottom: "1px solid #dee2e6" }}>
                   <div><b>{systemType === "auto" ? previewConfig.inverterQty : inverterQty} unit(s)</b> × {data.selectedInverter?.brand || ""} {data.selectedInverter?.capacity || ""}</div>
-                  <div style={{ fontSize: 13, color: "#666", marginTop: 4 }}>
+                  <div style={{ fontSize: 11, color: "#666", marginTop: 4 }}>
                     Model: {data.selectedInverter?.model || ""} | Unit Price: Rs. {(data.selectedInverter?.price || 0).toLocaleString()}
                   </div>
                 </td>
-                <td style={{ padding: "12px", borderBottom: "1px solid #dee2e6", textAlign: "right", fontWeight: 700, color: "#ff6600" }}>
+                <td style={{ padding: "6mm", borderBottom: "1px solid #dee2e6", textAlign: "right", fontWeight: 700, color: "#ff6600" }}>
                   Rs. {data.invTotal.toLocaleString()}
                 </td>
               </tr>
@@ -774,20 +854,20 @@ JazakAllah! 🤝`
               {/* Battery (for hybrid only) */}
               {sysType === "hybrid" && (
                 <tr style={{ backgroundColor: "#f8f9fa" }}>
-                  <td style={{ padding: "12px", fontWeight: 600, borderBottom: "1px solid #dee2e6" }}>
+                  <td style={{ padding: "6mm", fontWeight: 600, borderBottom: "1px solid #dee2e6" }}>
                     🔋 Batteries
                   </td>
-                  <td style={{ padding: "12px", borderBottom: "1px solid #dee2e6" }}>
+                  <td style={{ padding: "6mm", borderBottom: "1px solid #dee2e6" }}>
                     <div><b>{(systemType === "auto" ? previewConfig.batteryQty : batteryQty)} units</b> × {data.selectedBattery?.model || ""}</div>
-                    <div style={{ fontSize: 13, color: "#666", marginTop: 4 }}>
+                    <div style={{ fontSize: 11, color: "#666", marginTop: 4 }}>
                       Type: {data.selectedBattery?.type || ""} | Voltage: {data.selectedBattery?.voltage || ""} | 
                       Capacity: {data.selectedBattery?.capacity || ""}
                     </div>
-                    <div style={{ fontSize: 13, color: "#666" }}>
+                    <div style={{ fontSize: 11, color: "#666" }}>
                       Unit Price: Rs. {(data.battUnit || 0).toLocaleString()}
                     </div>
                   </td>
-                  <td style={{ padding: "12px", borderBottom: "1px solid #dee2e6", textAlign: "right", fontWeight: 700, color: "#ff6600" }}>
+                  <td style={{ padding: "6mm", borderBottom: "1px solid #dee2e6", textAlign: "right", fontWeight: 700, color: "#ff6600" }}>
                     Rs. {(data.battTotal || 0).toLocaleString()}
                   </td>
                 </tr>
@@ -795,44 +875,44 @@ JazakAllah! 🤝`
               
               {/* Mounting Structure */}
               <tr style={{ backgroundColor: "white" }}>
-                <td style={{ padding: "12px", fontWeight: 600, borderBottom: "1px solid #dee2e6" }}>
+                <td style={{ padding: "6mm", fontWeight: 600, borderBottom: "1px solid #dee2e6" }}>
                   🔧 Mounting Structure
                 </td>
-                <td style={{ padding: "12px", borderBottom: "1px solid #dee2e6" }}>
+                <td style={{ padding: "6mm", borderBottom: "1px solid #dee2e6" }}>
                   <div><b>{data.standQty} sets</b> × {systemType === "auto" ? previewConfig.standType : standType}</div>
-                  <div style={{ fontSize: 13, color: "#666", marginTop: 4 }}>
+                  <div style={{ fontSize: 11, color: "#666", marginTop: 4 }}>
                     Unit Price: Rs. {(data.standUnit || 0).toLocaleString()}
                   </div>
                 </td>
-                <td style={{ padding: "12px", borderBottom: "1px solid #dee2e6", textAlign: "right", fontWeight: 700, color: "#ff6600" }}>
+                <td style={{ padding: "6mm", borderBottom: "1px solid #dee2e6", textAlign: "right", fontWeight: 700, color: "#ff6600" }}>
                   Rs. {data.standTotal.toLocaleString()}
                 </td>
               </tr>
               
               {/* Service Charges */}
               <tr style={{ backgroundColor: "#f8f9fa" }}>
-                <td style={{ padding: "12px", fontWeight: 600, borderBottom: "1px solid #dee2e6" }}>
+                <td style={{ padding: "6mm", fontWeight: 600, borderBottom: "1px solid #dee2e6" }}>
                   🛠️ Installation & Services
                 </td>
-                <td style={{ padding: "12px", borderBottom: "1px solid #dee2e6" }}>
-                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit, minmax(150px, 1fr))", gap: "8px", fontSize: 13 }}>
+                <td style={{ padding: "6mm", borderBottom: "1px solid #dee2e6" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "8px", fontSize: 11 }}>
                     <div>Safety Materials: Rs. {data.safety.toLocaleString()}</div>
                     <div>Transportation: Rs. {data.transport.toLocaleString()}</div>
                     <div>Installation: Rs. {data.install.toLocaleString()}</div>
                     {greenMeter && <div style={{ color: "#28a745", fontWeight: 600 }}>Net Metering: Rs. {greenMeterCharges.toLocaleString()}</div>}
                   </div>
                 </td>
-                <td style={{ padding: "12px", borderBottom: "1px solid #dee2e6", textAlign: "right", fontWeight: 700, color: "#ff6600" }}>
+                <td style={{ padding: "6mm", borderBottom: "1px solid #dee2e6", textAlign: "right", fontWeight: 700, color: "#ff6600" }}>
                   Rs. {(data.safety + data.transport + data.install + (greenMeter ? greenMeterCharges : 0)).toLocaleString()}
                 </td>
               </tr>
               
               {/* Grand Total */}
-              <tr style={{ backgroundColor: "#ff6600", color: "white" }}>
-                <td colSpan={2} style={{ padding: "15px", fontWeight: 700, fontSize: 16, textAlign: "right" }}>
-                  💰 TOTAL AMOUNT:
+              <tr style={{ background: "linear-gradient(135deg, #1a237e 0%, #3949ab 100%)", color: "white" }}>
+                <td colSpan={2} style={{ padding: "8mm", fontWeight: 700, fontSize: 16, textAlign: "right" }}>
+                  💰 VIP TOTAL AMOUNT:
                 </td>
-                <td style={{ padding: "15px", fontSize: 20, fontWeight: 900, textAlign: "right" }}>
+                <td style={{ padding: "8mm", fontSize: 20, fontWeight: 900, textAlign: "right" }}>
                   Rs. {data.grandTotal.toLocaleString()}
                 </td>
               </tr>
@@ -846,15 +926,17 @@ JazakAllah! 🤝`
         {/* Enhanced Terms & Payment */}
         <div style={{
           background: "linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%)",
-          padding: "15px",
+          padding: "10mm",
           borderRadius: 10,
-          marginBottom: 20,
-          border: "2px solid #4caf50"
+          marginBottom: "10mm",
+          border: "2px solid #4caf50",
+          position: "relative",
+          zIndex: 1
         }}>
-          <div style={{ fontSize: 16, fontWeight: 700, color: "#2e7d32", marginBottom: 12 }}>
+          <div style={{ fontSize: 16, fontWeight: 700, color: "#2e7d32", marginBottom: 10 }}>
             💳 Payment Terms & Conditions
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "15px", fontSize: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10mm", fontSize: 12 }}>
             <div>
               <b>Payment Schedule:</b>
               <ul style={{ marginTop: 8, paddingLeft: 20, lineHeight: 1.6 }}>
@@ -877,19 +959,21 @@ JazakAllah! 🤝`
         
         {/* Enhanced Footer */}
         <div style={{
-          background: "linear-gradient(135deg, #1976d2 0%, #1565c0 100%)",
+          background: "linear-gradient(135deg, #1a237e 0%, #3949ab 100%)",
           color: "#fff",
           fontWeight: 600,
           textAlign: "center",
-          padding: "15px",
+          padding: "10mm",
           borderRadius: 8,
-          fontSize: 13,
-          marginTop: 15
+          fontSize: 12,
+          marginTop: 10,
+          position: "relative",
+          zIndex: 1
         }}>
           <div style={{ marginBottom: 8 }}>
             📧 sales@syedsolarenergy.com | 📱 WhatsApp: 0304-4678929/0307-5596695
           </div>
-          <div style={{ fontSize: 12, opacity: 0.9 }}>
+          <div style={{ fontSize: 11, opacity: 0.9 }}>
             🏢 Office #23, Mustafa Plaza, Ring Road, Peshawar | 🌐 www.syedsolarenergy.com
           </div>
         </div>
@@ -1385,7 +1469,7 @@ JazakAllah! 🤝`
                 opacity: saving || !systemType || !customer.name ? 0.6 : 1
               }}
             >
-              {saving ? "🔄 Generating..." : "📄 Generate PDF & Send WhatsApp"}
+              {saving ? "🔄 Generating..." : "📄 Generate VIP PDF & Send WhatsApp"}
             </button>
             
             {saving && (
@@ -1435,10 +1519,10 @@ JazakAllah! 🤝`
               }}>
                 <div style={{ 
                   width: "100%", 
-                  maxWidth: "595px",
-                  transform: isMobile ? "scale(0.8)" : "scale(1)",
+                  maxWidth: "210mm", // A4 width
+                  transform: isMobile ? "scale(0.6)" : "scale(0.8)",
                   transformOrigin: "top center",
-                  margin: isMobile ? "-20px 0" : "0"
+                  margin: isMobile ? "-40px 0" : "-30px 0"
                 }}>
                   {renderQuotationPreview()}
                 </div>
