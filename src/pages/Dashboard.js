@@ -1,23 +1,35 @@
-import React, { useContext, useState, useEffect } from "react";
-import { useGlobalContext } from "../context/GlobalContext";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { supabase } from "../supabaseClient";
 
 function Dashboard() {
-  const { inventoryList, staffList } = useGlobalContext();
+  // State for all data
   const [projects, setProjects] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [repairs, setRepairs] = useState([]);
   const [quotations, setQuotations] = useState([]);
   const [inventory, setInventory] = useState([]);
+  const [staffList, setStaffList] = useState([]);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [loading, setLoading] = useState(true);
   const [syncStatus, setSyncStatus] = useState("loading");
 
-  // Load all data from Supabase
+  // Import supabase dynamically to handle potential import errors
+  const [supabase, setSupabase] = useState(null);
+
   useEffect(() => {
-    loadAllData();
-    
+    // Try to import supabase
+    const initializeSupabase = async () => {
+      try {
+        const { supabase: supabaseClient } = await import("../supabaseClient");
+        setSupabase(supabaseClient);
+      } catch (error) {
+        console.warn("Supabase not available, falling back to localStorage:", error);
+        loadFromLocalStorage();
+      }
+    };
+
+    initializeSupabase();
+
     // Update time every minute
     const timer = setInterval(() => {
       setCurrentTime(new Date());
@@ -26,58 +38,96 @@ function Dashboard() {
     return () => clearInterval(timer);
   }, []);
 
+  useEffect(() => {
+    if (supabase) {
+      loadAllData();
+    }
+  }, [supabase]);
+
+  const loadFromLocalStorage = () => {
+    try {
+      // Fallback to localStorage if Supabase fails
+      const storedProjects = JSON.parse(localStorage.getItem("projects") || "[]");
+      const storedExpenses = JSON.parse(localStorage.getItem("expenses") || "[]");
+      const storedRepairs = JSON.parse(localStorage.getItem("repairs") || "[]");
+      const storedQuotations = JSON.parse(localStorage.getItem("quotations") || "[]");
+      const storedInventory = JSON.parse(localStorage.getItem("inventory") || "[]");
+      const storedStaff = JSON.parse(localStorage.getItem("staffList") || "[]");
+
+      setProjects(storedProjects);
+      setExpenses(storedExpenses);
+      setRepairs(storedRepairs);
+      setQuotations(storedQuotations);
+      setInventory(storedInventory);
+      setStaffList(storedStaff);
+      setSyncStatus("offline");
+      setLoading(false);
+    } catch (error) {
+      console.error("Error loading from localStorage:", error);
+      // Set empty arrays as fallback
+      setProjects([]);
+      setExpenses([]);
+      setRepairs([]);
+      setQuotations([]);
+      setInventory([]);
+      setStaffList([]);
+      setSyncStatus("error");
+      setLoading(false);
+    }
+  };
+
   const loadAllData = async () => {
+    if (!supabase) {
+      loadFromLocalStorage();
+      return;
+    }
+
     setLoading(true);
     setSyncStatus("loading");
     
     try {
-      // Load data from multiple Supabase tables concurrently
-      const [
-        quotationsResult,
-        expensesResult,
-        repairsResult,
-        inventoryResult
-      ] = await Promise.allSettled([
+      // Load data from multiple Supabase tables
+      const loadPromises = [
         supabase.from("quotations").select("*").order("created_at", { ascending: false }),
         supabase.from("expenses").select("*").order("created_at", { ascending: false }),
         supabase.from("repairs").select("*").order("created_at", { ascending: false }),
         supabase.from("inventory").select("*").order("created_at", { ascending: false })
-      ]);
+      ];
+
+      const results = await Promise.allSettled(loadPromises);
 
       // Process quotations
-      if (quotationsResult.status === "fulfilled" && quotationsResult.value.data) {
-        const quotationsData = quotationsResult.value.data.map(item => ({
+      if (results[0].status === "fulfilled" && results[0].value.data) {
+        const quotationsData = results[0].value.data.map(item => ({
           id: item.quotation_id || item.id.toString(),
           customer: {
-            name: item.customer_name,
-            contact: item.customer_contact,
-            email: item.customer_email,
-            address: item.customer_address
+            name: item.customer_name || 'Unknown Customer',
+            contact: item.customer_contact || '',
+            email: item.customer_email || '',
+            address: item.customer_address || ''
           },
-          systemType: item.system_type,
-          total: item.total_amount,
+          systemType: item.system_type || 'Unknown System',
+          total: item.total_amount || 0,
           date: item.created_at,
           followUpDate: item.follow_up_date || "",
           followUpStatus: (item.follow_up_status || 'pending').toLowerCase(),
           remarks: item.remarks || "",
           quotationDate: item.quotation_date,
-          staff: item.staff_name,
-          location: item.location,
-          dealAmount: item.total_amount,
+          staff: item.staff_name || '',
+          location: item.location || '',
+          dealAmount: item.total_amount || 0,
           capacity: calculateSystemCapacity(item),
-          // Equipment details
           solarPanel: {
-            company: item.panel_brand,
-            watts: item.panel_watt,
-            quantity: item.panel_quantity
+            company: item.panel_brand || '',
+            watts: item.panel_watt || 0,
+            quantity: item.panel_quantity || 0
           },
           inverter: {
-            company: item.inverter_type,
+            company: item.inverter_type || '',
             kw: item.inverter_size?.replace('kW','') || '0'
           },
-          batteryModel: item.battery_model,
+          batteryModel: item.battery_model || '',
           batteryQuantity: item.battery_quantity || 0,
-          // Add progress based on follow-up status
           progress: item.follow_up_status === 'completed' ? 
             [{ stage: "Final payment received", date: item.updated_at }] : []
         }));
@@ -94,29 +144,29 @@ function Dashboard() {
       }
 
       // Process expenses
-      if (expensesResult.status === "fulfilled" && expensesResult.value.data) {
-        const expensesData = expensesResult.value.data.map(item => ({
+      if (results[1].status === "fulfilled" && results[1].value.data) {
+        const expensesData = results[1].value.data.map(item => ({
           id: item.id,
           amount: item.amount || 0,
-          type: item.type,
-          name: item.name,
-          source: item.source,
+          type: item.type || 'debit',
+          name: item.name || '',
+          source: item.source || '',
           date: item.date,
-          details: item.details,
-          remarks: item.remarks
+          details: item.details || '',
+          remarks: item.remarks || ''
         }));
         setExpenses(expensesData);
       }
 
       // Process repairs
-      if (repairsResult.status === "fulfilled" && repairsResult.value.data) {
-        const repairsData = repairsResult.value.data.map(item => ({
+      if (results[2].status === "fulfilled" && results[2].value.data) {
+        const repairsData = results[2].value.data.map(item => ({
           id: item.id,
-          customer_name: item.customer_name,
-          inverter_brand: item.inverter_brand,
-          inverter_model: item.inverter_model,
-          status: item.status,
-          priority: item.priority,
+          customer_name: item.customer_name || 'Unknown Customer',
+          inverter_brand: item.inverter_brand || '',
+          inverter_model: item.inverter_model || '',
+          status: item.status || 'Pending',
+          priority: item.priority || 'Normal',
           date: item.date,
           repair_charges: item.repair_charges || 0,
           parts_used: item.parts_used || []
@@ -125,38 +175,48 @@ function Dashboard() {
       }
 
       // Process inventory
-      if (inventoryResult.status === "fulfilled" && inventoryResult.value.data) {
-        const inventoryData = inventoryResult.value.data.map(item => ({
+      if (results[3].status === "fulfilled" && results[3].value.data) {
+        const inventoryData = results[3].value.data.map(item => ({
           id: item.id,
-          name: item.name,
+          name: item.name || 'Unknown Item',
           quantity: item.quantity || 0,
           unit_price: item.unit_price || 0,
           min_quantity: item.min_quantity || 0,
           reorder_point: item.reorder_point || 0,
-          category: item.category,
-          brand: item.brand
+          category: item.category || '',
+          brand: item.brand || ''
         }));
         setInventory(inventoryData);
       }
 
+      // Load staff from localStorage as fallback
+      const storedStaff = JSON.parse(localStorage.getItem("staffList") || "[]");
+      setStaffList(storedStaff);
+
       setSyncStatus("synced");
     } catch (error) {
-      console.error("Error loading data:", error);
+      console.error("Error loading data from Supabase:", error);
       setSyncStatus("error");
+      // Fallback to localStorage
+      loadFromLocalStorage();
     } finally {
       setLoading(false);
     }
   };
 
-  // Helper function to calculate system capacity from quotation data
+  // Helper function to calculate system capacity
   const calculateSystemCapacity = (item) => {
-    if (item.panel_watt && item.panel_quantity) {
-      return (parseInt(item.panel_watt) * parseInt(item.panel_quantity)) / 1000; // Convert to kW
+    try {
+      if (item.panel_watt && item.panel_quantity) {
+        return (parseInt(item.panel_watt) * parseInt(item.panel_quantity)) / 1000;
+      }
+      return 0;
+    } catch (error) {
+      return 0;
     }
-    return 0;
   };
 
-  // Calculate comprehensive metrics
+  // Calculate comprehensive metrics with safe fallbacks
   const totalProjects = projects.length;
   const completedProjects = projects.filter(p => 
     Array.isArray(p.progress) && 
@@ -166,12 +226,10 @@ function Dashboard() {
     ['pending', 'contacted'].includes(q.followUpStatus)
   ).length;
   
-  // Calculate expenses (only debit/expense type)
   const totalExpenses = expenses
     .filter(exp => exp.type === 'debit')
     .reduce((total, exp) => total + (parseFloat(exp.amount) || 0), 0);
   
-  // Calculate revenue (credit type expenses + completed project values)
   const creditRevenue = expenses
     .filter(exp => exp.type === 'credit')
     .reduce((total, exp) => total + (parseFloat(exp.amount) || 0), 0);
@@ -190,21 +248,16 @@ function Dashboard() {
   const pendingRepairs = repairs.filter(r => 
     r.status === "Pending Approval" || r.status === "In Progress"
   ).length;
-  const completedRepairs = repairs.filter(r => 
-    r.status === "Completed" || r.status === "Delivered"
-  ).length;
   
   const pendingQuotations = quotations.filter(q => 
     ['pending', 'contacted'].includes(q.followUpStatus)
   ).length;
 
-  // Calculate total capacity installed
   const totalCapacityInstalled = projects
     .filter(p => Array.isArray(p.progress) && 
       p.progress.some(prog => prog.stage === "Final payment received"))
     .reduce((total, p) => total + (parseFloat(p.capacity) || 0), 0);
 
-  // Get recent activities
   const recentProjects = projects
     .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))
     .slice(0, 4);
@@ -214,20 +267,24 @@ function Dashboard() {
     .sort((a, b) => new Date(a.followUpDate) - new Date(b.followUpDate))
     .slice(0, 4);
 
-  // Recent repairs that need attention
-  const urgentRepairs = repairs
-    .filter(r => r.priority === "High" || r.priority === "Urgent" || r.status === "Pending Approval")
-    .slice(0, 3);
-
-  // Low stock items
   const lowStockItems = inventory.filter(item => 
     parseFloat(item.quantity) <= (parseFloat(item.reorder_point) || parseFloat(item.min_quantity) || 5)
   );
 
-  const currentUser = JSON.parse(localStorage.getItem("loggedInUser") || "{}");
+  const currentUser = (() => {
+    try {
+      return JSON.parse(localStorage.getItem("loggedInUser") || "{}");
+    } catch {
+      return {};
+    }
+  })();
 
   const manualSync = async () => {
-    await loadAllData();
+    if (supabase) {
+      await loadAllData();
+    } else {
+      loadFromLocalStorage();
+    }
   };
 
   return (
@@ -245,10 +302,12 @@ function Dashboard() {
             <div style={styles.syncStatus}>
               <span style={{
                 color: syncStatus === "synced" ? "#4caf50" : 
-                       syncStatus === "loading" ? "#ff9800" : "#f44336"
+                       syncStatus === "loading" ? "#ff9800" : 
+                       syncStatus === "offline" ? "#2196f3" : "#f44336"
               }}>
-                {syncStatus === "synced" ? "✅ Data synced" : 
-                 syncStatus === "loading" ? "🔄 Loading..." : "❌ Sync error"}
+                {syncStatus === "synced" ? "✅ Data synced with database" : 
+                 syncStatus === "loading" ? "🔄 Loading data..." : 
+                 syncStatus === "offline" ? "📱 Using local data" : "❌ Sync error - using fallback"}
               </span>
             </div>
           </div>
@@ -281,7 +340,7 @@ function Dashboard() {
         </div>
       </div>
 
-      {loading ? (
+      {loading && syncStatus === "loading" ? (
         <div style={styles.loadingContainer}>
           <div style={styles.loadingSpinner}>⏳</div>
           <h3>Loading Dashboard Data...</h3>
@@ -367,7 +426,7 @@ function Dashboard() {
                 icon="🛠️" 
                 title="Repair Services" 
                 value={`${pendingRepairs} Pending`}
-                subtitle={`${completedRepairs} completed repairs`}
+                subtitle={`${repairs.length} total repairs`}
                 color="linear-gradient(135deg, #fd7e14, #e55a00)"
                 link="/repairs"
                 alert={pendingRepairs > 0}
@@ -524,15 +583,12 @@ function Dashboard() {
                   </div>
                 )}
                 
-                {urgentRepairs.length > 0 && (
+                {pendingRepairs > 0 && (
                   <div style={styles.alertItem}>
                     <span style={styles.alertIcon}>🛠️</span>
                     <div>
-                      <strong>{urgentRepairs.length} urgent repairs</strong>
-                      <div style={styles.alertSubtext}>
-                        {urgentRepairs.slice(0, 2).map(repair => repair.customer_name).join(', ')}
-                        {urgentRepairs.length > 2 && ` and ${urgentRepairs.length - 2} more`}
-                      </div>
+                      <strong>{pendingRepairs} pending repairs</strong>
+                      <div style={styles.alertSubtext}>Customer service required</div>
                     </div>
                     <Link to="/repairs" style={styles.alertLink}>View</Link>
                   </div>
@@ -549,7 +605,7 @@ function Dashboard() {
                   </div>
                 )}
                 
-                {lowStockItems.length === 0 && urgentRepairs.length === 0 && pendingQuotations === 0 && (
+                {lowStockItems.length === 0 && pendingRepairs === 0 && pendingQuotations === 0 && (
                   <div style={styles.noAlerts}>
                     <span style={styles.alertIcon}>✅</span>
                     All systems running smoothly!
