@@ -51,7 +51,7 @@ const QuotationSoftware = () => {
   const batteryTypes = ['Lithium', 'Tubular'];
   const lithium24 = ['Itell 2.56kWh', 'Ziewnic 2.56kWh'];
   const lithium48 = ['Itell 5.12kWh', 'Ziewnic 5.12kWh', 'Solax 5.12kWh', '1On 5.12kWh'];
-  const tubular = ['Osaka 1800Ah', 'Osaka 2500Ah', 'Phoenix 1800Ah','Phoenix 2500Ah','Hawk 1800Ah','Hawk 2500Ah'];
+  const tubular = ['Osaka 1800Ah', 'Osaka 2500Ah', 'Phoenix 1800Ah', 'Phoenix 2500Ah', 'Hawk 1800Ah', 'Hawk 2500Ah'];
   const panelCompanies = ['JA Solar', 'Canadian', 'Longi'];
   const panelWatts = ['585', '590', '605'];
   const standTypes = ['16 Gauge', '18 Gauge', 'Girder', 'L2 (2 panels)'];
@@ -77,135 +77,107 @@ const QuotationSoftware = () => {
   }, [isEngineerIncluded]);
 
   // Database operations
-async function saveQuotationToSupabase(quotationData) {
-  const VALID_STATUSES = ['pending','contacted','completed','cancelled'];
-const status = VALID_STATUSES.includes(quotationData.followUpStatus)
-  ? quotationData.followUpStatus
-  : 'pending';
+  async function saveQuotationToSupabase(quotationData) {
+    const VALID_STATUSES = ['pending', 'contacted', 'completed', 'cancelled'];
+    const status = VALID_STATUSES.includes(quotationData.followUpStatus) ? quotationData.followUpStatus : 'pending';
 
-const supabaseData = {
-  // …  
-  follow_up_status: status,
-  // …
-};
+    const supabaseData = {
+      quotation_date: quotationData.quotationDate,
+      quotation_id: quotationData.id,
+      customer_name: quotationData.customer.name,
+      customer_contact: quotationData.customer.contact,
+      customer_email: quotationData.customer.email || null,
+      customer_address: quotationData.customer.address,
+      system_type: quotationData.systemType,
+      panel_brand: quotationData.solarPanel.company,
+      panel_watt: quotationData.solarPanel.watts,
+      panel_quantity: quotationData.solarPanel.quantity,
+      panel_total: getPanelPrice(quotationData.solarPanel) * quotationData.solarPanel.quantity,
+      inverter_type: quotationData.inverter.company || null,
+      inverter_size: `${quotationData.inverter.kw}kW` || null,
+      inverter_total: quotationData.inverter.quantity * quotationData.inverter.pricePerUnit,
+      battery_type: quotationData.batteryType || null,
+      battery_model: quotationData.batteryModel || null,
+      battery_quantity: quotationData.batteryQuantity || 0,
+      battery_total: quotationData.batteryQuantity * quotationData.batteryPrice,
+      stand_type: quotationData.stand.type,
+      stand_quantity: getStandQty(quotationData.solarPanel.quantity, quotationData.stand.type),
+      stand_total: getStandQty(quotationData.solarPanel.quantity, quotationData.stand.type) * quotationData.stand.pricePerStand,
+      safety_charges: quotationData.safety,
+      transport_charges: quotationData.transport,
+      installation_charges: quotationData.labour,
+      engineer_charges: quotationData.isEngineerIncluded ? quotationData.engineer : 0,
+      green_meter: quotationData.isGreenmeterIncluded,
+      green_meter_charges: quotationData.isGreenmeterIncluded ? quotationData.greenmeter : 0,
+      total_amount: quotationData.total,
+      staff_name: quotationData.staff || null,
+      location: quotationData.location || null,
+      follow_up_status: status,
+      created_at: new Date().toISOString()
+    };
 
     try {
-      // only the columns that actually exist in your "quotations" table
-      const supabaseData = {
-        quotation_date: quotationData.quotationDate,
-
-        quotation_id:    quotationData.id,
-        customer_name:   quotationData.customer.name,
-        customer_contact:quotationData.customer.contact,
-        customer_email:  quotationData.customer.email || null,
-        customer_address:quotationData.customer.address,
-        system_type:     quotationData.systemType,
-        panel_brand:     quotationData.solarPanel.company,
-        panel_watt:      quotationData.solarPanel.watts,
-        panel_quantity:  quotationData.solarPanel.quantity,
-        panel_total:     getPanelPrice(quotationData.solarPanel) * quotationData.solarPanel.quantity,
-        inverter_type:   quotationData.inverter.company || null,
-        inverter_size:   `${quotationData.inverter.kw}kW` || null,
-        inverter_total:  quotationData.inverter.quantity * quotationData.inverter.pricePerUnit,
-        battery_type:    quotationData.batteryType || null,
-        battery_model:   quotationData.batteryModel || null,
-        battery_quantity:quotationData.batteryQuantity || 0,
-        battery_total:   quotationData.batteryQuantity * quotationData.batteryPrice,
-        stand_type:      quotationData.stand.type,
-        stand_quantity:  getStandQty(quotationData.solarPanel.quantity, quotationData.stand.type),
-        stand_total:     getStandQty(quotationData.solarPanel.quantity, quotationData.stand.type) * quotationData.stand.pricePerStand,
-        safety_charges:  quotationData.safety,
-        transport_charges:quotationData.transport,
-        installation_charges:quotationData.labour,
-        engineer_charges: quotationData.isEngineerIncluded ? quotationData.engineer : 0,
-        green_meter:     quotationData.isGreenmeterIncluded,
-        green_meter_charges:quotationData.isGreenmeterIncluded ? quotationData.greenmeter : 0,
-        total_amount:    quotationData.total,
-        staff_name:      quotationData.staff || null,
-        location:        quotationData.location || null,
-        follow_up_status:quotationData.followUpStatus || 'pending',
-        follow_up_status: status,
-        created_at:      new Date().toISOString()
-      };
-      console.log('📤 supabaseData going in:', supabaseData)
-      // after you build supabaseData:
-console.log("👉 follow_up_status going to supabase:", supabaseData.follow_up_status);
-
       const { data, error } = await supabase
         .from("quotations")
         .insert([supabaseData])
-
-        .select();               // return all columns of the new row
-
-      if (error) {
-        console.error("Supabase insert error:", error);
-        throw error;
-      }
-      return data[0];            // the full row, including its new `.id`
+        .select();
+      if (error) throw error;
+      return data[0];
     } catch (err) {
       console.error("Save to Supabase error:", err);
       throw err;
     }
   }
 
-async function loadQuotationsFromSupabase() {
+  async function loadQuotationsFromSupabase() {
     try {
       const { data, error } = await supabase
         .from("quotations")
         .select("*")
         .order("created_at", { ascending: false });
+      if (error) throw error;
 
-      if (error) {
-        console.error("Supabase select error:", error);
-        throw error;
-      }
-
-      // Map the Supabase row into your internal format
       return data.map(item => ({
-        id:                 item.quotation_id,            // use the real PK
+        id: item.quotation_id,
         customer: {
-          name:    item.customer_name,
+          name: item.customer_name,
           contact: item.customer_contact,
-          email:   item.customer_email,
+          email: item.customer_email,
           address: item.customer_address
         },
-        staff:           item.staff_name,
-        systemType:      item.system_type,
-        location:        item.location,
+        staff: item.staff_name,
+        systemType: item.system_type,
+        location: item.location,
         inverter: {
           company: item.inverter_type,
-          kw:      item.inverter_size?.replace('kW','') || '0',
-          quantity:1,
+          kw: item.inverter_size?.replace('kW', '') || '0',
+          quantity: 1,
           pricePerUnit: item.inverter_total
         },
-        batteryType:     item.battery_type || '',
-        batteryModel:    item.battery_model || '',
+        batteryType: item.battery_type || '',
+        batteryModel: item.battery_model || '',
         batteryQuantity: item.battery_quantity,
-        batteryPrice:    item.battery_quantity > 0
-                            ? (item.battery_total / item.battery_quantity)
-                            : 0,
+        batteryPrice: item.battery_quantity > 0 ? (item.battery_total / item.battery_quantity) : 0,
         solarPanel: {
           company: item.panel_brand,
-          watts:   item.panel_watt,
-          quantity:item.panel_quantity,
-          pricePerWatt: item.panel_quantity > 0
-                           ? (item.panel_total / (item.panel_quantity * parseInt(item.panel_watt)))
-                           : 0
+          watts: item.panel_watt,
+          quantity: item.panel_quantity,
+          pricePerWatt: item.panel_quantity > 0 ? (item.panel_total / (item.panel_quantity * parseInt(item.panel_watt))) : 0
         },
         stand: {
-          type:          item.stand_type,
+          type: item.stand_type,
           pricePerStand: item.stand_total / (item.stand_quantity || 1)
         },
-        safety:         item.safety_charges,
-        transport:      item.transport_charges,
-        labour:         item.installation_charges,
-        engineer:       item.engineer_charges || 0,
-        greenmeter:     item.green_meter_charges || 0,
-        total:          item.total_amount,
+        safety: item.safety_charges,
+        transport: item.transport_charges,
+        labour: item.installation_charges,
+        engineer: item.engineer_charges || 0,
+        greenmeter: item.green_meter_charges || 0,
+        total: item.total_amount,
         followUpStatus: item.follow_up_status || 'pending',
-        quotationDate:  item.created_at,
+        quotationDate: item.created_at,
         isGreenmeterIncluded: item.green_meter,
-        isEngineerIncluded:   item.engineer_charges > 0
+        isEngineerIncluded: item.engineer_charges > 0
       }));
     } catch (err) {
       console.error("Load from Supabase error:", err);
@@ -213,68 +185,51 @@ async function loadQuotationsFromSupabase() {
     }
   }
 
-   async function updateQuotationInSupabase(quotationId, updatedData) {
-    const VALID_STATUSES = ['pending','contacted','completed','cancelled'];
-const status = VALID_STATUSES.includes(updatedData.followUpStatus)
-  ? updatedData.followUpStatus
-  : 'pending';
+  async function updateQuotationInSupabase(quotationId, updatedData) {
+    const VALID_STATUSES = ['pending', 'contacted', 'completed', 'cancelled'];
+    const status = VALID_STATUSES.includes(updatedData.followUpStatus) ? updatedData.followUpStatus : 'pending';
 
-const supabaseData = {
-  // …  
-  follow_up_status: status,
-  // …
-};
+    const supabaseData = {
+      quotation_id: updatedData.id,
+      customer_name: updatedData.customer.name,
+      customer_contact: updatedData.customer.contact,
+      customer_email: updatedData.customer.email || null,
+      customer_address: updatedData.customer.address,
+      system_type: updatedData.systemType,
+      panel_brand: updatedData.solarPanel.company,
+      panel_watt: updatedData.solarPanel.watts,
+      panel_quantity: updatedData.solarPanel.quantity,
+      panel_total: updatedData.solarPanel.pricePerWatt * updatedData.solarPanel.quantity * parseInt(updatedData.solarPanel.watts),
+      inverter_type: updatedData.inverter.company || null,
+      inverter_size: `${updatedData.inverter.kw}kW` || null,
+      inverter_total: updatedData.inverter.quantity * updatedData.inverter.pricePerUnit,
+      battery_type: updatedData.batteryType || null,
+      battery_model: updatedData.batteryModel || null,
+      battery_quantity: updatedData.batteryQuantity || 0,
+      battery_total: updatedData.batteryQuantity * updatedData.batteryPrice,
+      stand_type: updatedData.stand.type,
+      stand_quantity: getStandQty(updatedData.solarPanel.quantity, updatedData.stand.type),
+      stand_total: getStandQty(updatedData.solarPanel.quantity, updatedData.stand.type) * updatedData.stand.pricePerStand,
+      safety_charges: updatedData.safety,
+      transport_charges: updatedData.transport,
+      installation_charges: updatedData.labour,
+      engineer_charges: updatedData.isEngineerIncluded ? updatedData.engineer : 0,
+      green_meter: updatedData.isGreenmeterIncluded,
+      green_meter_charges: updatedData.isGreenmeterIncluded ? updatedData.greenmeter : 0,
+      total_amount: updatedData.total,
+      staff_name: updatedData.staff || null,
+      location: updatedData.location || null,
+      follow_up_status: status,
+      updated_at: new Date().toISOString()
+    };
 
     try {
-      // build the same payload shape as for insert, minus created_at
-      const supabaseData = {
-        quotation_id:    updatedData.id,
-        customer_name:   updatedData.customer.name,
-        customer_contact:updatedData.customer.contact,
-        customer_email:  updatedData.customer.email || null,
-        customer_address:updatedData.customer.address,
-        system_type:     updatedData.systemType,
-        panel_brand:     updatedData.solarPanel.company,
-        panel_watt:      updatedData.solarPanel.watts,
-        panel_quantity:  updatedData.solarPanel.quantity,
-        panel_total:     updatedData.solarPanel.pricePerWatt
-                          * updatedData.solarPanel.quantity
-                          * parseInt(updatedData.solarPanel.watts),
-        inverter_type:   updatedData.inverter.company || null,
-        inverter_size:   `${updatedData.inverter.kw}kW` || null,
-        inverter_total:  updatedData.inverter.quantity * updatedData.inverter.pricePerUnit,
-        battery_type:    updatedData.batteryType || null,
-        battery_model:   updatedData.batteryModel || null,
-        battery_quantity:updatedData.batteryQuantity || 0,
-        battery_total:   updatedData.batteryQuantity * updatedData.batteryPrice,
-        stand_type:      updatedData.stand.type,
-        stand_quantity:  getStandQty(updatedData.solarPanel.quantity, updatedData.stand.type),
-        stand_total:     getStandQty(updatedData.solarPanel.quantity, updatedData.stand.type) * updatedData.stand.pricePerStand,
-        safety_charges:  updatedData.safety,
-        transport_charges:updatedData.transport,
-        installation_charges:updatedData.labour,
-        engineer_charges: updatedData.isEngineerIncluded ? updatedData.engineer : 0,
-        green_meter:     updatedData.isGreenmeterIncluded,
-        green_meter_charges:updatedData.isGreenmeterIncluded ? updatedData.greenmeter : 0,
-        total_amount:    updatedData.total,
-        staff_name:      updatedData.staff || null,
-        location:        updatedData.location || null,
-        follow_up_status:updatedData.followUpStatus || 'pending',
-        updated_at:      new Date().toISOString()
-      };
-// after you build supabaseData:
-console.log("👉 follow_up_status going to supabase:", supabaseData.follow_up_status);
-
       const { data, error } = await supabase
         .from("quotations")
         .update(supabaseData)
-        .eq("quotation_id", quotationId) 
+        .eq("quotation_id", quotationId)
         .select();
-
-      if (error) {
-        console.error("Supabase update error:", error);
-        throw error;
-      }
+      if (error) throw error;
       return data[0];
     } catch (err) {
       console.error("Update in Supabase error:", err);
@@ -282,41 +237,17 @@ console.log("👉 follow_up_status going to supabase:", supabaseData.follow_up_s
     }
   }
 
-
-   async function deleteQuotationFromSupabase(quotationId) {
+  async function deleteQuotationFromSupabase(quotationId) {
     try {
       const { error } = await supabase
         .from("quotations")
         .delete()
         .eq("quotation_id", quotationId);
-        //.eq("id", quotationId);       // ← use `id`, not `quotation_id`
-      if (error) {
-        console.error("Supabase delete error:", error);
-        throw error;
-      }
+      if (error) throw error;
       return true;
     } catch (err) {
       console.error("Delete from Supabase error:", err);
       throw err;
-    }
-  }
-
-  // Local storage operations
-  function saveToLocalStorage(quotations) {
-    try {
-      localStorage.setItem("quotations", JSON.stringify(quotations));
-    } catch (err) {
-      console.error("Local storage save error:", err);
-    }
-  }
-
-  function loadFromLocalStorage() {
-    try {
-      const stored = localStorage.getItem("quotations");
-      return stored ? JSON.parse(stored) : [];
-    } catch (err) {
-      console.error("Local storage load error:", err);
-      return [];
     }
   }
 
@@ -325,25 +256,11 @@ console.log("👉 follow_up_status going to supabase:", supabaseData.follow_up_s
     setIsLoading(true);
     try {
       const supabaseQuotations = await loadQuotationsFromSupabase();
-      const localQuotations = loadFromLocalStorage();
-      
-      // Merge quotations (prioritize Supabase data)
-      const mergedQuotations = [...supabaseQuotations];
-      
-      // Add local-only quotations
-      localQuotations.forEach(localQuote => {
-        const existsInSupabase = supabaseQuotations.find(sq => sq.id === localQuote.id);
-        if (!existsInSupabase) {
-          mergedQuotations.push({ ...localQuote, localOnly: true });
-        }
-      });
-
-      setQuotations(mergedQuotations);
-      saveToLocalStorage(mergedQuotations);
+      setQuotations(supabaseQuotations);
     } catch (err) {
       console.error("Error loading quotations:", err);
-      const localQuotations = loadFromLocalStorage();
-      setQuotations(localQuotations);
+      alert("Failed to load quotations from database.");
+      setQuotations([]);
     } finally {
       setIsLoading(false);
     }
@@ -424,44 +341,16 @@ console.log("👉 follow_up_status going to supabase:", supabaseData.follow_up_s
         quotationDate
       };
 
-      // Save to Supabase
-      // try saving to Supabase and let any error bubble out
-    if (editingQuotation) {
-     await updateQuotationInSupabase(quotationId, newQuotation);
-   } else {
-      await saveQuotationToSupabase(newQuotation);
-    }
-    localStorage.removeItem("quotations");
-     // try {
-      //  if (editingQuotation) {
-      //    await updateQuotationInSupabase(quotationId, newQuotation);
-      //  } else {
-      //    await saveQuotationToSupabase(newQuotation);
-     //   }
-     // } catch (supabaseError) {
-     //   console.warn("Failed to save to Supabase, saving locally only:", supabaseError);
-     //   newQuotation.localOnly = true;
-     // }
-
-      // Update local state and storage
-      let updatedQuotations;
       if (editingQuotation) {
-        updatedQuotations = quotations.map(q => 
-          q.id === quotationId ? newQuotation : q
-        );
+        await updateQuotationInSupabase(quotationId, newQuotation);
       } else {
-        updatedQuotations = [...quotations, newQuotation];
+        await saveQuotationToSupabase(newQuotation);
       }
-      
-      setQuotations(updatedQuotations);
-      //saveToLocalStorage(updatedQuotations);
-      
+
+      await loadAllQuotations();
       setCurrentQuotation(newQuotation);
       alert(`✅ Quotation ${editingQuotation ? 'updated' : 'saved'} successfully!`);
-      
-      // Reset form
       resetForm();
-      
     } catch (err) {
       console.error("Error saving quotation:", err);
       alert(`❌ Error ${editingQuotation ? 'updating' : 'saving'} quotation: ` + err.message);
@@ -472,17 +361,10 @@ console.log("👉 follow_up_status going to supabase:", supabaseData.follow_up_s
 
   const deleteQuotation = async (quotationId) => {
     try {
-      // Delete from Supabase
       await deleteQuotationFromSupabase(quotationId);
-
-      // Update local state
-      const updatedQuotations = quotations.filter(q => q.id !== quotationId);
-      setQuotations(updatedQuotations);
-      //saveToLocalStorage(updatedQuotations);
-      
+      await loadAllQuotations();
       alert("✅ Quotation deleted successfully!");
       setConfirmDeleteId(null);
-      
     } catch (err) {
       console.error("Error deleting quotation:", err);
       alert("❌ Error deleting quotation: " + err.message);
@@ -545,7 +427,7 @@ console.log("👉 follow_up_status going to supabase:", supabaseData.follow_up_s
                 flex: 1;
               }
               .company-info h1 { 
-                font-size: 24px; 
+                font-size: 28px; 
                 margin-bottom: 8px; 
                 color: white;
                 letter-spacing: 1px;
@@ -558,11 +440,12 @@ console.log("👉 follow_up_status going to supabase:", supabaseData.follow_up_s
               .quotation-title { 
                 background: linear-gradient(135deg, #e65100, #ff9800); 
                 color: white; 
-                padding: 15px; 
+                padding: 20px; 
                 text-align: center; 
-                font-size: 20px; 
+                font-size: 24px; 
                 font-weight: bold;
-                letter-spacing: 1px;
+                letter-spacing: 1.5px;
+                text-transform: uppercase;
               }
               .quotation-meta {
                 display: flex;
@@ -572,8 +455,11 @@ console.log("👉 follow_up_status going to supabase:", supabaseData.follow_up_s
                 border-bottom: 1px solid #eee;
               }
               .customer-section { 
-                padding: 25px;
+                padding: 30px;
                 background: #fff;
+                border: 1px solid #ffe0b2;
+                border-radius: 10px;
+                margin: 20px;
               }
               .customer-section h3 { 
                 color: #ff6b35; 
@@ -637,10 +523,11 @@ console.log("👉 follow_up_status going to supabase:", supabaseData.follow_up_s
                 font-size: 16px; 
               }
               .total-row td { 
-                border-top: 2px solid #ff9800; 
+                border-top: 3px solid #ff9800; 
                 color: #e65100; 
                 font-weight: bold;
-                padding: 15px;
+                padding: 20px;
+                font-size: 18px;
               }
               .notes-section { 
                 padding: 25px;
@@ -694,14 +581,26 @@ console.log("👉 follow_up_status going to supabase:", supabaseData.follow_up_s
                 font-style: italic;
                 color: #4a5568;
               }
+              .thank-you {
+                text-align: center;
+                padding: 20px;
+                font-style: italic;
+                color: #666;
+                border-top: 1px solid #eee;
+                margin-top: 20px;
+              }
               @media print { 
-                body { margin: 0; padding: 0; } 
+                body { margin: 0; padding: 0; -webkit-print-color-adjust: exact; } 
                 .container { max-width: none; box-shadow: none; border: none; }
+                * { color: inherit !important; background: inherit !important; }
               }
             </style>
           </head>
           <body>
             ${quotationHTML}
+            <div class="thank-you">
+              <p>Thank you for considering Syed Solar Energy for your solar needs. We look forward to serving you!</p>
+            </div>
             <script>
               window.onload = function() {
                 setTimeout(function() {
@@ -886,7 +785,7 @@ console.log("👉 follow_up_status going to supabase:", supabaseData.follow_up_s
             <div class="note-block">
               <h5>🛡️ WARRANTY INFORMATION</h5>
               <ul>
-                <li>Solar Panels: 12 years product warranty</li>
+                <li>Solar Panels: A-Grade warranty</li>
                 <li>Inverters: 5 years comprehensive warranty</li>
                 <li>Batteries: Manufacturer warranty terms apply</li>
                 <li>Installation: 3 months service warranty</li>
@@ -907,7 +806,7 @@ console.log("👉 follow_up_status going to supabase:", supabaseData.follow_up_s
               <h5>📝 IMPORTANT NOTES</h5>
               <ul>
                 <li>Prices subject to change without notice</li>
-                <li>Installation timeline: 7-14 days after payment</li>
+                <li>Installation timeline: 1-2 days after payment</li>
                 <li>Site survey required before installation</li>
                 <li>Taxes not included in pricing</li>
               </ul>
@@ -1048,9 +947,6 @@ console.log("👉 follow_up_status going to supabase:", supabaseData.follow_up_s
                 <div style={styles.quotationHeader}>
                   <h3 style={styles.quotationTitle}>{quotation.customer.name}</h3>
                   <span style={styles.quotationId}>#{quotation.id}</span>
-                  {quotation.localOnly && (
-                    <span style={styles.localOnlyBadge}>📱 Local</span>
-                  )}
                 </div>
                 
                 <div style={styles.quotationDetails}>
@@ -1759,7 +1655,7 @@ const styles = {
   cancelEditButton: {
     background: 'rgba(255, 255, 255, 0.2)',
     color: 'white',
-    border: '2px solid rgba(255, 255, 255, 0.3)',
+    border: '2px solid rgba(255, 255, 0.3)',
     borderRadius: '12px',
     padding: '10px 16px',
     cursor: 'pointer',
@@ -1897,15 +1793,6 @@ const styles = {
     fontSize: '0.8rem',
     fontWeight: '600',
     flexShrink: 0,
-  },
-  
-  localOnlyBadge: {
-    background: '#ffc107',
-    color: 'white',
-    padding: '2px 8px',
-    borderRadius: '10px',
-    fontSize: '0.7rem',
-    fontWeight: '600',
   },
   
   quotationDetails: {
@@ -2122,18 +2009,6 @@ const styles = {
     transition: 'all 0.3s ease',
   },
   
-  saveButton: {
-    background: 'linear-gradient(135deg, #4caf50, #45a049)',
-    color: 'white',
-    border: 'none',
-    borderRadius: '6px',
-    padding: '8px 16px',
-    cursor: 'pointer',
-    fontSize: '0.85rem',
-    fontWeight: '600',
-    transition: 'all 0.3s ease',
-  },
-  
   formContainer: {
     background: 'white',
     borderRadius: '20px',
@@ -2321,7 +2196,6 @@ const styles = {
     minWidth: '150px',
   },
   
-  // Responsive styles
   '@media (max-width: 768px)': {
     container: {
       padding: '10px',
