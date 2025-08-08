@@ -324,39 +324,41 @@ export default function Quotation() {
   async function saveQuotationToSupabase(quotationData) {
     try {
       const supabaseData = {
-        customer_name: quotationData.customer.name,
-        customer_contact: quotationData.customer.contact,
-        customer_email: quotationData.customer.email || null,
-        customer_address: quotationData.customer.address,
-        system_type: quotationData.systemType,
-        panel_brand: quotationData.solarPanel.company,
-        panel_watt: quotationData.solarPanel.watts,
-        panel_quantity: quotationData.solarPanel.quantity,
-        panel_total: quotationData.panelTotal,
-        inverter_brand: quotationData.inverter.company || null,
-        inverter_model: quotationData.inverter.model || null,
-        inverter_capacity: quotationData.inverter.capacity || null,
-        inverter_quantity: quotationData.inverterQuantity,
-        inverter_total: quotationData.inverterTotal,
-        battery_type: quotationData.batteryType || null,
-        battery_model: quotationData.batteryModel || null,
-        battery_voltage: quotationData.batteryVoltage || null,
-        battery_quantity: quotationData.batteryQuantity || null,
-        battery_total: quotationData.batteryTotal || 0,
-        stand_type: quotationData.standType,
-        stand_quantity: quotationData.standQuantity,
-        stand_total: quotationData.standTotal,
-        safety_charges: quotationData.safety,
-        transport_charges: quotationData.transport,
-        installation_charges: quotationData.install,
-        engineer_charges: quotationData.engineer || 0,
-        green_meter: quotationData.greenMeter,
-        green_meter_charges: quotationData.greenMeterCharges || 0,
-        total_amount: quotationData.grandTotal,
+        customer_name: quotationData.customer_name,
+        customer_contact: quotationData.customer_contact,
+        customer_email: quotationData.customer_email || null,
+        customer_address: quotationData.customer_address,
+        system_type: quotationData.system_type,
+        panel_brand: quotationData.panel_brand,
+        panel_watt: quotationData.panel_watt,
+        panel_quantity: quotationData.panel_quantity,
+        panel_total: quotationData.panel_total,
+        inverter_type: quotationData.inverter_brand || null,
+        inverter_size: quotationData.inverter_capacity || null,
+        inverter_total: quotationData.inverter_total,
+        inverter_brand: quotationData.inverter_brand || null,
+        inverter_model: quotationData.inverter_model || null,
+        inverter_capacity: quotationData.inverter_capacity || null,
+        inverter_quantity: quotationData.inverter_quantity?.toString() || null,
+        battery_type: quotationData.battery_type || null,
+        battery_model: quotationData.battery_model || null,
+        battery_voltage: quotationData.battery_voltage || null,
+        battery_quantity: quotationData.battery_quantity || null,
+        battery_total: quotationData.battery_total || 0,
+        stand_type: quotationData.stand_type,
+        stand_quantity: quotationData.stand_quantity,
+        stand_total: quotationData.stand_total,
+        safety_charges: quotationData.safety_charges,
+        transport_charges: quotationData.transport_charges,
+        installation_charges: quotationData.installation_charges,
+        engineer_charges: quotationData.engineer_charges || 0,
+        green_meter: quotationData.green_meter,
+        green_meter_charges: quotationData.green_meter_charges || 0,
+        total_amount: quotationData.total_amount,
         quotation_date: new Date().toISOString(),
         created_at: new Date().toISOString(),
-        quotation_id: quotationData.quotationId,
-        follow_up_status: 'pending'
+        quotation_id: quotationData.quotation_id,
+        follow_up_status: 'Pending' // Match the default value in the table
       };
       
       const { data, error } = await supabase
@@ -443,6 +445,7 @@ export default function Quotation() {
       safety_charges: quotationData.safety,
       transport_charges: quotationData.transport,
       installation_charges: quotationData.install,
+      engineer_charges: 0,
       green_meter: greenMeter,
       green_meter_charges: quotationData.green,
       total_amount: quotationData.grandTotal,
@@ -452,7 +455,12 @@ export default function Quotation() {
     };
     
     // Save to Supabase
-    await saveQuotationToSupabase(supabaseData);
+    const savedQuotation = await saveQuotationToSupabase(supabaseData);
+    
+    if (!savedQuotation) {
+      alert("Failed to save quotation to database. Please try again.");
+      return;
+    }
     
     // Generate PDF and WhatsApp redirect
     setTimeout(async () => {
@@ -946,40 +954,6 @@ JazakAllah! 🤝`
             }}>
               📋 System Configuration
             </h2>
-            
-            {/* Quotation ID Display */}
-            <div style={{ 
-              background: "linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)",
-              borderRadius: 8,
-              padding: "12px",
-              marginBottom: 20,
-              textAlign: "center",
-              border: "1px solid #90caf9"
-            }}>
-              <div style={{ fontSize: 16, fontWeight: 700, color: "#1565c0", marginBottom: 5 }}>
-                📋 Quotation ID
-              </div>
-              <div style={{ fontSize: 18, fontFamily: "monospace", color: "#0d47a1" }}>
-                #{quotationId}
-              </div>
-              <button
-                type="button"
-                onClick={() => setQuotationId(generateQuotationId())}
-                style={{
-                  background: "#f0f0f0",
-                  color: "#333",
-                  border: "none",
-                  borderRadius: "6px",
-                  padding: "6px 12px",
-                  cursor: "pointer",
-                  fontSize: "12px",
-                  fontWeight: "600",
-                  marginTop: 8
-                }}
-              >
-                🔄 Reset ID
-              </button>
-            </div>
             
             {/* System Type Selection */}
             <div style={{ marginBottom: 25 }}>
