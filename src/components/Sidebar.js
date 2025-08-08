@@ -4,91 +4,74 @@ import { NavLink, useLocation } from "react-router-dom";
 import {
   MdDashboard, MdInventory, MdBuild, MdReceipt, MdBarChart, MdStore,
   MdAdminPanelSettings, MdHistory, MdPeople, MdLockReset, MdMenu,
-  MdMenuOpen, MdLogout, MdSettings
+  MdMenuOpen, MdLogout
 } from "react-icons/md";
 import { FaTools, FaFileInvoice, FaUserCircle, FaCrown } from "react-icons/fa";
 import { TbReportMoney } from "react-icons/tb";
 
-// List of sidebar links and their permissions
+// Compact sidebar links
 const sidebarLinks = [
   {
     to: "/dashboard",
     label: "Dashboard",
-    icon: <MdDashboard size={22} color="#FF9800" />,
-    permission: { category: "dashboard", key: "view" },
-    description: "Main dashboard overview"
+    icon: <MdDashboard size={20} />,
+    permission: { category: "dashboard", key: "view" }
   },
   {
     to: "/inventory",
     label: "Inventory",
-    icon: <MdInventory size={22} color="#FFD600" />,
-    permission: { category: "inventory", key: "view" },
-    description: "Manage product inventory"
+    icon: <MdInventory size={20} />,
+    permission: { category: "inventory", key: "view" }
   },
   {
     to: "/repairs",
     label: "Repairs",
-    icon: <FaTools size={21} color="#FF6B35" />,
-    permission: { category: "repairs", key: "view" },
-    description: "Handle repair requests"
+    icon: <FaTools size={19} />,
+    permission: { category: "repairs", key: "view" }
   },
   {
     to: "/expenses",
     label: "Expenses",
-    icon: <TbReportMoney size={21} color="#1E88E5" />,
-    permission: { category: "expenses", key: "view" },
-    description: "Track business expenses"
+    icon: <TbReportMoney size={19} />,
+    permission: { category: "expenses", key: "view" }
   },
   {
     to: "/reports",
     label: "Reports",
-    icon: <MdBarChart size={22} color="#43A047" />,
-    permission: { category: "reports", key: "view" },
-    description: "View analytics and reports"
+    icon: <MdBarChart size={20} />,
+    permission: { category: "reports", key: "view" }
   },
   {
     to: "/productspage",
     label: "Products",
-    icon: <MdStore size={22} color="#F44336" />,
-    permission: { category: "products", key: "view" },
-    description: "Manage product catalog"
+    icon: <MdStore size={20} />,
+    permission: { category: "products", key: "view" }
   },
   {
     to: "/admin",
     label: "Admin",
-    icon: <MdAdminPanelSettings size={22} color="#AB47BC" />,
+    icon: <MdAdminPanelSettings size={20} />,
     permission: { category: "userManagement", key: "view" },
-    adminOnly: true,
-    description: "System administration"
+    adminOnly: true
   },
   {
     to: "/followups",
     label: "Follow Ups",
-    icon: <MdHistory size={22} color="#795548" />,
-    permission: { category: "followups", key: "view" },
-    description: "Track customer follow-ups"
+    icon: <MdHistory size={20} />,
+    permission: { category: "followups", key: "view" }
   },
   {
     to: "/staff",
     label: "Staff",
-    icon: <MdPeople size={22} color="#0288D1" />,
-    permission: { category: "staff", key: "view" },
-    description: "Manage staff members"
+    icon: <MdPeople size={20} />,
+    permission: { category: "staff", key: "view" }
   },
   {
     to: "/quotationsoftware",
-    label: "Quotation SW",
-    icon: <FaFileInvoice size={19} color="#00BFAE" />,
-    permission: { category: "quotations", key: "view" },
-    description: "Generate quotations"
-  },
-  {
-    to: "/changepassword",
-    label: "Change Password",
-    icon: <MdLockReset size={22} color="#C62828" />,
-    permission: { category: "profile", key: "edit" },
-    description: "Update your password"
-  },
+    label: "Quotations",
+    icon: <FaFileInvoice size={18} />,
+    permission: { category: "quotations", key: "view" }
+  }
 ];
 
 // Helper to get current user from localStorage
@@ -100,7 +83,6 @@ function getCurrentUser() {
     const users = JSON.parse(localStorage.getItem("users") || "[]");
     const user = users.find(u => u.username === loggedInUser);
     
-    // Return user with default permissions if not found
     return user || {
       username: loggedInUser,
       role: "user",
@@ -141,7 +123,6 @@ export default function Sidebar() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Always show sidebar with fallback user if needed
   const currentUser = getCurrentUser() || {
     username: "guest",
     role: "user",
@@ -163,22 +144,15 @@ export default function Sidebar() {
   const userName = currentUser?.fullName || currentUser?.username || "User";
   const userRole = currentUser?.role || "user";
 
-  // Check permission for each link - more permissive approach
+  // Check permission for each link
   const canAccess = (link) => {
-    // Admin sees everything
     if (isAdmin) return true;
-    
-    // Admin-only links are restricted
     if (link.adminOnly && !isAdmin) return false;
     
-    // For regular users, check permissions or default to true for basic navigation
     const { category, key } = link.permission;
     const hasPermission = currentUser?.permissions?.[category]?.[key];
     
-    // If permission is explicitly false, deny access
     if (hasPermission === false) return false;
-    
-    // If no permission is set, allow access for basic navigation (default true)
     return hasPermission !== undefined ? hasPermission : true;
   };
 
@@ -196,104 +170,72 @@ export default function Sidebar() {
     <>
       <aside
         style={{
-          width: isCollapsed ? 85 : 320,
-          background: "linear-gradient(180deg, #fff8f0 0%, #ffe0b2 50%, #ffcc80 100%)",
-          color: "#222",
+          width: isCollapsed ? 70 : 250,
+          background: "linear-gradient(180deg, #fff 0%, #f8f9fa 100%)",
+          color: "#333",
           height: "100vh",
           position: "fixed",
           left: 0,
           top: 0,
-          overflowY: "auto",
+          overflowY: "hidden",
           overflowX: "hidden",
           zIndex: 200,
-          boxShadow: isCollapsed 
-            ? "4px 0 20px rgba(255, 152, 0, 0.3)"
-            : "8px 0 35px rgba(255, 152, 0, 0.35)",
+          boxShadow: "4px 0 15px rgba(0, 0, 0, 0.1)",
           display: "flex",
           flexDirection: "column",
-          transition: "all 0.5s cubic-bezier(0.4, 0, 0.2, 1)",
-          borderRight: "4px solid rgba(255, 152, 0, 0.2)",
-          backdropFilter: "blur(10px)"
+          transition: "all 0.3s ease",
+          borderRight: "1px solid #e0e0e0"
         }}
-        className="professional-sidebar"
       >
-        {/* Spacer for top margin */}
-        <div style={{ height: "25px" }} />
-
-        {/* Enhanced User Profile Section */}
-        {!isCollapsed && currentUser && (
-          <div
-            style={{
-              padding: "25px 20px",
-              background: "linear-gradient(135deg, #fff9f0 0%, #ffe0b2 100%)",
-              borderBottom: "3px solid rgba(255, 225, 188, 0.7)",
-              margin: "15px 15px 20px 15px",
-              borderRadius: "16px",
-              boxShadow: "0 8px 25px rgba(255, 152, 0, 0.15), 0 4px 12px rgba(0,0,0,0.05)"
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
-              <div style={{ position: "relative" }}>
-                <FaUserCircle size={45} color="#FF9800" />
-                {isAdmin && (
-                  <FaCrown 
-                    size={16} 
-                    color="#FFD700" 
-                    style={{
-                      position: "absolute",
-                      top: -5,
-                      right: -5,
-                      filter: "drop-shadow(0 2px 4px rgba(255, 215, 0, 0.6))"
-                    }}
-                  />
-                )}
-              </div>
-              <div style={{ flex: 1 }}>
+        {/* Compact Header */}
+        <div style={{
+          padding: isCollapsed ? "15px 10px" : "20px 15px",
+          background: "linear-gradient(135deg, #FF6B35, #F7931E)",
+          color: "white",
+          borderBottom: "1px solid rgba(255,255,255,0.2)"
+        }}>
+          {!isCollapsed ? (
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <FaUserCircle size={32} />
+              <div>
                 <div style={{ 
-                  fontWeight: 800, 
-                  fontSize: "18px", 
-                  color: "#333",
-                  marginBottom: "6px",
-                  textShadow: "0 1px 3px rgba(0,0,0,0.1)"
+                  fontWeight: 700, 
+                  fontSize: "14px",
+                  marginBottom: "2px"
                 }}>
-                  {userName}
+                  {userName.split(' ')[0]}
                 </div>
                 <div style={{ 
-                  fontSize: "14px", 
-                  color: "#fff",
+                  fontSize: "11px", 
+                  opacity: 0.9,
                   textTransform: "capitalize",
-                  background: isAdmin 
-                    ? "linear-gradient(135deg, #FF9800 0%, #ff6b35 100%)"
-                    : "linear-gradient(135deg, #43A047 0%, #2e7d32 100%)",
-                  padding: "4px 12px",
-                  borderRadius: "12px",
-                  display: "inline-flex",
+                  display: "flex",
                   alignItems: "center",
-                  gap: "6px",
-                  fontWeight: 700,
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
-                  textShadow: "0 1px 2px rgba(0,0,0,0.3)"
+                  gap: "4px"
                 }}>
-                  {isAdmin && <FaCrown size={12} />}
+                  {isAdmin && <FaCrown size={10} />}
                   {userRole}
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          ) : (
+            <div style={{ textAlign: "center" }}>
+              <FaUserCircle size={28} />
+            </div>
+          )}
+        </div>
 
-        {/* Enhanced Nav Links */}
+        {/* Compact Navigation */}
         <nav style={{ 
           flex: 1, 
           display: "flex", 
-          flexDirection: "column", 
-          padding: isCollapsed ? "20px 10px" : "20px 15px",
-          transition: "padding 0.5s ease",
-          gap: "8px"
+          flexDirection: "column",
+          padding: "10px 8px",
+          gap: "3px"
         }}>
           {sidebarLinks
             .filter(link => canAccess(link))
-            .map((link, index) => {
+            .map((link) => {
               const isActive = location.pathname === link.to;
               return (
                 <NavLink
@@ -304,66 +246,44 @@ export default function Sidebar() {
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    gap: isCollapsed ? 0 : 20,
-                    padding: isCollapsed ? "16px 10px" : "18px 25px",
-                    color: isActive ? "#ff6b35" : "#333",
+                    gap: isCollapsed ? 0 : 12,
+                    padding: isCollapsed ? "10px" : "10px 15px",
+                    color: isActive ? "#FF6B35" : "#555",
                     background: isActive
-                      ? "linear-gradient(135deg, #fffde4 0%, #ffe0b2 50%, #fff3e0 100%)"
+                      ? "linear-gradient(90deg, #fff3e0, #ffe0b2)"
                       : hoveredLink === link.to 
-                        ? "linear-gradient(135deg, #fff8f0 0%, #ffe0b2 100%)"
-                        : "linear-gradient(135deg, #fff 0%, #fffbf7 100%)",
-                    fontWeight: isActive ? 900 : 700,
+                        ? "#f5f5f5"
+                        : "transparent",
+                    fontWeight: isActive ? 600 : 500,
                     textDecoration: "none",
-                    borderRadius: isCollapsed ? 16 : 18,
-                    fontSize: isCollapsed ? 0 : 17,
+                    borderRadius: 8,
+                    fontSize: 13,
                     boxShadow: isActive
-                      ? "0 12px 35px rgba(255, 208, 128, 0.6), 0 6px 18px rgba(255, 152, 0, 0.3), inset 0 2px 6px rgba(255,255,255,0.9)"
-                      : hoveredLink === link.to
-                        ? "0 10px 30px rgba(255, 152, 0, 0.4), 0 5px 15px rgba(0,0,0,0.1)"
-                        : "0 6px 20px rgba(255, 208, 128, 0.25), 0 3px 8px rgba(0,0,0,0.05)",
+                      ? "0 2px 8px rgba(255, 107, 53, 0.2)"
+                      : "none",
                     border: isActive
-                      ? "3px solid #ff9800"
-                      : hoveredLink === link.to
-                        ? "3px solid rgba(255, 152, 0, 0.5)"
-                        : "3px solid rgba(255, 236, 179, 0.7)",
-                    transform: isActive 
-                      ? "translateY(-4px) scale(1.08)" 
-                      : hoveredLink === link.to 
-                        ? "translateY(-2px) scale(1.04)" 
-                        : "none",
-                    transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+                      ? "1px solid rgba(255, 107, 53, 0.3)"
+                      : "1px solid transparent",
+                    transition: "all 0.2s ease",
                     cursor: "pointer",
-                    position: "relative",
-                    overflow: "hidden",
                     justifyContent: isCollapsed ? "center" : "flex-start",
-                    minHeight: isCollapsed ? 56 : "auto",
-                    animationDelay: `${index * 0.08}s`
+                    minHeight: 36
                   }}
-                  className="professional-sidebar-link"
-                  title={isCollapsed ? `${link.label} - ${link.description}` : ""}
+                  title={isCollapsed ? link.label : ""}
                 >
                   <span style={{
-                    filter: "drop-shadow(0 3px 8px rgba(255, 247, 247, 0.7))",
-                    minWidth: 36,
-                    display: "inline-flex",
-                    justifyContent: "center",
-                    position: "relative",
-                    zIndex: 1,
-                    fontSize: isCollapsed ? "24px" : "26px",
-                    transition: "font-size 0.5s ease"
+                    color: isActive ? "#FF6B35" : "#666",
+                    minWidth: 20,
+                    display: "flex",
+                    justifyContent: "center"
                   }}>
                     {link.icon}
                   </span>
                   {!isCollapsed && (
                     <span style={{
-                      opacity: isCollapsed ? 0 : 1,
-                      transform: isCollapsed ? "translateX(-20px)" : "translateX(0)",
-                      transition: "all 0.5s ease",
                       whiteSpace: "nowrap",
-                      position: "relative",
-                      zIndex: 1,
-                      fontFamily: "Poppins, Arial, sans-serif",
-                      letterSpacing: "0.3px"
+                      fontSize: "13px",
+                      fontWeight: isActive ? 600 : 500
                     }}>
                       {link.label}
                     </span>
@@ -373,236 +293,198 @@ export default function Sidebar() {
             })}
         </nav>
 
-        {/* Enhanced Logout Button */}
-        <div style={{ 
-          padding: isCollapsed ? "20px 10px 25px" : "20px 15px 25px",
-          borderTop: "3px solid rgba(255, 225, 188, 0.6)"
-        }}>
+        {/* Compact Bottom Section */}
+        <div style={{ padding: "10px 8px" }}>
+          {/* Change Password Button */}
+          <NavLink
+            to="/changepassword"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: isCollapsed ? 0 : 12,
+              padding: isCollapsed ? "10px" : "10px 15px",
+              color: "#666",
+              background: "transparent",
+              fontWeight: 500,
+              textDecoration: "none",
+              borderRadius: 8,
+              fontSize: 13,
+              transition: "all 0.2s ease",
+              cursor: "pointer",
+              justifyContent: isCollapsed ? "center" : "flex-start",
+              minHeight: 36,
+              marginBottom: "8px"
+            }}
+            title={isCollapsed ? "Change Password" : ""}
+          >
+            <span style={{
+              color: "#666",
+              minWidth: 20,
+              display: "flex",
+              justifyContent: "center"
+            }}>
+              <MdLockReset size={20} />
+            </span>
+            {!isCollapsed && (
+              <span style={{
+                whiteSpace: "nowrap",
+                fontSize: "13px"
+              }}>
+                Change Password
+              </span>
+            )}
+          </NavLink>
+
+          {/* Logout Button */}
           <button
             onClick={handleLogout}
             style={{
               display: "flex",
               alignItems: "center",
-              gap: isCollapsed ? 0 : 18,
-              padding: isCollapsed ? "16px 10px" : "18px 25px",
+              gap: isCollapsed ? 0 : 12,
+              padding: isCollapsed ? "10px" : "10px 15px",
               width: "100%",
-              background: "linear-gradient(135deg, #f44336 0%, #d32f2f 100%)",
+              background: "linear-gradient(135deg, #dc3545, #c82333)",
               color: "#fff",
-              border: "3px solid rgba(255,255,255,0.3)",
-              borderRadius: isCollapsed ? 16 : 18,
-              fontSize: isCollapsed ? 0 : 17,
-              fontWeight: 800,
+              border: "none",
+              borderRadius: 8,
+              fontSize: 13,
+              fontWeight: 600,
               cursor: "pointer",
-              boxShadow: "0 8px 25px rgba(244, 67, 54, 0.4), 0 4px 15px rgba(0,0,0,0.15)",
-              transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+              transition: "all 0.2s ease",
               justifyContent: isCollapsed ? "center" : "flex-start",
-              textShadow: "0 2px 4px rgba(0,0,0,0.3)",
-              letterSpacing: "0.3px"
+              minHeight: 36
             }}
-            className="professional-logout-btn"
             title={isCollapsed ? "Logout" : ""}
+            onMouseOver={(e) => {
+              e.target.style.background = "linear-gradient(135deg, #c82333, #bd2130)";
+              e.target.style.transform = "translateY(-1px)";
+            }}
+            onMouseOut={(e) => {
+              e.target.style.background = "linear-gradient(135deg, #dc3545, #c82333)";
+              e.target.style.transform = "translateY(0)";
+            }}
           >
-            <MdLogout size={isCollapsed ? 24 : 26} />
+            <MdLogout size={20} />
             {!isCollapsed && <span>Logout</span>}
           </button>
         </div>
-
-        {/* Enhanced decorative bottom */}
-        <div style={{
-          height: "20px",
-          background: "linear-gradient(180deg, transparent 0%, rgba(255, 152, 0, 0.1) 100%)",
-          borderTop: "2px solid rgba(255, 225, 188, 0.5)"
-        }} />
       </aside>
 
-      {/* Toggle Button at Middle Edge */}
+      {/* Toggle Button */}
       <button
         onClick={toggleSidebar}
         style={{
           position: "fixed",
           top: "50%",
-          left: isCollapsed ? 65 : 300,
+          left: isCollapsed ? 50 : 230,
           transform: "translateY(-50%)",
-          width: 40,
-          height: 60,
-          borderRadius: "0 12px 12px 0",
-          background: "linear-gradient(135deg, #ff9800 0%, #ff6b35 100%)",
+          width: 32,
+          height: 48,
+          borderRadius: "0 8px 8px 0",
+          background: "linear-gradient(135deg, #FF6B35, #F7931E)",
           border: "none",
           color: "#fff",
           cursor: "pointer",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          boxShadow: "2px 0 15px rgba(255, 152, 0, 0.4), 0 4px 20px rgba(0,0,0,0.15)",
+          boxShadow: "2px 0 10px rgba(0,0,0,0.1)",
           zIndex: 210,
-          transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
-          fontSize: "18px",
-          borderLeft: "3px solid rgba(255,255,255,0.3)"
+          transition: "all 0.3s ease",
+          fontSize: "14px"
         }}
-        className="sidebar-toggle-edge"
         title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+        onMouseOver={(e) => {
+          e.target.style.transform = "translateY(-50%) scale(1.1)";
+          e.target.style.boxShadow = "2px 0 15px rgba(255, 107, 53, 0.3)";
+        }}
+        onMouseOut={(e) => {
+          e.target.style.transform = "translateY(-50%) scale(1)";
+          e.target.style.boxShadow = "2px 0 10px rgba(0,0,0,0.1)";
+        }}
       >
-        {isCollapsed ? <MdMenuOpen size={20} /> : <MdMenu size={20} />}
+        {isCollapsed ? <MdMenuOpen size={16} /> : <MdMenu size={16} />}
       </button>
 
-      {/* Professional Enhanced Styles */}
+      {/* Enhanced Styles */}
       <style>
         {`
-          .professional-sidebar::-webkit-scrollbar {
-            width: 10px;
+          /* Tooltip for collapsed state */
+          .collapsed-tooltip {
+            position: relative;
           }
           
-          .professional-sidebar::-webkit-scrollbar-track {
-            background: rgba(255, 225, 188, 0.4);
-            border-radius: 6px;
-          }
-          
-          .professional-sidebar::-webkit-scrollbar-thumb {
-            background: linear-gradient(180deg, #ff9800, #ff6b35);
-            border-radius: 6px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-          }
-          
-          .professional-sidebar::-webkit-scrollbar-thumb:hover {
-            background: linear-gradient(180deg, #f57c00, #e64a19);
-          }
-          
-          .professional-sidebar-link::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 152, 0, 0.2), transparent);
-            transition: left 1s ease;
-            z-index: 0;
-          }
-          
-          .professional-sidebar-link:hover::before {
-            left: 100%;
-          }
-          
-          .sidebar-toggle-edge:hover {
-            left: ${isCollapsed ? 70 : 305}px;
-            transform: translateY(-50%) scale(1.1);
-            box-shadow: 4px 0 25px rgba(255, 152, 0, 0.6), 0 6px 30px rgba(0,0,0,0.2);
-            background: linear-gradient(135deg, #f57c00 0%, #e64a19 100%);
-          }
-          
-          .sidebar-toggle-edge:active {
-            transform: translateY(-50%) scale(0.95);
-          }
-          
-          .professional-logout-btn:hover {
-            transform: translateY(-3px) scale(1.05);
-            box-shadow: 0 12px 35px rgba(244, 67, 54, 0.5), 0 6px 20px rgba(0,0,0,0.2);
-            background: linear-gradient(135deg, #e53935 0%, #c62828 100%);
-          }
-          
-          .professional-logout-btn:active {
-            transform: translateY(-1px) scale(1.02);
-          }
-          
-          @keyframes slideInLeft {
-            0% {
-              opacity: 0;
-              transform: translateX(-30px) scale(0.9);
-            }
-            100% {
-              opacity: 1;
-              transform: translateX(0) scale(1);
-            }
-          }
-          
-          .professional-sidebar-link {
-            animation: slideInLeft 0.6s ease-out both;
-          }
-          
-          /* Enhanced tooltip for collapsed state */
-          .professional-sidebar-link[title]:hover::after {
+          .collapsed-tooltip:hover::after {
             content: attr(title);
             position: absolute;
             left: 100%;
             top: 50%;
             transform: translateY(-50%);
-            background: linear-gradient(135deg, rgba(51, 51, 51, 0.95) 0%, rgba(0,0,0,0.9) 100%);
+            background: rgba(0, 0, 0, 0.9);
             color: white;
-            padding: 12px 18px;
-            border-radius: 12px;
-            font-size: 14px;
-            font-weight: 600;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
             white-space: nowrap;
             z-index: 1000;
-            margin-left: 20px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.5), 0 4px 12px rgba(255, 152, 0, 0.3);
+            margin-left: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
             pointer-events: none;
             opacity: 0;
-            animation: fadeInTooltip 0.5s ease-out 0.7s both;
-            max-width: 250px;
-            border: 2px solid rgba(255, 152, 0, 0.3);
+            animation: fadeInTooltip 0.3s ease-out 0.5s both;
           }
           
           @keyframes fadeInTooltip {
             0% {
               opacity: 0;
-              transform: translateY(-50%) translateX(-15px) scale(0.9);
+              transform: translateY(-50%) translateX(-10px);
             }
             100% {
               opacity: 1;
-              transform: translateY(-50%) translateX(0) scale(1);
+              transform: translateY(-50%) translateX(0);
             }
           }
           
-          /* Responsive design */
-          @media (max-width: 768px) {
-            .professional-sidebar {
-              width: 85px !important;
-            }
-            .sidebar-toggle-edge {
-              left: 65px !important;
-            }
-          }
-          
-          @media (max-width: 480px) {
-            .professional-sidebar {
-              width: 75px !important;
-            }
-            .sidebar-toggle-edge {
-              left: 55px !important;
-            }
-          }
-          
-          /* Professional gradient animations */
-          .professional-sidebar::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 5px;
-            background: linear-gradient(90deg, #ff9800, #ff6b35, #f57c00, #ff9800);
-            background-size: 200% 100%;
-            animation: shimmer 3s ease-in-out infinite;
-            z-index: 1;
-          }
-          
-          @keyframes shimmer {
-            0% { background-position: -200% 0; }
-            100% { background-position: 200% 0; }
-          }
-          
-          /* Smooth transitions for all elements */
+          /* Smooth transitions */
           * {
             transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
           }
           
-          /* Professional focus states */
-          .professional-sidebar-link:focus,
-          .professional-logout-btn:focus,
-          .sidebar-toggle-edge:focus {
-            outline: 3px solid rgba(255, 152, 0, 0.5);
+          /* Focus states for accessibility */
+          a:focus,
+          button:focus {
+            outline: 2px solid rgba(255, 107, 53, 0.5);
             outline-offset: 2px;
+          }
+          
+          /* Responsive design */
+          @media (max-width: 768px) {
+            aside {
+              width: 70px !important;
+            }
+            .toggle-button {
+              left: 50px !important;
+            }
+          }
+          
+          /* Improved scrollbar for larger screens */
+          aside::-webkit-scrollbar {
+            width: 4px;
+          }
+          
+          aside::-webkit-scrollbar-track {
+            background: transparent;
+          }
+          
+          aside::-webkit-scrollbar-thumb {
+            background: rgba(255, 107, 53, 0.3);
+            border-radius: 2px;
+          }
+          
+          aside::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 107, 53, 0.5);
           }
         `}
       </style>
