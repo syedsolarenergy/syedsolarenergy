@@ -900,7 +900,9 @@ const componentStyles = {
     transition: "all 0.3s ease",
     background: "white",
     border: "2px solid transparent",
-    boxShadow: "0 2px 8px rgba(0,0,0,0.05)"
+    boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+    display: "flex",
+    alignItems: "center"
   },
 
   inputContainerFocused: {
@@ -915,7 +917,7 @@ const componentStyles = {
 
   input: {
     width: "100%",
-    padding: "16px 55px 16px 18px",
+    padding: "16px 60px 16px 18px",
     border: "none",
     borderRadius: "12px",
     fontSize: "16px",
@@ -928,23 +930,24 @@ const componentStyles = {
 
   passwordToggle: {
     position: "absolute",
-    right: "12px",
+    right: "8px",
     top: "50%",
     transform: "translateY(-50%)",
     background: "rgba(0,0,0,0.05)",
     border: "none",
     cursor: "pointer",
-    fontSize: "16px",
+    fontSize: "14px",
     color: "#666",
-    padding: "8px",
+    padding: "10px",
     borderRadius: "8px",
     transition: "all 0.2s ease",
-    width: "36px",
-    height: "36px",
+    width: "40px",
+    height: "40px",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    zIndex: 10
+    zIndex: 100,
+    flexShrink: 0
   },
 
   passwordToggleActive: {
