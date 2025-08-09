@@ -1,6 +1,5 @@
+
 import React, { useState, useRef, useEffect } from "react";
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
 import logo from "../assets/logo.png";
 import Footer from "../components/Footer";
 import { supabase } from "../supabaseClient";
@@ -377,10 +376,400 @@ export default function Quotation() {
     }
   }
   
-  // Enhanced PDF generation with better layout
-  const pdfRef = useRef();
+  // Generate quotation HTML (copied from QuotationSoftware and adapted)
+  const generateQuotationHTML = (quotationData) => {
+    return `
+      <div class="container">
+        <div class="header">
+          <div class="logo-container">
+            <img src="${logo}" alt="Syed Solar Energy Logo" class="logo" />
+          </div>
+          <div class="company-info">
+            <h1>Syed Solar Energy Pvt Ltd</h1>
+            <p>Office #23, Mustafa Plaza, Ring Road Near Imtiaz Mega Center, Peshawar</p>
+            <p><strong>Phone:</strong> 0304-4678929 | <strong>Email:</strong> sales@syedsolarenergy.com</p>
+            <p><strong>Website:</strong> www.syedsolarenergy.com</p>
+          </div>
+        </div>
+        <div class="quotation-title">
+          🌞 Solar Energy Quotation
+        </div>
+        <div class="quotation-meta">
+          <div>
+            <p><strong>Quotation ID:</strong> #${quotationData.id}</p>
+            <p><strong>Date:</strong> ${quotationData.quotationDate || new Date().toLocaleDateString()}</p>
+          </div>
+          <div>
+            <p><strong>Valid Until:</strong> ${new Date(Date.now() + 3*24*60*60*1000).toLocaleDateString()}</p>
+            <p><strong>System Type:</strong> ${quotationData.systemType}</p>
+          </div>
+        </div>
+        <div class="customer-section">
+          <h3>Customer Information</h3>
+          <p><strong>Name:</strong> ${quotationData.customer.name}</p>
+          <p><strong>Contact:</strong> ${quotationData.customer.contact}</p>
+          <p><strong>Email:</strong> ${quotationData.customer.email || 'Not provided'}</p>
+          <p><strong>Address:</strong> ${quotationData.customer.address}</p>
+        </div>
+        <h3 style="color: #e65100; margin: 15px 0 10px 0;">System Configuration & Pricing</h3>
+        
+        <table class="details-table">
+          <thead>
+            <tr>
+              <th style="width: 50%;">Item Description</th>
+              <th style="width: 20%; text-align: center;">Quantity</th>
+              <th style="width: 30%; text-align: right;">Amount (PKR)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <div class="item-name">Solar Panels</div>
+                <div class="item-desc">${quotationData.solarPanel.company} ${quotationData.solarPanel.watts}W Premium Grade</div>
+              </td>
+              <td style="text-align: center;">${quotationData.solarPanel.quantity} pcs</td>
+              <td class="price">Rs. ${(quotationData.solarPanel.pricePerWatt * quotationData.solarPanel.watts * quotationData.solarPanel.quantity).toLocaleString()}</td>
+            </tr>
+            
+            <tr>
+              <td>
+                <div class="item-name">${quotationData.systemType.includes('Daytime') ? 'Grid-Tie' : 'Hybrid'} Inverter</div>
+                <div class="item-desc">${quotationData.inverter.company} ${quotationData.inverter.kw}kW</div>
+              </td>
+              <td style="text-align: center;">${quotationData.inverter.quantity} unit</td>
+              <td class="price">Rs. ${(quotationData.inverter.quantity * quotationData.inverter.pricePerUnit).toLocaleString()}</td>
+            </tr>
+            
+            ${quotationData.batteryQuantity > 0 ? `
+            <tr>
+              <td>
+                <div class="item-name">Battery Bank</div>
+                <div class="item-desc">${quotationData.batteryModel} (${quotationData.batteryType})</div>
+              </td>
+              <td style="text-align: center;">${quotationData.batteryQuantity} units</td>
+              <td class="price">Rs. ${(quotationData.batteryQuantity * quotationData.batteryPrice).toLocaleString()}</td>
+            </tr>
+            ` : ''}
+            
+            <tr>
+              <td>
+                <div class="item-name">Mounting Structure</div>
+                <div class="item-desc">${quotationData.stand.type} Grade</div>
+              </td>
+              <td style="text-align: center;">${quotationData.stand.quantity} sets</td>
+              <td class="price">Rs. ${(quotationData.stand.quantity * quotationData.stand.pricePerStand).toLocaleString()}</td>
+            </tr>
+            
+            <tr>
+              <td>
+                <div class="item-name">Safety & Protection Equipment</div>
+                <div class="item-desc">Complete safety kit</div>
+              </td>
+              <td style="text-align: center;">1 set</td>
+              <td class="price">Rs. ${quotationData.safety.toLocaleString()}</td>
+            </tr>
+            
+            <tr>
+              <td>
+                <div class="item-name">Transportation</div>
+                <div class="item-desc">Within Peshawar</div>
+              </td>
+              <td style="text-align: center;">-</td>
+              <td class="price">Rs. ${quotationData.transport.toLocaleString()}</td>
+            </tr>
+            
+            <tr>
+              <td>
+                <div class="item-name">Professional Installation</div>
+                <div class="item-desc">By certified technicians</div>
+              </td>
+              <td style="text-align: center;">-</td>
+              <td class="price">Rs. ${quotationData.labour.toLocaleString()}</td>
+            </tr>
+            
+            ${quotationData.isGreenmeterIncluded ? `
+            <tr>
+              <td>
+                <div class="item-name">Net Metering (Green Meter)</div>
+                <div class="item-desc">Government documentation</div>
+              </td>
+              <td style="text-align: center;">1 unit</td>
+              <td class="price">Rs. ${quotationData.greenmeter.toLocaleString()}</td>
+            </tr>
+            ` : ''}
+            
+            <tr class="total-row">
+              <td colspan="2" style="text-align: right; font-size: 16px;">
+                <strong>TOTAL INVESTMENT</strong>
+              </td>
+              <td class="price" style="font-size: 18px;">
+                <strong>Rs. ${quotationData.total.toLocaleString()}</strong>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="warranty-section">
+          <h4>🛡️ Warranty & Quality Assurance</h4>
+          <ul>
+            <li>Solar Panels: 12 years product + 25 years performance warranty</li>
+            <li>Inverters: 5 years comprehensive warranty</li>
+            <li>Batteries: As per manufacturer's warranty policy</li>
+            <li>Installation: 3 months after-sales service warranty</li>
+            <li>Site Survey: Rs. 2,000/- for Peshawar city</li>
+          </ul>
+        </div>
+        <div class="terms-section">
+          <h4>📋 Terms & Payment Schedule</h4>
+          <ul>
+            <li><strong>Booking:</strong> 5% advance payment</li>
+            <li><strong>Material Arrival:</strong> 70% payment</li>
+            <li><strong>Completion:</strong> 25% final payment</li>
+            <li><strong>Validity:</strong> 3 days only</li>
+            <li><strong>Note:</strong> Prices subject to market changes</li>
+          </ul>
+        </div>
+        <div class="footer">
+          Thank you for choosing Syed Solar Energy<br/>
+          📧 sales@syedsolarenergy.com | 📱 03044678929<br/>
+          📍 Office #23, Mustafa Plaza, Ring Road, Peshawar
+        </div>
+      </div>
+    `;
+  };
+
+  // Print quotation function (copied from QuotationSoftware)
+  const printQuotation = (quotationData) => {
+    try {
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        alert("Please allow pop-ups to print quotations.");
+        return;
+      }
+      
+      const quotationHTML = generateQuotationHTML(quotationData);
+      
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="UTF-8">
+            <title>Quotation - ${quotationData?.customer.name}</title>
+            <style>
+              * { margin: 0; padding: 0; box-sizing: border-box; }
+              body { 
+                font-family: 'Arial', sans-serif; 
+                background: #fff; 
+                color: #333; 
+                line-height: 1.6; 
+                font-size: 14px;
+                margin: 0;
+                padding: 20px;
+              }
+              .container { 
+                max-width: 800px; 
+                margin: 0 auto; 
+              }
+              .header { 
+                display: flex; 
+                align-items: center; 
+                margin-bottom: 20px; 
+                border-bottom: 3px solid #ff9800; 
+                padding-bottom: 15px; 
+              }
+              .logo-container {
+                flex: 0 0 100px;
+                padding-right: 20px;
+              }
+              .logo {
+                width: 100px;
+                height: 100px;
+                border-radius: 10px;
+              }
+              .company-info { 
+                padding-left: 20px;
+                flex: 1;
+              }
+              .company-info h1 { 
+                color: #ff9800; 
+                font-size: 28px; 
+                margin-bottom: 8px; 
+                font-weight: bold; 
+                letter-spacing: 1px;
+              }
+              .company-info p { 
+                margin: 5px 0;
+                font-size: 13px;
+                color: #666;
+              }
+              .quotation-title { 
+                background: linear-gradient(135deg, #ff9800, #ff6b35); 
+                color: white; 
+                padding: 20px 15px; 
+                text-align: center; 
+                font-size: 24px; 
+                font-weight: bold;
+                letter-spacing: 1.5px;
+                text-transform: uppercase;
+                margin: 15px 0;
+                border-radius: 8px;
+              }
+              .quotation-meta {
+                display: flex;
+                justify-content: space-between;
+                padding: 10px;
+                background: #f0f8ff;
+                border-radius: 8px;
+                border-left: 4px solid #2196f3;
+                margin: 15px 0;
+              }
+              .customer-section { 
+                background: #fffbe8;
+                border-radius: 8px;
+                padding: 15px;
+                margin: 15px 0;
+                border-left: 4px solid #ff9800;
+              }
+              .customer-section h3 { 
+                color: #e65100; 
+                margin-bottom: 8px; 
+                font-size: 16px; 
+              }
+              .details-table { 
+                width: 100%; 
+                border-collapse: collapse; 
+                margin: 15px 0;
+                background: #fff;
+              }
+              .details-table th { 
+                background: #ff9800; 
+                color: white; 
+                padding: 10px; 
+                text-align: left; 
+                font-weight: bold; 
+              }
+              .details-table td { 
+                padding: 8px 10px; 
+                border-bottom: 1px solid #eee; 
+              }
+              .details-table tr:nth-child(even) { 
+                background: #f9f9f9; 
+              }
+              .item-name { 
+                font-weight: bold; 
+                color: #333; 
+              }
+              .item-desc {
+                font-size: 13px;
+                color: #666;
+                display: block;
+                margin-top: 3px;
+              }
+              .price { 
+                font-weight: bold; 
+                color: #e65100; 
+                text-align: right; 
+              }
+              .total-row { 
+                background: #ffe0b2 !important; 
+                font-weight: bold; 
+                font-size: 16px; 
+              }
+              .total-row td { 
+                border-top: 2px solid #ff9800; 
+                color: #e65100; 
+                font-weight: bold;
+                padding: 20px;
+                font-size: 18px;
+              }
+              .warranty-section { 
+                background: #f0f8f0; 
+                border-left: 4px solid #28a745; 
+                border-radius: 6px; 
+                padding: 15px; 
+                margin: 20px 0; 
+              }
+              .warranty-section h4 { 
+                color: #28a745; 
+                margin-bottom: 10px; 
+                font-size: 14px; 
+              }
+              .warranty-section ul { 
+                list-style: none; 
+                padding-left: 0; 
+              }
+              .warranty-section li { 
+                padding: 3px 0; 
+                font-size: 12px; 
+                position: relative; 
+                padding-left: 15px; 
+              }
+              .warranty-section li:before { 
+                content: "✓"; 
+                color: #28a745; 
+                font-weight: bold; 
+                position: absolute; 
+                left: 0; 
+              }
+              .terms-section { 
+                background: #fff8e1; 
+                border-left: 4px solid #ffc107; 
+                border-radius: 6px; 
+                padding: 15px; 
+                margin: 20px 0; 
+              }
+              .terms-section h4 { 
+                color: #f57c00; 
+                margin-bottom: 10px; 
+                font-size: 14px; 
+              }
+              .terms-section ul { 
+                list-style: disc; 
+                padding-left: 15px; 
+              }
+              .terms-section li { 
+                padding: 2px 0; 
+                font-size: 12px; 
+              }
+              .footer { 
+                text-align: center; 
+                padding: 20px;
+                background: #ff9800; 
+                color: white; 
+                font-size: 14px; 
+                border-radius: 8px;
+                margin-top: 20px;
+              }
+              @media print { 
+                body { margin: 0; padding: 0; -webkit-print-color-adjust: exact; } 
+                .container { max-width: none; }
+              }
+            </style>
+          </head>
+          <body>
+            ${quotationHTML}
+            <script>
+              window.onload = function() {
+                setTimeout(function() {
+                  window.print();
+                  window.onafterprint = function() { window.close(); }
+                }, 500);
+              }
+            </script>
+          </body>
+        </html>
+      `);
+      
+      printWindow.document.close();
+    } catch (error) {
+      console.error("Error printing quotation:", error);
+      alert("❌ Error printing quotation. Please try again.");
+    }
+  };
+
+  // Modified handleGenerateQuotation function
   async function handleGenerateQuotation(e) {
     e.preventDefault();
+    setSaving(true);
     
     // Prepare quotation data for Supabase
     let quotationData, sysType, previewConfig, systemLabel;
@@ -459,89 +848,70 @@ export default function Quotation() {
     
     if (!savedQuotation) {
       alert("Failed to save quotation to database. Please try again.");
+      setSaving(false);
       return;
     }
     
-    // Generate PDF and WhatsApp redirect
-    setTimeout(async () => {
-      try {
-        // Generate enhanced PDF
-        const input = pdfRef.current;
-        const canvas = await html2canvas(input, {
-          scale: 3,
-          useCORS: true,
-          allowTaint: true,
-          backgroundColor: '#ffffff',
-          logging: false,
-          width: input.scrollWidth,
-          height: input.scrollHeight
-        });
-        
-        // Professional PDF, max 2 pages
-        const imgData = canvas.toDataURL("image/png", 1.0);
-        const pdf = new jsPDF("p", "pt", "a4");
-        
-        // 20pt margins
-        const M = 20;
-        const pageW = pdf.internal.pageSize.getWidth();
-        const pageH = pdf.internal.pageSize.getHeight();
-        const usableW = pageW - M*2;
-        const usableH = pageH - M*2;
-        
-        // actual image size
-        const props = pdf.getImageProperties(imgData);
-        let imgW = usableW;
-        let imgH = (props.height * usableW) / props.width;
-        
-        // if it would take >2 pages, shrink to fit exactly 2
-        const pagesNeeded = Math.ceil(imgH / usableH);
-        if (pagesNeeded > 2) {
-          const scale = (usableH * 2) / imgH;
-          imgW *= scale;
-          imgH *= scale;
-        }
-        
-        // draw in up to two pages
-        let yOffset = M;
-        let remaining = imgH;
-        let pageNum = 1;
-        while (remaining > 0) {
-          // position the correct slice
-          const sliceY = M - (imgH - remaining);
-          pdf.addImage(imgData, "PNG", M, sliceY, imgW, imgH);
-          
-          // page number in 8pt font
-          pdf.setFontSize(8);
-          pdf.text(
-            `Page ${pageNum}`,
-            pageW / 2,
-            pageH - M / 2,
-            { align: "center" }
-          );
-          
-          remaining -= usableH;
-          if (remaining > 0 && pageNum < 2) {
-            pdf.addPage();
-            pageNum++;
-          } else {
-            break; // Don't create more than 2 pages
-          }
-        }
-        
-        // save with customer name and date
-        pdf.save(
-          `SSE-Quotation-${quotationId}-${customer.name || "Customer"}-${new Date()
-            .toISOString()
-            .split("T")[0]}.pdf`
-        );
-        
-        // Enhanced WhatsApp message
-        const whatsappNumber = "923044678929";
-        const totalKW = systemType === "auto" ? kwAuto : 
-                       (parseInt(panelWatt) * panelQty / 1000).toFixed(1);
-        
-        const msg = encodeURIComponent(
-          `🌞 Assalam-o-Alaikum! I have generated my solar quotation from Syed Solar Energy website.
+    // Prepare data for printing
+    const printData = {
+      id: quotationId,
+      customer: {
+        name: customer.name,
+        contact: customer.contact,
+        email: customer.email,
+        address: customer.address
+      },
+      systemType: systemLabel,
+      quotationDate: new Date().toLocaleDateString(),
+      solarPanel: {
+        company: systemType === "auto" ? previewConfig.panelBrand : panelBrand,
+        watts: systemType === "auto" ? previewConfig.panelWatt : panelWatt,
+        quantity: systemType === "auto" ? previewConfig.panelQty : panelQty,
+        pricePerWatt: systemType === "auto" 
+          ? (panelPrices[previewConfig.panelBrand]?.[previewConfig.panelWatt]?.pricePerWatt || 0)
+          : (panelPrices[panelBrand]?.[panelWatt]?.pricePerWatt || 0)
+      },
+      inverter: {
+        company: quotationData.selectedInverter?.brand || "",
+        kw: quotationData.selectedInverter?.capacity || "",
+        quantity: systemType === "auto" ? previewConfig.inverterQty : inverterQty,
+        pricePerUnit: quotationData.selectedInverter?.price || 0
+      },
+      batteryType: sysType === "hybrid" 
+        ? (systemType === "auto" ? previewConfig.batteryType : batteryType)
+        : "",
+      batteryModel: sysType === "hybrid" 
+        ? (quotationData.selectedBattery?.model || "")
+        : "",
+      batteryQuantity: sysType === "hybrid" 
+        ? (systemType === "auto" ? previewConfig.batteryQty : batteryQty)
+        : 0,
+      batteryPrice: sysType === "hybrid" 
+        ? (quotationData.selectedBattery?.price || 0)
+        : 0,
+      stand: {
+        type: systemType === "auto" ? previewConfig.standType : standType,
+        quantity: quotationData.standQty,
+        pricePerStand: standPrices[systemType === "auto" ? previewConfig.standType : standType] || 0
+      },
+      safety: quotationData.safety,
+      transport: quotationData.transport,
+      labour: quotationData.install,
+      isGreenmeterIncluded: greenMeter,
+      greenmeter: quotationData.green,
+      total: quotationData.grandTotal
+    };
+    
+    // Print quotation using the new method
+    printQuotation(printData);
+    
+    // Enhanced WhatsApp message
+    const whatsappNumber = "923044678929";
+    const totalKW = systemType === "auto" ? kwAuto : 
+                   (parseInt(panelWatt) * panelQty / 1000).toFixed(1);
+    
+    const msg = encodeURIComponent(
+      `🌞 Assalam-o-Alaikum! I have generated my solar quotation from Syed Solar Energy website.
 📋 Quotation Details:
 • Name: ${customer.name}
 • Contact: ${customer.contact}
@@ -556,28 +926,23 @@ ${customer.address}
 ${sysType === "hybrid" ? `• Battery: ${quotationData.selectedBattery?.model || ""} x ${systemType === "auto" ? previewConfig.batteryQty : batteryQty}` : ""}
 I am interested in installing this solar system. Please review my quotation and contact me to discuss further details, site visit, and installation timeline.
 JazakAllah! 🤝`
-        );
-        
-        // Open WhatsApp
-        const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${msg}`;
-        const opened = window.open(whatsappUrl, "_blank");
-        
-        if (!opened || opened.closed || typeof opened.closed == "undefined") {
-          alert("📱 WhatsApp redirect was blocked. Please allow popups or manually contact: 0304-467-8929");
-          window.location.href = whatsappUrl;
-        }
-        
-        // Generate new ID for next quotation
-        setQuotationId(generateQuotationId());
-        
-      } catch (error) {
-        console.error("Error generating PDF:", error);
-        alert("PDF generated successfully! However, there was an issue with WhatsApp redirect. Please manually contact: 0304-467-8929");
-      }
-    }, 1000);
+    );
+    
+    // Open WhatsApp
+    const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${msg}`;
+    const opened = window.open(whatsappUrl, "_blank");
+    
+    if (!opened || opened.closed || typeof opened.closed == "undefined") {
+      alert("📱 WhatsApp redirect was blocked. Please allow popups or manually contact: 0304-467-8929");
+      window.location.href = whatsappUrl;
+    }
+    
+    // Generate new ID for next quotation
+    setQuotationId(generateQuotationId());
+    setSaving(false);
   }
   
-  // Enhanced preview rendering
+  // Enhanced preview rendering with same design as QuotationScreen
   function renderQuotationPreview() {
     let data, sysType, sysLabel, previewConfig;
     if (systemType === "auto") {
@@ -605,39 +970,12 @@ JazakAllah! 🤝`
       data = getHybridCost(panelQty, standType, batteryQty, selectedBattery, inverterQty);
     }
     if (!data) return null;
+    
     const totalKW = systemType === "auto" ? kwAuto : 
                    (parseInt(panelWatt) * panelQty / 1000).toFixed(1);
     
-    // Enhanced warranty section
-    const warrantyBox = (
-      <div style={{
-        background: "linear-gradient(135deg, #fffde6 0%, #fff9c4 100%)",
-        borderLeft: "8px solid #ff9800",
-        borderRadius: 10,
-        margin: "20px 0",
-        padding: "20px",
-        fontWeight: 600,
-        fontSize: 15,
-        color: "#3b2400",
-        boxShadow: "0 4px 15px rgba(255, 152, 0, 0.15)"
-      }}>
-        <div style={{ display: "flex", alignItems: "center", marginBottom: 12 }}>
-          <span style={{ fontSize: 20, marginRight: 8 }}>🛡️</span>
-          <b style={{ fontSize: 16 }}>Warranty & Quality Assurance</b>
-        </div>
-        <ul style={{ marginTop: 10, paddingLeft: 20, marginBottom: 10, lineHeight: 1.6 }}>
-          <li>All solar panels are <b>A-Grade, Tier-1</b></li>
-          <li>Inverters include comprehensive warranty: <b>Daytime (5 years)</b>, <b>Hybrid (as per brand policy)</b></li>
-          <li>Lithium batteries: <b>5-10 years as per company policy</b> | Tubular batteries: <b>as per company policy</b></li>
-          <li>Professional installation with <b>6 months after-sales service warranty</b></li>
-          <li>Site visit charges: <b>Rs. 2,000/-</b> (Peshawar city)</li>
-          <li><b>Free system monitoring</b> and maintenance guidance for first month</li>
-        </ul>
-      </div>
-    );
-    
     return (
-      <div ref={pdfRef} style={{
+      <div style={{
         background: "#fff", 
         width: "100%", 
         maxWidth: "595px", 
@@ -651,247 +989,577 @@ JazakAllah! 🤝`
         fontSize: 14,
         overflow: "hidden"
       }}>
-        {/* Enhanced Header */}
-        <div style={{ 
-          background: "linear-gradient(135deg, #ff9800 0%, #ff6600 100%)",
-          margin: "-20px -20px 20px -20px",
-          padding: "20px",
-          borderRadius: "12px 12px 0 0",
-          color: "white"
-        }}>
-          <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", alignItems: "center" }}>
-            <div style={{ marginBottom: isMobile ? 15 : 0 }}>
-              <img 
-                src={logo} 
-                alt="Syed Solar Logo" 
-                style={{ width: 80, height: "auto", marginBottom: 10 }} 
-              />
-              <div style={{ fontSize: 24, fontWeight: 900 }}>
-                Syed Solar Energy Pvt Ltd
-              </div>
-              <div style={{ fontSize: 13, opacity: 0.9, marginTop: 5 }}>
-                📍 Office #23, Mustafa Plaza, Ring Road, Peshawar
-              </div>
-            </div>
-            <div style={{ textAlign: isMobile ? "center" : "right" }}>
-              <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>
-                {sysLabel} Quotation
-              </div>
-              <div style={{ fontSize: 13, opacity: 0.9 }}>
-                📅 Date: {new Date().toLocaleDateString()}
-              </div>
-              <div style={{ fontSize: 16, fontWeight: 700, marginTop: 8 }}>
-                ⚡ {totalKW}kW Solar System
-              </div>
-              <div style={{ fontSize: 13, opacity: 0.9, marginTop: 5 }}>
-                📋 Quotation ID: #{quotationId}
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        {/* Customer Details */}
+        {/* Header with same design as QuotationScreen */}
         <div style={{
-          background: "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)",
-          borderRadius: 8,
-          padding: "15px",
-          marginBottom: 20,
-          border: "1px solid #dee2e6"
+          display: 'flex',
+          alignItems: 'center',
+          marginBottom: '20px',
+          borderBottom: '3px solid #ff9800',
+          paddingBottom: '15px'
         }}>
-          <div style={{ fontSize: 16, fontWeight: 700, color: "#495057", marginBottom: 10 }}>
-            👤 Customer Information
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "10px", fontSize: 14 }}>
-            <div><b>Name:</b> {customer.name || "-"}</div>
-            <div><b>Contact:</b> {customer.contact || "-"}</div>
-            <div><b>Email:</b> {customer.email || "-"}</div>
-            <div><b>Address:</b> {customer.address || "-"}</div>
-          </div>
-        </div>
-        
-        {/* Enhanced System Configuration */}
-        <div style={{
-          background: "linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%)",
-          borderRadius: 10,
-          padding: "15px",
-          marginBottom: 20,
-          border: "2px solid #ffcc02"
-        }}>
-          <div style={{ fontSize: 16, fontWeight: 700, color: "#ef6c00", marginBottom: 15 }}>
-            ⚙️ System Configuration & Pricing
-          </div>
-          
-          <table style={{
-            width: "100%",
-            borderCollapse: "collapse",
-            fontSize: 14,
-            backgroundColor: "white",
-            borderRadius: 8,
-            overflow: "hidden",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
+          <div style={{
+            flex: '0 0 100px',
+            paddingRight: '20px'
           }}>
-            <thead>
-              <tr style={{ backgroundColor: "#ff9800", color: "white" }}>
-                <th style={{ padding: "12px", textAlign: "left" }}>Item</th>
-                <th style={{ padding: "12px", textAlign: "left" }}>Details</th>
-                <th style={{ padding: "12px", textAlign: "right" }}>Amount (PKR)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {/* Solar Panels */}
-              <tr style={{ backgroundColor: "#f8f9fa" }}>
-                <td style={{ padding: "12px", fontWeight: 600, borderBottom: "1px solid #dee2e6" }}>
-                  🔆 Solar Panels
-                </td>
-                <td style={{ padding: "12px", borderBottom: "1px solid #dee2e6" }}>
-                  <div><b>{(systemType === "auto" ? previewConfig.panelQty : panelQty)} panels</b> × {systemType === "auto" ? previewConfig.panelBrand : panelBrand} ({systemType === "auto" ? previewConfig.panelWatt : panelWatt}W)</div>
-                  <div style={{ fontSize: 13, color: "#666", marginTop: 4 }}>
-                    Unit Price: Rs. {(data.panelUnitPrice || 0).toLocaleString()} | 
-                    Price/Watt: Rs. {(panelPrices[systemType === "auto" ? previewConfig.panelBrand : panelBrand]?.[systemType === "auto" ? previewConfig.panelWatt : panelWatt]?.pricePerWatt || 0)}
-                  </div>
-                </td>
-                <td style={{ padding: "12px", borderBottom: "1px solid #dee2e6", textAlign: "right", fontWeight: 700, color: "#ff6600" }}>
-                  Rs. {data.panelTotal.toLocaleString()}
-                </td>
-              </tr>
-              
-              {/* Inverter */}
-              <tr style={{ backgroundColor: "white" }}>
-                <td style={{ padding: "12px", fontWeight: 600, borderBottom: "1px solid #dee2e6" }}>
-                  🔄 {sysType === "daytime" ? "Daytime" : "Hybrid"} Inverter
-                </td>
-                <td style={{ padding: "12px", borderBottom: "1px solid #dee2e6" }}>
-                  <div><b>{systemType === "auto" ? previewConfig.inverterQty : inverterQty} unit(s)</b> × {data.selectedInverter?.brand || ""} {data.selectedInverter?.capacity || ""}</div>
-                  <div style={{ fontSize: 13, color: "#666", marginTop: 4 }}>
-                    Model: {data.selectedInverter?.model || ""} | Unit Price: Rs. {(data.selectedInverter?.price || 0).toLocaleString()}
-                  </div>
-                </td>
-                <td style={{ padding: "12px", borderBottom: "1px solid #dee2e6", textAlign: "right", fontWeight: 700, color: "#ff6600" }}>
-                  Rs. {data.invTotal.toLocaleString()}
-                </td>
-              </tr>
-              
-              {/* Battery (for hybrid only) */}
-              {sysType === "hybrid" && (
-                <tr style={{ backgroundColor: "#f8f9fa" }}>
-                  <td style={{ padding: "12px", fontWeight: 600, borderBottom: "1px solid #dee2e6" }}>
-                    🔋 Batteries
-                  </td>
-                  <td style={{ padding: "12px", borderBottom: "1px solid #dee2e6" }}>
-                    <div><b>{(systemType === "auto" ? previewConfig.batteryQty : batteryQty)} units</b> × {data.selectedBattery?.model || ""}</div>
-                    <div style={{ fontSize: 13, color: "#666", marginTop: 4 }}>
-                      Type: {data.selectedBattery?.type || ""} | Voltage: {data.selectedBattery?.voltage || ""} | 
-                      Capacity: {data.selectedBattery?.capacity || ""}
-                    </div>
-                    <div style={{ fontSize: 13, color: "#666" }}>
-                      Unit Price: Rs. {(data.battUnit || 0).toLocaleString()}
-                    </div>
-                  </td>
-                  <td style={{ padding: "12px", borderBottom: "1px solid #dee2e6", textAlign: "right", fontWeight: 700, color: "#ff6600" }}>
-                    Rs. {(data.battTotal || 0).toLocaleString()}
-                  </td>
-                </tr>
-              )}
-              
-              {/* Mounting Structure */}
-              <tr style={{ backgroundColor: "white" }}>
-                <td style={{ padding: "12px", fontWeight: 600, borderBottom: "1px solid #dee2e6" }}>
-                  🔧 Mounting Structure
-                </td>
-                <td style={{ padding: "12px", borderBottom: "1px solid #dee2e6" }}>
-                  <div><b>{data.standQty} sets</b> × {systemType === "auto" ? previewConfig.standType : standType}</div>
-                  <div style={{ fontSize: 13, color: "#666", marginTop: 4 }}>
-                    Unit Price: Rs. {(data.standUnit || 0).toLocaleString()}
-                  </div>
-                </td>
-                <td style={{ padding: "12px", borderBottom: "1px solid #dee2e6", textAlign: "right", fontWeight: 700, color: "#ff6600" }}>
-                  Rs. {data.standTotal.toLocaleString()}
-                </td>
-              </tr>
-              
-              {/* Service Charges */}
-              <tr style={{ backgroundColor: "#f8f9fa" }}>
-                <td style={{ padding: "12px", fontWeight: 600, borderBottom: "1px solid #dee2e6" }}>
-                  🛠️ Installation & Services
-                </td>
-                <td style={{ padding: "12px", borderBottom: "1px solid #dee2e6" }}>
-                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit, minmax(150px, 1fr))", gap: "8px", fontSize: 13 }}>
-                    <div>Safety Materials: Rs. {data.safety.toLocaleString()}</div>
-                    <div>Transportation: Rs. {data.transport.toLocaleString()}</div>
-                    <div>Installation: Rs. {data.install.toLocaleString()}</div>
-                    {greenMeter && <div style={{ color: "#28a745", fontWeight: 600 }}>Net Metering: Rs. {greenMeterCharges.toLocaleString()}</div>}
-                  </div>
-                </td>
-                <td style={{ padding: "12px", borderBottom: "1px solid #dee2e6", textAlign: "right", fontWeight: 700, color: "#ff6600" }}>
-                  Rs. {(data.safety + data.transport + data.install + (greenMeter ? greenMeterCharges : 0)).toLocaleString()}
-                </td>
-              </tr>
-              
-              {/* Grand Total */}
-              <tr style={{ backgroundColor: "#ff6600", color: "white" }}>
-                <td colSpan={2} style={{ padding: "15px", fontWeight: 700, fontSize: 16, textAlign: "right" }}>
-                  💰 TOTAL AMOUNT:
-                </td>
-                <td style={{ padding: "15px", fontSize: 20, fontWeight: 900, textAlign: "right" }}>
-                  Rs. {data.grandTotal.toLocaleString()}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        
-        {/* Warranty Box */}
-        {warrantyBox}
-        
-        {/* Enhanced Terms & Payment */}
-        <div style={{
-          background: "linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%)",
-          padding: "15px",
-          borderRadius: 10,
-          marginBottom: 20,
-          border: "2px solid #4caf50"
-        }}>
-          <div style={{ fontSize: 16, fontWeight: 700, color: "#2e7d32", marginBottom: 12 }}>
-            💳 Payment Terms & Conditions
+            <img 
+              src={logo} 
+              alt="Syed Solar Energy Logo" 
+              style={{
+                width: '100px',
+                height: '100px',
+                borderRadius: '10px'
+              }} 
+            />
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "15px", fontSize: 14 }}>
-            <div>
-              <b>Payment Schedule:</b>
-              <ul style={{ marginTop: 8, paddingLeft: 20, lineHeight: 1.6 }}>
-                <li><b>5%</b> advance for booking</li>
-                <li><b>70%</b> on material delivery</li>
-                <li><b>25%</b> after installation</li>
-              </ul>
-            </div>
-            <div>
-              <b>Important Notes:</b>
-              <ul style={{ marginTop: 8, paddingLeft: 20, lineHeight: 1.6 }}>
-                <li>Quotation valid for <b>3 days</b></li>
-                <li>Prices subject to market changes</li>
-                <li>Installation within 1-2 days</li>
-                <li>After sales services included</li>
-              </ul>
-            </div>
+          <div style={{ paddingLeft: '20px', flex: 1 }}>
+            <h1 style={{
+              color: '#ff9800',
+              fontSize: '28px',
+              fontWeight: 'bold',
+              marginBottom: '8px',
+              letterSpacing: '1px'
+            }}>
+              Syed Solar Energy Pvt Ltd
+            </h1>
+            <p style={{
+              color: '#666',
+              fontSize: '13px',
+              margin: '5px 0'
+            }}>
+              Office #23, Mustafa Plaza, Ring Road Near Imtiaz Mega Center, Peshawar
+            </p>
+            <p style={{
+              color: '#666',
+              fontSize: '13px',
+              margin: '5px 0'
+            }}>
+              <strong>Phone:</strong> 0304-4678929 | <strong>Email:</strong> sales@syedsolarenergy.com
+            </p>
           </div>
         </div>
-        
-        {/* Enhanced Footer */}
+        {/* Quotation Title */}
         <div style={{
-          background: "linear-gradient(135deg, #1976d2 0%, #1565c0 100%)",
-          color: "#fff",
-          fontWeight: 600,
-          textAlign: "center",
-          padding: "15px",
-          borderRadius: 8,
-          fontSize: 13,
-          marginTop: 15
+          background: 'linear-gradient(135deg, #ff9800, #ff6b35)',
+          color: 'white',
+          padding: '20px 15px',
+          borderRadius: '8px',
+          fontSize: '24px',
+          fontWeight: 'bold',
+          textAlign: 'center',
+          margin: '15px 0',
+          letterSpacing: '1.5px',
+          textTransform: 'uppercase'
         }}>
-          <div style={{ marginBottom: 8 }}>
-            📧 sales@syedsolarenergy.com | 📱 WhatsApp: 0304-4678929/0307-5596695
+          🌞 Solar Energy Quotation
+        </div>
+        {/* Quotation Meta */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          margin: '15px 0',
+          padding: '10px',
+          background: '#f0f8ff',
+          borderRadius: '8px',
+          borderLeft: '4px solid #2196f3'
+        }}>
+          <div>
+            <p style={{ margin: '0', fontSize: '14px' }}><strong>Quotation ID:</strong> #{quotationId}</p>
+            <p style={{ margin: '0', fontSize: '14px' }}><strong>Date:</strong> {new Date().toLocaleDateString()}</p>
           </div>
-          <div style={{ fontSize: 12, opacity: 0.9 }}>
-            🏢 Office #23, Mustafa Plaza, Ring Road, Peshawar | 🌐 www.syedsolarenergy.com
+          <div style={{ textAlign: 'right' }}>
+            <p style={{ margin: '0', fontSize: '14px' }}><strong>Valid Until:</strong> {new Date(Date.now() + 3*24*60*60*1000).toLocaleDateString()}</p>
+            <p style={{ margin: '0', fontSize: '14px' }}><strong>System Type:</strong> {sysLabel}</p>
           </div>
+        </div>
+        {/* Customer Section */}
+        <div style={{
+          background: '#fffbe8',
+          borderRadius: '8px',
+          padding: '15px',
+          margin: '15px 0',
+          borderLeft: '4px solid #ff9800'
+        }}>
+          <h3 style={{
+            color: '#e65100',
+            marginBottom: '8px',
+            fontSize: '16px'
+          }}>
+            Customer Information
+          </h3>
+          <p style={{ margin: '0', fontSize: '14px' }}><strong>Name:</strong> {customer.name}</p>
+          <p style={{ margin: '0', fontSize: '14px' }}><strong>Contact:</strong> {customer.contact}</p>
+          <p style={{ margin: '0', fontSize: '14px' }}><strong>Email:</strong> {customer.email || 'Not provided'}</p>
+          <p style={{ margin: '0', fontSize: '14px' }}><strong>Address:</strong> {customer.address}</p>
+        </div>
+        {/* System Configuration Table */}
+        <h3 style={{
+          color: '#e65100',
+          margin: '15px 0 10px 0'
+        }}>
+          System Configuration & Pricing
+        </h3>
+        <table style={{
+          width: '100%',
+          borderCollapse: 'collapse',
+          margin: '15px 0',
+          background: '#fff'
+        }}>
+          <thead>
+            <tr>
+              <th style={{
+                background: '#ff9800',
+                color: 'white',
+                padding: '10px',
+                textAlign: 'left',
+                fontWeight: 'bold',
+                width: '50%'
+              }}>
+                Item Description
+              </th>
+              <th style={{
+                background: '#ff9800',
+                color: 'white',
+                padding: '10px',
+                textAlign: 'center',
+                fontWeight: 'bold',
+                width: '20%'
+              }}>
+                Quantity
+              </th>
+              <th style={{
+                background: '#ff9800',
+                color: 'white',
+                padding: '10px',
+                textAlign: 'right',
+                fontWeight: 'bold',
+                width: '30%'
+              }}>
+                Amount (PKR)
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {/* Solar Panels */}
+            <tr>
+              <td style={{
+                padding: '8px 10px',
+                borderBottom: '1px solid #eee'
+              }}>
+                <div style={{ fontWeight: 'bold', color: '#333' }}>
+                  Solar Panels
+                </div>
+                <div style={{ fontSize: '13px', color: '#666' }}>
+                  {systemType === "auto" ? previewConfig.panelBrand : panelBrand} {systemType === "auto" ? previewConfig.panelWatt : panelWatt}W Premium Grade
+                </div>
+              </td>
+              <td style={{
+                padding: '8px 10px',
+                borderBottom: '1px solid #eee',
+                textAlign: 'center'
+              }}>
+                {systemType === "auto" ? previewConfig.panelQty : panelQty} pcs
+              </td>
+              <td style={{
+                padding: '8px 10px',
+                borderBottom: '1px solid #eee',
+                textAlign: 'right',
+                fontWeight: 'bold',
+                color: '#e65100'
+              }}>
+                Rs. {data.panelTotal.toLocaleString()}
+              </td>
+            </tr>
+            {/* Inverter */}
+            <tr style={{ background: '#f9f9f9' }}>
+              <td style={{
+                padding: '8px 10px',
+                borderBottom: '1px solid #eee'
+              }}>
+                <div style={{ fontWeight: 'bold', color: '#333' }}>
+                  {sysType === "daytime" ? 'Grid-Tie' : 'Hybrid'} Inverter
+                </div>
+                <div style={{ fontSize: '13px', color: '#666' }}>
+                  {data.selectedInverter?.brand || ""} {data.selectedInverter?.capacity || ""}
+                </div>
+              </td>
+              <td style={{
+                padding: '8px 10px',
+                borderBottom: '1px solid #eee',
+                textAlign: 'center'
+              }}>
+                {systemType === "auto" ? previewConfig.inverterQty : inverterQty} unit
+              </td>
+              <td style={{
+                padding: '8px 10px',
+                borderBottom: '1px solid #eee',
+                textAlign: 'right',
+                fontWeight: 'bold',
+                color: '#e65100'
+              }}>
+                Rs. {data.invTotal.toLocaleString()}
+              </td>
+            </tr>
+            {/* Battery (for hybrid only) */}
+            {sysType === "hybrid" && data.battTotal > 0 && (
+              <tr>
+                <td style={{
+                  padding: '8px 10px',
+                  borderBottom: '1px solid #eee'
+                }}>
+                  <div style={{ fontWeight: 'bold', color: '#333' }}>
+                    Battery Bank
+                  </div>
+                  <div style={{ fontSize: '13px', color: '#666' }}>
+                    {data.selectedBattery?.model || ""} ({data.selectedBattery?.type || ""})
+                  </div>
+                </td>
+                <td style={{
+                  padding: '8px 10px',
+                  borderBottom: '1px solid #eee',
+                  textAlign: 'center'
+                }}>
+                  {systemType === "auto" ? previewConfig.batteryQty : batteryQty} units
+                </td>
+                <td style={{
+                  padding: '8px 10px',
+                  borderBottom: '1px solid #eee',
+                  textAlign: 'right',
+                  fontWeight: 'bold',
+                  color: '#e65100'
+                }}>
+                  Rs. {data.battTotal.toLocaleString()}
+                </td>
+              </tr>
+            )}
+            {/* Mounting Structure */}
+            <tr style={{ background: '#f9f9f9' }}>
+              <td style={{
+                padding: '8px 10px',
+                borderBottom: '1px solid #eee'
+              }}>
+                <div style={{ fontWeight: 'bold', color: '#333' }}>
+                  Mounting Structure
+                </div>
+                <div style={{ fontSize: '13px', color: '#666' }}>
+                  {systemType === "auto" ? previewConfig.standType : standType} Grade
+                </div>
+              </td>
+              <td style={{
+                padding: '8px 10px',
+                borderBottom: '1px solid #eee',
+                textAlign: 'center'
+              }}>
+                {data.standQty} sets
+              </td>
+              <td style={{
+                padding: '8px 10px',
+                borderBottom: '1px solid #eee',
+                textAlign: 'right',
+                fontWeight: 'bold',
+                color: '#e65100'
+              }}>
+                Rs. {data.standTotal.toLocaleString()}
+              </td>
+            </tr>
+            {/* Safety & Protection */}
+            <tr>
+              <td style={{
+                padding: '8px 10px',
+                borderBottom: '1px solid #eee'
+              }}>
+                <div style={{ fontWeight: 'bold', color: '#333' }}>
+                  Safety & Protection Equipment
+                </div>
+              </td>
+              <td style={{
+                padding: '8px 10px',
+                borderBottom: '1px solid #eee',
+                textAlign: 'center'
+              }}>
+                1 set
+              </td>
+              <td style={{
+                padding: '8px 10px',
+                borderBottom: '1px solid #eee',
+                textAlign: 'right',
+                fontWeight: 'bold',
+                color: '#e65100'
+              }}>
+                Rs. {data.safety.toLocaleString()}
+              </td>
+            </tr>
+            {/* Transportation */}
+            <tr style={{ background: '#f9f9f9' }}>
+              <td style={{
+                padding: '8px 10px',
+                borderBottom: '1px solid #eee'
+              }}>
+                <div style={{ fontWeight: 'bold', color: '#333' }}>
+                  Transportation
+                </div>
+              </td>
+              <td style={{
+                padding: '8px 10px',
+                borderBottom: '1px solid #eee',
+                textAlign: 'center'
+              }}>
+                -
+              </td>
+              <td style={{
+                padding: '8px 10px',
+                borderBottom: '1px solid #eee',
+                textAlign: 'right',
+                fontWeight: 'bold',
+                color: '#e65100'
+              }}>
+                Rs. {data.transport.toLocaleString()}
+              </td>
+            </tr>
+            {/* Installation */}
+            <tr>
+              <td style={{
+                padding: '8px 10px',
+                borderBottom: '1px solid #eee'
+              }}>
+                <div style={{ fontWeight: 'bold', color: '#333' }}>
+                  Professional Installation
+                </div>
+              </td>
+              <td style={{
+                padding: '8px 10px',
+                borderBottom: '1px solid #eee',
+                textAlign: 'center'
+              }}>
+                -
+              </td>
+              <td style={{
+                padding: '8px 10px',
+                borderBottom: '1px solid #eee',
+                textAlign: 'right',
+                fontWeight: 'bold',
+                color: '#e65100'
+              }}>
+                Rs. {data.install.toLocaleString()}
+              </td>
+            </tr>
+            {/* Green Meter (if included) */}
+            {greenMeter && (
+              <tr style={{ background: '#f9f9f9' }}>
+                <td style={{
+                  padding: '8px 10px',
+                  borderBottom: '1px solid #eee'
+                }}>
+                  <div style={{ fontWeight: 'bold', color: '#333' }}>
+                    Net Metering (Green Meter)
+                  </div>
+                </td>
+                <td style={{
+                  padding: '8px 10px',
+                  borderBottom: '1px solid #eee',
+                  textAlign: 'center'
+                }}>
+                  1 unit
+                </td>
+                <td style={{
+                  padding: '8px 10px',
+                  borderBottom: '1px solid #eee',
+                  textAlign: 'right',
+                  fontWeight: 'bold',
+                  color: '#e65100'
+                }}>
+                  Rs. {data.green.toLocaleString()}
+                </td>
+              </tr>
+            )}
+            {/* Total */}
+            <tr style={{
+              background: '#ffe0b2',
+              fontWeight: 'bold',
+              fontSize: '16px'
+            }}>
+              <td colSpan="2" style={{
+                borderTop: '2px solid #ff9800',
+                color: '#e65100',
+                fontWeight: 'bold',
+                padding: '20px',
+                fontSize: '16px',
+                textAlign: 'right'
+              }}>
+                <strong>TOTAL INVESTMENT</strong>
+              </td>
+              <td style={{
+                borderTop: '2px solid #ff9800',
+                color: '#e65100',
+                fontWeight: 'bold',
+                padding: '20px',
+                fontSize: '18px',
+                textAlign: 'right'
+              }}>
+                <strong>Rs. {data.grandTotal.toLocaleString()}</strong>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        {/* Warranty Section */}
+        <div style={{
+          background: '#f0f8f0',
+          borderLeft: '4px solid #28a745',
+          borderRadius: '6px',
+          padding: '15px',
+          margin: '20px 0'
+        }}>
+          <h4 style={{
+            color: '#28a745',
+            marginBottom: '10px',
+            fontSize: '14px'
+          }}>
+            🛡️ Warranty & Quality Assurance
+          </h4>
+          <ul style={{
+            listStyle: 'none',
+            paddingLeft: '0'
+          }}>
+            <li style={{
+              padding: '3px 0',
+              fontSize: '12px',
+              position: 'relative',
+              paddingLeft: '15px'
+            }}>
+              <span style={{
+                content: "✓",
+                color: '#28a745',
+                fontWeight: 'bold',
+                position: 'absolute',
+                left: '0'
+              }}>✓</span>
+              Solar Panels: 12 years product + 25 years performance warranty
+            </li>
+            <li style={{
+              padding: '3px 0',
+              fontSize: '12px',
+              position: 'relative',
+              paddingLeft: '15px'
+            }}>
+              <span style={{
+                content: "✓",
+                color: '#28a745',
+                fontWeight: 'bold',
+                position: 'absolute',
+                left: '0'
+              }}>✓</span>
+              Inverters: 5 years comprehensive warranty
+            </li>
+            <li style={{
+              padding: '3px 0',
+              fontSize: '12px',
+              position: 'relative',
+              paddingLeft: '15px'
+            }}>
+              <span style={{
+                content: "✓",
+                color: '#28a745',
+                fontWeight: 'bold',
+                position: 'absolute',
+                left: '0'
+              }}>✓</span>
+              Batteries: As per manufacturer's warranty policy
+            </li>
+            <li style={{
+              padding: '3px 0',
+              fontSize: '12px',
+              position: 'relative',
+              paddingLeft: '15px'
+            }}>
+              <span style={{
+                content: "✓",
+                color: '#28a745',
+                fontWeight: 'bold',
+                position: 'absolute',
+                left: '0'
+              }}>✓</span>
+              Installation: 3 months after-sales service warranty
+            </li>
+            <li style={{
+              padding: '3px 0',
+              fontSize: '12px',
+              position: 'relative',
+              paddingLeft: '15px'
+            }}>
+              <span style={{
+                content: "✓",
+                color: '#28a745',
+                fontWeight: 'bold',
+                position: 'absolute',
+                left: '0'
+              }}>✓</span>
+              Site Survey: Rs. 2,000/- for Peshawar city
+            </li>
+          </ul>
+        </div>
+        {/* Terms Section */}
+        <div style={{
+          background: '#fff8e1',
+          borderLeft: '4px solid #ffc107',
+          borderRadius: '6px',
+          padding: '15px',
+          margin: '20px 0'
+        }}>
+          <h4 style={{
+            color: '#f57c00',
+            marginBottom: '10px',
+            fontSize: '14px'
+          }}>
+            📋 Terms & Payment Schedule
+          </h4>
+          <ul style={{
+            listStyle: 'disc',
+            paddingLeft: '15px'
+          }}>
+            <li style={{
+              padding: '2px 0',
+              fontSize: '12px'
+            }}>
+              <strong>Booking:</strong> 5% advance payment
+            </li>
+            <li style={{
+              padding: '2px 0',
+              fontSize: '12px'
+            }}>
+              <strong>Material Arrival:</strong> 70% payment
+            </li>
+            <li style={{
+              padding: '2px 0',
+              fontSize: '12px'
+            }}>
+              <strong>Completion:</strong> 25% final payment
+            </li>
+            <li style={{
+              padding: '2px 0',
+              fontSize: '12px'
+            }}>
+              <strong>Validity:</strong> 3 days only
+            </li>
+            <li style={{
+              padding: '2px 0',
+              fontSize: '12px'
+            }}>
+              <strong>Note:</strong> Prices subject to market changes
+            </li>
+          </ul>
+        </div>
+        {/* Footer */}
+        <div style={{
+          textAlign: 'center',
+          padding: '20px',
+          background: '#ff9800',
+          color: 'white',
+          borderRadius: '8px',
+          fontSize: '14px'
+        }}>
+          Thank you for choosing Syed Solar Energy<br/>
+          📧 sales@syedsolarenergy.com | 📱 03044678929<br/>
+          📍 Office #23, Mustafa Plaza, Ring Road, Peshawar
         </div>
       </div>
     );
@@ -1461,7 +2129,6 @@ const sectionBox = {
   boxShadow: "0 4px 15px rgba(255, 152, 0, 0.1)",
   border: "1px solid #ffe0b2"
 };
-
 const sectionTitle = { 
   color: "#FF9800", 
   fontWeight: 800, 
@@ -1470,7 +2137,6 @@ const sectionTitle = {
   paddingBottom: "8px",
   borderBottom: "2px solid #ffcc02"
 };
-
 const labelStyle = {
   display: "block",
   fontWeight: 600,
@@ -1478,7 +2144,6 @@ const labelStyle = {
   color: "#333",
   fontSize: "14px"
 };
-
 const inputStyle = { 
   width: "100%", 
   padding: "10px 12px", 
@@ -1489,7 +2154,6 @@ const inputStyle = {
   transition: "border-color 0.3s ease",
   boxSizing: "border-box"
 };
-
 const priceInfoBox = {
   background: "linear-gradient(135deg, #e8f5e8 0%, #f1f8e9 100%)",
   border: "2px solid #c8e6c9",
@@ -1502,7 +2166,6 @@ const priceInfoBox = {
   fontSize: "13px",
   color: "#2e7d32"
 };
-
 const chargesBox = {
   background: "linear-gradient(135deg, #e3f2fd 0%, #f1f8e9 100%)",
   border: "2px solid #bbdefb",

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from "../supabaseClient";
+import logo from "../assets/logo.png";
 
 const QuotationSoftware = () => {
   // State variables
@@ -30,20 +31,15 @@ const QuotationSoftware = () => {
   
   // UI states
   const [quotations, setQuotations] = useState([]);
-  const [showPreview, setShowPreview] = useState(false);
   const [showQuotationsList, setShowQuotationsList] = useState(false);
   const [currentQuotation, setCurrentQuotation] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [selectedQuotation, setSelectedQuotation] = useState(null);
-  const [showEditModal, setShowEditModal] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [filter, setFilter] = useState('all');
   const [editingQuotation, setEditingQuotation] = useState(null);
-  
-  // Ref for PDF generation
-  const quotationRef = useRef();
   
   // Equipment options
   const inverterCompanies = ['Inverex', 'Ziewnic', 'Growatt', 'Goodwe', '1On', 'Solax', 'Sunlife', 'Longlife'];
@@ -76,11 +72,39 @@ const QuotationSoftware = () => {
     setLabour(isEngineerIncluded ? 15000 : 20000);
   }, [isEngineerIncluded]);
 
+  // Helper functions
+  const getBatteryOptions = () => {
+    const kw = parseFloat(inverter.kw);
+    if (batteryType === 'Lithium') return kw <= 4.2 ? lithium24 : lithium48;
+    if (batteryType === 'Tubular') return tubular;
+    return [];
+  };
+  
+  const getPanelPrice = (panel = solarPanel) => parseFloat(panel.pricePerWatt) * parseInt(panel.watts || 0);
+  const getStandQty = (qty = solarPanel.quantity, type = stand.type) => 
+    type === 'L2 (2 panels)' ? Math.ceil(qty / 2) : qty;
+  
+  const getTotal = () =>
+    inverter.quantity * inverter.pricePerUnit +
+    batteryQuantity * batteryPrice +
+    getPanelPrice() * solarPanel.quantity +
+    getStandQty() * stand.pricePerStand +
+    safety + transport + labour + (isEngineerIncluded ? engineer : 0) +
+    (isGreenmeterIncluded ? greenmeter : 0);
+
+  // Generate quotation ID
+  const generateQuotationId = () => {
+    const date = new Date();
+    const year = date.getFullYear().toString().slice(-2);
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    return `SE-${year}${month}-${random}`;
+  };
+
   // Database operations
   async function saveQuotationToSupabase(quotationData) {
     const VALID_STATUSES = ['pending', 'contacted', 'completed', 'cancelled'];
     const status = VALID_STATUSES.includes(quotationData.followUpStatus) ? quotationData.followUpStatus : 'pending';
-
     const supabaseData = {
       quotation_date: quotationData.quotationDate,
       quotation_id: quotationData.id,
@@ -115,7 +139,6 @@ const QuotationSoftware = () => {
       follow_up_status: status,
       created_at: new Date().toISOString()
     };
-
     try {
       const { data, error } = await supabase
         .from("quotations")
@@ -136,7 +159,6 @@ const QuotationSoftware = () => {
         .select("*")
         .order("created_at", { ascending: false });
       if (error) throw error;
-
       return data.map(item => ({
         id: item.quotation_id,
         customer: {
@@ -188,7 +210,6 @@ const QuotationSoftware = () => {
   async function updateQuotationInSupabase(quotationId, updatedData) {
     const VALID_STATUSES = ['pending', 'contacted', 'completed', 'cancelled'];
     const status = VALID_STATUSES.includes(updatedData.followUpStatus) ? updatedData.followUpStatus : 'pending';
-
     const supabaseData = {
       quotation_id: updatedData.id,
       customer_name: updatedData.customer.name,
@@ -222,7 +243,6 @@ const QuotationSoftware = () => {
       follow_up_status: status,
       updated_at: new Date().toISOString()
     };
-
     try {
       const { data, error } = await supabase
         .from("quotations")
@@ -275,35 +295,6 @@ const QuotationSoftware = () => {
     }
   }
 
-  // Helper functions
-  const getBatteryOptions = () => {
-    const kw = parseFloat(inverter.kw);
-    if (batteryType === 'Lithium') return kw <= 4.2 ? lithium24 : lithium48;
-    if (batteryType === 'Tubular') return tubular;
-    return [];
-  };
-  
-  const getPanelPrice = (panel = solarPanel) => parseFloat(panel.pricePerWatt) * parseInt(panel.watts || 0);
-  const getStandQty = (qty = solarPanel.quantity, type = stand.type) => 
-    type === 'L2 (2 panels)' ? Math.ceil(qty / 2) : qty;
-  
-  const getTotal = () =>
-    inverter.quantity * inverter.pricePerUnit +
-    batteryQuantity * batteryPrice +
-    getPanelPrice() * solarPanel.quantity +
-    getStandQty() * stand.pricePerStand +
-    safety + transport + labour + (isEngineerIncluded ? engineer : 0) +
-    (isGreenmeterIncluded ? greenmeter : 0);
-
-  // Generate quotation ID
-  const generateQuotationId = () => {
-    const date = new Date();
-    const year = date.getFullYear().toString().slice(-2);
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-    return `SE-${year}${month}-${random}`;
-  };
-
   // CRUD operations
   const saveQuotation = async () => {
     if (!customer.name || !customer.contact || !staffName || !systemType) {
@@ -340,13 +331,11 @@ const QuotationSoftware = () => {
         followUpStatus: editingQuotation?.followUpStatus || "pending",
         quotationDate
       };
-
       if (editingQuotation) {
         await updateQuotationInSupabase(quotationId, newQuotation);
       } else {
         await saveQuotationToSupabase(newQuotation);
       }
-
       await loadAllQuotations();
       setCurrentQuotation(newQuotation);
       alert(`✅ Quotation ${editingQuotation ? 'updated' : 'saved'} successfully!`);
@@ -371,7 +360,7 @@ const QuotationSoftware = () => {
     }
   };
 
-  // Enhanced print quotation with professional design
+  // Enhanced print quotation with same format as QuotationScreen
   const printQuotation = (quotationData) => {
     try {
       const printWindow = window.open('', '_blank');
@@ -402,17 +391,13 @@ const QuotationSoftware = () => {
               .container { 
                 max-width: 800px; 
                 margin: 0 auto; 
-                border: 1px solid #ddd;
-                border-radius: 10px;
-                overflow: hidden;
-                box-shadow: 0 0 20px rgba(0,0,0,0.1);
               }
               .header { 
                 display: flex; 
                 align-items: center; 
-                padding: 30px;
-                background: linear-gradient(135deg, #FF6B35, #F7931E);
-                color: white;
+                margin-bottom: 20px; 
+                border-bottom: 3px solid #ff9800; 
+                padding-bottom: 15px; 
               }
               .logo-container {
                 flex: 0 0 100px;
@@ -421,94 +406,84 @@ const QuotationSoftware = () => {
               .logo {
                 width: 100px;
                 height: 100px;
+                border-radius: 10px;
               }
               .company-info { 
                 padding-left: 20px;
                 flex: 1;
               }
               .company-info h1 { 
+                color: #ff9800; 
                 font-size: 28px; 
                 margin-bottom: 8px; 
-                color: white;
+                font-weight: bold; 
                 letter-spacing: 1px;
               }
               .company-info p { 
                 margin: 5px 0;
                 font-size: 13px;
-                opacity: 0.9;
+                color: #666;
               }
               .quotation-title { 
-                background: linear-gradient(135deg, #e65100, #ff9800); 
+                background: linear-gradient(135deg, #ff9800, #ff6b35); 
                 color: white; 
-                padding: 20px; 
+                padding: 20px 15px; 
                 text-align: center; 
                 font-size: 24px; 
                 font-weight: bold;
                 letter-spacing: 1.5px;
                 text-transform: uppercase;
+                margin: 15px 0;
+                border-radius: 8px;
               }
               .quotation-meta {
                 display: flex;
                 justify-content: space-between;
-                padding: 20px;
-                background: #f8f9fa;
-                border-bottom: 1px solid #eee;
+                padding: 10px;
+                background: #f0f8ff;
+                border-radius: 8px;
+                border-left: 4px solid #2196f3;
+                margin: 15px 0;
               }
               .customer-section { 
-                padding: 30px;
-                background: #fff;
-                border: 1px solid #ffe0b2;
-                border-radius: 10px;
-                margin: 20px;
+                background: #fffbe8;
+                border-radius: 8px;
+                padding: 15px;
+                margin: 15px 0;
+                border-left: 4px solid #ff9800;
               }
               .customer-section h3 { 
-                color: #ff6b35; 
-                margin-bottom: 15px; 
-                font-size: 18px; 
-                border-bottom: 2px solid #ff9800;
-                padding-bottom: 8px;
-                display: inline-block;
-              }
-              .customer-details {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-                gap: 15px;
-              }
-              .customer-detail {
-                margin-bottom: 10px;
-              }
-              .customer-detail strong {
-                display: inline-block;
-                width: 120px;
-                color: #4a5568;
+                color: #e65100; 
+                margin-bottom: 8px; 
+                font-size: 16px; 
               }
               .details-table { 
                 width: 100%; 
                 border-collapse: collapse; 
-                margin: 20px 0;
+                margin: 15px 0;
+                background: #fff;
               }
               .details-table th { 
                 background: #ff9800; 
                 color: white; 
-                padding: 12px 15px; 
+                padding: 10px; 
                 text-align: left; 
                 font-weight: bold; 
-                font-size: 14px;
               }
               .details-table td { 
-                padding: 12px 15px; 
+                padding: 8px 10px; 
                 border-bottom: 1px solid #eee; 
               }
               .details-table tr:nth-child(even) { 
-                background: #fff8f0; 
+                background: #f9f9f9; 
               }
               .item-name { 
                 font-weight: bold; 
-                color: #2d3748; 
+                color: #333; 
               }
               .item-desc {
                 font-size: 13px;
-                color: #718096;
+                color: #666;
                 display: block;
                 margin-top: 3px;
               }
@@ -518,50 +493,65 @@ const QuotationSoftware = () => {
                 text-align: right; 
               }
               .total-row { 
-                background: #fff3e0 !important; 
+                background: #ffe0b2 !important; 
                 font-weight: bold; 
                 font-size: 16px; 
               }
               .total-row td { 
-                border-top: 3px solid #ff9800; 
+                border-top: 2px solid #ff9800; 
                 color: #e65100; 
                 font-weight: bold;
                 padding: 20px;
                 font-size: 18px;
               }
-              .notes-section { 
-                padding: 25px;
-                background: #fff8f0;
-                border-top: 1px solid #eee;
+              .warranty-section { 
+                background: #f0f8f0; 
+                border-left: 4px solid #28a745; 
+                border-radius: 6px; 
+                padding: 15px; 
+                margin: 20px 0; 
               }
-              .notes-section h4 { 
-                color: #ff6b35; 
-                margin-bottom: 15px; 
-                font-size: 16px; 
+              .warranty-section h4 { 
+                color: #28a745; 
+                margin-bottom: 10px; 
+                font-size: 14px; 
               }
-              .notes-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-                gap: 30px;
+              .warranty-section ul { 
+                list-style: none; 
+                padding-left: 0; 
               }
-              .note-block {
-                background: white;
-                border-radius: 8px;
-                padding: 15px;
-                box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+              .warranty-section li { 
+                padding: 3px 0; 
+                font-size: 12px; 
+                position: relative; 
+                padding-left: 15px; 
               }
-              .note-block h5 {
-                color: #ff6b35;
-                margin: 0 0 10px 0;
-                padding-bottom: 5px;
-                border-bottom: 1px dashed #ffe0b2;
+              .warranty-section li:before { 
+                content: "✓"; 
+                color: #28a745; 
+                font-weight: bold; 
+                position: absolute; 
+                left: 0; 
               }
-              .note-block ul { 
-                padding-left: 20px; 
+              .terms-section { 
+                background: #fff8e1; 
+                border-left: 4px solid #ffc107; 
+                border-radius: 6px; 
+                padding: 15px; 
+                margin: 20px 0; 
               }
-              .note-block li { 
-                padding: 5px 0; 
-                font-size: 13px; 
+              .terms-section h4 { 
+                color: #f57c00; 
+                margin-bottom: 10px; 
+                font-size: 14px; 
+              }
+              .terms-section ul { 
+                list-style: disc; 
+                padding-left: 15px; 
+              }
+              .terms-section li { 
+                padding: 2px 0; 
+                font-size: 12px; 
               }
               .footer { 
                 text-align: center; 
@@ -569,38 +559,17 @@ const QuotationSoftware = () => {
                 background: #ff9800; 
                 color: white; 
                 font-size: 14px; 
-              }
-              .signature {
-                margin-top: 40px;
-                padding-top: 10px;
-                border-top: 1px solid #ffe0b2;
-                text-align: right;
-              }
-              .signature p {
-                margin: 5px 0;
-                font-style: italic;
-                color: #4a5568;
-              }
-              .thank-you {
-                text-align: center;
-                padding: 20px;
-                font-style: italic;
-                color: #666;
-                border-top: 1px solid #eee;
+                border-radius: 8px;
                 margin-top: 20px;
               }
               @media print { 
                 body { margin: 0; padding: 0; -webkit-print-color-adjust: exact; } 
-                .container { max-width: none; box-shadow: none; border: none; }
-                * { color: inherit !important; background: inherit !important; }
+                .container { max-width: none; }
               }
             </style>
           </head>
           <body>
             ${quotationHTML}
-            <div class="thank-you">
-              <p>Thank you for considering Syed Solar Energy for your solar needs. We look forward to serving you!</p>
-            </div>
             <script>
               window.onload = function() {
                 setTimeout(function() {
@@ -625,7 +594,7 @@ const QuotationSoftware = () => {
       <div class="container">
         <div class="header">
           <div class="logo-container">
-            <img src="/logo.png" alt="Syed Solar Energy Logo" class="logo" />
+            <img src="${logo}" alt="Syed Solar Energy Logo" class="logo" />
           </div>
           <div class="company-info">
             <h1>Syed Solar Energy Pvt Ltd</h1>
@@ -634,11 +603,9 @@ const QuotationSoftware = () => {
             <p><strong>Website:</strong> www.syedsolarenergy.com</p>
           </div>
         </div>
-
         <div class="quotation-title">
-          SOLAR ENERGY QUOTATION
+          🌞 Solar Energy Quotation
         </div>
-
         <div class="quotation-meta">
           <div>
             <p><strong>Quotation ID:</strong> #${quotationData.id}</p>
@@ -646,29 +613,26 @@ const QuotationSoftware = () => {
             <p><strong>Prepared By:</strong> ${quotationData.staff}</p>
           </div>
           <div>
-            <p><strong>Customer ID:</strong> C-${quotationData.id.split('-')[2]}</p>
             <p><strong>Valid Until:</strong> ${new Date(Date.now() + 3*24*60*60*1000).toLocaleDateString()}</p>
+            <p><strong>System Type:</strong> ${quotationData.systemType}</p>
             <p><strong>Location:</strong> ${quotationData.location}</p>
           </div>
         </div>
-
         <div class="customer-section">
-          <h3>CUSTOMER DETAILS</h3>
-          <div class="customer-details">
-            <div class="customer-detail"><strong>Name:</strong> ${quotationData.customer.name}</div>
-            <div class="customer-detail"><strong>Contact:</strong> ${quotationData.customer.contact}</div>
-            <div class="customer-detail"><strong>Email:</strong> ${quotationData.customer.email || 'Not provided'}</div>
-            <div class="customer-detail"><strong>Address:</strong> ${quotationData.customer.address}</div>
-          </div>
+          <h3>Customer Information</h3>
+          <p><strong>Name:</strong> ${quotationData.customer.name}</p>
+          <p><strong>Contact:</strong> ${quotationData.customer.contact}</p>
+          <p><strong>Email:</strong> ${quotationData.customer.email || 'Not provided'}</p>
+          <p><strong>Address:</strong> ${quotationData.customer.address}</p>
         </div>
-
+        <h3 style="color: #e65100; margin: 15px 0 10px 0;">System Configuration & Pricing</h3>
+        
         <table class="details-table">
           <thead>
             <tr>
-              <th style="width: 45%;">Item Description</th>
-              <th style="width: 15%; text-align: center;">Qty</th>
-              <th style="width: 20%; text-align: right;">Unit Price</th>
-              <th style="width: 20%; text-align: right;">Amount (PKR)</th>
+              <th style="width: 50%;">Item Description</th>
+              <th style="width: 20%; text-align: center;">Quantity</th>
+              <th style="width: 30%; text-align: right;">Amount (PKR)</th>
             </tr>
           </thead>
           <tbody>
@@ -677,9 +641,8 @@ const QuotationSoftware = () => {
                 <div class="item-name">Solar Panels</div>
                 <div class="item-desc">${quotationData.solarPanel.company} ${quotationData.solarPanel.watts}W Premium Grade</div>
               </td>
-              <td style="text-align: center;">${quotationData.solarPanel.quantity}</td>
-              <td class="price">Rs. ${quotationData.solarPanel.pricePerWatt.toFixed(2)}/W</td>
-              <td class="price">Rs. ${(quotationData.solarPanel.pricePerWatt * quotationData.solarPanel.watts * quotationData.solarPanel.quantity).toLocaleString()}</td>
+              <td style="text-align: center;">${quotationData.solarPanel.quantity} pcs</td>
+              <td class="price">Rs. ${(getPanelPrice(quotationData.solarPanel) * quotationData.solarPanel.quantity).toLocaleString()}</td>
             </tr>
             
             <tr>
@@ -687,8 +650,7 @@ const QuotationSoftware = () => {
                 <div class="item-name">${quotationData.systemType.includes('Daytime') ? 'Grid-Tie' : 'Hybrid'} Inverter</div>
                 <div class="item-desc">${quotationData.inverter.company} ${quotationData.inverter.kw}kW</div>
               </td>
-              <td style="text-align: center;">${quotationData.inverter.quantity}</td>
-              <td class="price">Rs. ${quotationData.inverter.pricePerUnit.toLocaleString()}</td>
+              <td style="text-align: center;">${quotationData.inverter.quantity} unit</td>
               <td class="price">Rs. ${(quotationData.inverter.quantity * quotationData.inverter.pricePerUnit).toLocaleString()}</td>
             </tr>
             
@@ -698,8 +660,7 @@ const QuotationSoftware = () => {
                 <div class="item-name">Battery Bank</div>
                 <div class="item-desc">${quotationData.batteryModel} (${quotationData.batteryType})</div>
               </td>
-              <td style="text-align: center;">${quotationData.batteryQuantity}</td>
-              <td class="price">Rs. ${quotationData.batteryPrice.toLocaleString()}</td>
+              <td style="text-align: center;">${quotationData.batteryQuantity} units</td>
               <td class="price">Rs. ${(quotationData.batteryQuantity * quotationData.batteryPrice).toLocaleString()}</td>
             </tr>
             ` : ''}
@@ -709,8 +670,7 @@ const QuotationSoftware = () => {
                 <div class="item-name">Mounting Structure</div>
                 <div class="item-desc">${quotationData.stand.type} Grade</div>
               </td>
-              <td style="text-align: center;">${getStandQty(quotationData.solarPanel.quantity, quotationData.stand.type)}</td>
-              <td class="price">Rs. ${quotationData.stand.pricePerStand.toLocaleString()}</td>
+              <td style="text-align: center;">${getStandQty(quotationData.solarPanel.quantity, quotationData.stand.type)} sets</td>
               <td class="price">Rs. ${(getStandQty(quotationData.solarPanel.quantity, quotationData.stand.type) * quotationData.stand.pricePerStand).toLocaleString()}</td>
             </tr>
             
@@ -719,18 +679,16 @@ const QuotationSoftware = () => {
                 <div class="item-name">Safety & Protection Equipment</div>
                 <div class="item-desc">Complete safety kit</div>
               </td>
-              <td style="text-align: center;">1</td>
-              <td class="price">Rs. ${quotationData.safety.toLocaleString()}</td>
+              <td style="text-align: center;">1 set</td>
               <td class="price">Rs. ${quotationData.safety.toLocaleString()}</td>
             </tr>
             
             <tr>
               <td>
-                <div class="item-name">Transportation Charges</div>
+                <div class="item-name">Transportation</div>
                 <div class="item-desc">${quotationData.location === 'peshawar' ? 'Within Peshawar' : 'Outside Peshawar'}</div>
               </td>
               <td style="text-align: center;">-</td>
-              <td>-</td>
               <td class="price">Rs. ${quotationData.transport.toLocaleString()}</td>
             </tr>
             
@@ -740,7 +698,6 @@ const QuotationSoftware = () => {
                 <div class="item-desc">By certified technicians</div>
               </td>
               <td style="text-align: center;">-</td>
-              <td>-</td>
               <td class="price">Rs. ${quotationData.labour.toLocaleString()}</td>
             </tr>
             
@@ -751,7 +708,6 @@ const QuotationSoftware = () => {
                 <div class="item-desc">Professional oversight</div>
               </td>
               <td style="text-align: center;">-</td>
-              <td>-</td>
               <td class="price">Rs. ${quotationData.engineer.toLocaleString()}</td>
             </tr>
             ` : ''}
@@ -762,15 +718,14 @@ const QuotationSoftware = () => {
                 <div class="item-name">Net Metering (Green Meter)</div>
                 <div class="item-desc">Government documentation</div>
               </td>
-              <td style="text-align: center;">1</td>
-              <td class="price">Rs. ${quotationData.greenmeter.toLocaleString()}</td>
+              <td style="text-align: center;">1 unit</td>
               <td class="price">Rs. ${quotationData.greenmeter.toLocaleString()}</td>
             </tr>
             ` : ''}
             
             <tr class="total-row">
-              <td colspan="3" style="text-align: right; font-size: 16px;">
-                <strong>GRAND TOTAL</strong>
+              <td colspan="2" style="text-align: right; font-size: 16px;">
+                <strong>TOTAL INVESTMENT</strong>
               </td>
               <td class="price" style="font-size: 18px;">
                 <strong>Rs. ${quotationData.total.toLocaleString()}</strong>
@@ -778,50 +733,30 @@ const QuotationSoftware = () => {
             </tr>
           </tbody>
         </table>
-
-        <div class="notes-section">
-          <h4>TERMS & CONDITIONS</h4>
-          <div class="notes-grid">
-            <div class="note-block">
-              <h5>🛡️ WARRANTY INFORMATION</h5>
-              <ul>
-                <li>Solar Panels: A-Grade warranty</li>
-                <li>Inverters: 5 years comprehensive warranty</li>
-                <li>Batteries: Manufacturer warranty terms apply</li>
-                <li>Installation: 3 months service warranty</li>
-              </ul>
-            </div>
-            
-            <div class="note-block">
-              <h5>💳 PAYMENT TERMS</h5>
-              <ul>
-                <li>Booking: 5% advance payment</li>
-                <li>Material Delivery: 70% payment</li>
-                <li>Completion: 25% final payment</li>
-                <li>Validity: 3 days from quotation date</li>
-              </ul>
-            </div>
-            
-            <div class="note-block">
-              <h5>📝 IMPORTANT NOTES</h5>
-              <ul>
-                <li>Prices subject to change without notice</li>
-                <li>Installation timeline: 1-2 days after payment</li>
-                <li>Site survey required before installation</li>
-                <li>Taxes not included in pricing</li>
-              </ul>
-            </div>
-          </div>
+        <div class="warranty-section">
+          <h4>🛡️ Warranty & Quality Assurance</h4>
+          <ul>
+            <li>Solar Panels: 12 years product + 25 years performance warranty</li>
+            <li>Inverters: 5 years comprehensive warranty</li>
+            <li>Batteries: As per manufacturer's warranty policy</li>
+            <li>Installation: 3 months after-sales service warranty</li>
+            <li>Site Survey: Rs. 2,000/- for Peshawar city</li>
+          </ul>
         </div>
-        
-        <div class="signature">
-          <p>For Syed Solar Energy Pvt Ltd</p>
-          <p>_________________________</p>
-          <p>Authorized Signature</p>
+        <div class="terms-section">
+          <h4>📋 Terms & Payment Schedule</h4>
+          <ul>
+            <li><strong>Booking:</strong> 5% advance payment</li>
+            <li><strong>Material Arrival:</strong> 70% payment</li>
+            <li><strong>Completion:</strong> 25% final payment</li>
+            <li><strong>Validity:</strong> 3 days only</li>
+            <li><strong>Note:</strong> Prices subject to market changes</li>
+          </ul>
         </div>
-
         <div class="footer">
-          Thank you for choosing Syed Solar Energy | Powering a Sustainable Future
+          Thank you for choosing Syed Solar Energy<br/>
+          📧 sales@syedsolarenergy.com | 📱 03044678929<br/>
+          📍 Office #23, Mustafa Plaza, Ring Road, Peshawar
         </div>
       </div>
     `;
@@ -842,7 +777,6 @@ const QuotationSoftware = () => {
     setSafety(0);
     setIsEngineerIncluded(false);
     setCurrentQuotation(null);
-    setShowPreview(false);
     setEditingQuotation(null);
   };
 
@@ -881,7 +815,7 @@ const QuotationSoftware = () => {
     });
   };
 
-  // Render quotations list
+  // Render quotations list view
   if (showQuotationsList) {
     const filteredQuotations = getFilteredQuotations();
     
@@ -906,7 +840,6 @@ const QuotationSoftware = () => {
             </div>
           </div>
         </div>
-
         {/* Filter buttons */}
         <div style={styles.filterContainer}>
           <button 
@@ -934,7 +867,6 @@ const QuotationSoftware = () => {
             Cancelled ({quotations.filter(q => q.followUpStatus === 'cancelled').length})
           </button>
         </div>
-
         {isLoading ? (
           <div style={styles.loadingContainer}>
             <div style={styles.loadingSpinner}>⏳</div>
@@ -952,7 +884,7 @@ const QuotationSoftware = () => {
                 <div style={styles.quotationDetails}>
                   <p><strong>System:</strong> {quotation.systemType}</p>
                   <p><strong>Total:</strong> Rs {quotation.total.toLocaleString()}</p>
-                  <p><strong>Date:</strong> {new Date(quotation.date).toLocaleDateString()}</p>
+                  <p><strong>Date:</strong> {new Date(quotation.quotationDate).toLocaleDateString()}</p>
                   <p><strong>Status:</strong> 
                     <span style={{
                       ...styles.statusBadge,
@@ -1031,7 +963,6 @@ const QuotationSoftware = () => {
             )}
           </div>
         )}
-
         {/* View Quotation Modal */}
         {selectedQuotation && (
           <div style={styles.modal}>
@@ -1128,7 +1059,6 @@ const QuotationSoftware = () => {
           </div>
         </div>
       </div>
-
       {/* Analytics Cards */}
       <div style={styles.analyticsGrid}>
         <div style={styles.analyticsCard}>
@@ -1166,7 +1096,6 @@ const QuotationSoftware = () => {
           </div>
         </div>
       </div>
-
       {/* Quotation Form */}
       <div style={styles.formContainer}>
         <div style={styles.formHeader}>
@@ -1221,7 +1150,6 @@ const QuotationSoftware = () => {
               </div>
             </div>
           </div>
-
           {/* Project Setup */}
           <div style={styles.formSection}>
             <h3 style={styles.sectionTitle}>⚙️ Project Configuration</h3>
@@ -1265,7 +1193,6 @@ const QuotationSoftware = () => {
               </div>
             </div>
           </div>
-
           {/* Equipment Configuration */}
           <div style={styles.formSection}>
             <h3 style={styles.sectionTitle}>🔌 Equipment Configuration</h3>
@@ -1322,7 +1249,6 @@ const QuotationSoftware = () => {
                 </div>
               </div>
             </div>
-
             {/* Inverter */}
             <div style={styles.subsection}>
               <h4>🔌 Inverter</h4>
@@ -1374,7 +1300,6 @@ const QuotationSoftware = () => {
                 </div>
               </div>
             </div>
-
             {/* Battery Configuration */}
             {systemType === 'Hybrid' && (
               <div style={styles.subsection}>
@@ -1428,7 +1353,6 @@ const QuotationSoftware = () => {
                 </div>
               </div>
             )}
-
             {/* Mounting Structure */}
             <div style={styles.subsection}>
               <h4>🏗️ Mounting Structure</h4>
@@ -1467,7 +1391,6 @@ const QuotationSoftware = () => {
               </div>
             </div>
           </div>
-
           {/* Additional Services */}
           <div style={styles.formSection}>
             <h3 style={styles.sectionTitle}>⚙️ Additional Services & Costs</h3>
@@ -1531,7 +1454,6 @@ const QuotationSoftware = () => {
               </label>
             </div>
           </div>
-
           {/* Total and Actions */}
           <div style={styles.totalSection}>
             <div style={styles.totalDisplay}>
@@ -1580,7 +1502,7 @@ const styles = {
     padding: '15px',
     background: 'linear-gradient(135deg, #FFF8F0 0%, #FFEBDD 100%)',
     minHeight: '100vh',
-    fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+    fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif'",
   },
   
   header: {
@@ -1655,7 +1577,7 @@ const styles = {
   cancelEditButton: {
     background: 'rgba(255, 255, 255, 0.2)',
     color: 'white',
-    border: '2px solid rgba(255, 255, 0.3)',
+    border: '2px solid rgba(255, 255, 255, 0.3)',
     borderRadius: '12px',
     padding: '10px 16px',
     cursor: 'pointer',
@@ -2047,6 +1969,7 @@ const styles = {
     color: '#FF6B35',
     marginBottom: '15px',
     borderBottom: '2px solid #FFE0CC',
+ 
     paddingBottom: '8px',
     display: 'inline-block',
   },
@@ -2194,38 +2117,6 @@ const styles = {
     transition: 'all 0.3s ease',
     boxShadow: '0 8px 25px rgba(255, 107, 53, 0.3)',
     minWidth: '150px',
-  },
-  
-  '@media (max-width: 768px)': {
-    container: {
-      padding: '10px',
-    },
-    header: {
-      padding: '15px 20px',
-    },
-    headerContent: {
-      flexDirection: 'column',
-      alignItems: 'flex-start',
-    },
-    title: {
-      fontSize: '2rem',
-    },
-    formGrid: {
-      gridTemplateColumns: '1fr',
-    },
-    detailsGrid: {
-      gridTemplateColumns: '1fr',
-    },
-    quotationsGrid: {
-      gridTemplateColumns: '1fr',
-    },
-    quotationActions: {
-      flexDirection: 'column',
-    },
-    actionButtons: {
-      flexDirection: 'column',
-      alignItems: 'center',
-    },
   },
 };
 
