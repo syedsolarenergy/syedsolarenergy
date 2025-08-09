@@ -66,7 +66,7 @@ const unflattenPermissions = (flatPerms) => {
   return unflattened;
 };
 
-// Password hashing utilities (simple for demo - use bcrypt in production)
+// Password hashing utility
 const hashPassword = async (password) => {
   const encoder = new TextEncoder();
   const data = encoder.encode(password);
@@ -108,6 +108,277 @@ const Toast = ({ message, type, onClose }) => (
   </div>
 );
 
+// Activity Log Component
+const ActivityLog = ({ currentUser, showToast, hasPermission }) => {
+  const [activities, setActivities] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState({
+    action: '',
+    dateFrom: '',
+    dateTo: '',
+    limit: 50
+  });
+
+  const loadActivities = useCallback(async () => {
+    try {
+      setLoading(true);
+      let query = supabase
+        .from('admin_activity_log')
+        .select(`
+          *,
+          admin_users!admin_activity_log_user_id_fkey (username, role)
+        `)
+        .order('created_at', { ascending: false })
+        .limit(filters.limit);
+
+      if (filters.action) {
+        query = query.eq('action', filters.action);
+      }
+      
+      if (filters.dateFrom) {
+        query = query.gte('created_at', filters.dateFrom);
+      }
+      
+      if (filters.dateTo) {
+        query = query.lte('created_at', filters.dateTo + 'T23:59:59');
+      }
+
+      const { data, error } = await query;
+      
+      if (error) throw error;
+      setActivities(data || []);
+    } catch (error) {
+      console.error('Error loading activities:', error);
+      showToast('Failed to load activity log: ' + error.message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [filters, showToast]);
+
+  useEffect(() => {
+    if (hasPermission('settings', 'view') || currentUser?.role === 'admin') {
+      loadActivities();
+    }
+  }, [loadActivities, hasPermission, currentUser]);
+
+  const getActionIcon = (action) => {
+    const icons = {
+      'LOGIN': '🔐',
+      'LOGOUT': '🚪',
+      'CREATE_USER': '👤➕',
+      'UPDATE_USER': '👤✏️',
+      'DEACTIVATE_USER': '👤❌',
+      'UPDATE_PERMISSION': '🔐✏️',
+      'UPDATE_USER_ROLE': '👑',
+      'VIEW_USERS': '👥👁️',
+      'VIEW_ACTIVITY': '📊👁️',
+      'PASSWORD_CHANGE': '🔄🔒',
+      'PASSWORD_RESET_INITIATED': '🔄📧',
+      'PASSWORD_RESET_COMPLETED': '🔄✅'
+    };
+    return icons[action] || '📝';
+  };
+
+  const formatActionName = (action) => {
+    return action.replace(/_/g, ' ').toLowerCase()
+      .replace(/\b\w/g, l => l.toUpperCase());
+  };
+
+  if (!hasPermission('settings', 'view') && currentUser?.role !== 'admin') {
+    return (
+      <div style={{
+        background: "#fff",
+        padding: "30px",
+        borderRadius: "15px",
+        boxShadow: "0 10px 30px rgba(230, 126, 34, 0.1)",
+        textAlign: "center"
+      }}>
+        <h2 style={{ color: "#e67e22", marginBottom: "25px" }}>🔒 Access Denied</h2>
+        <p>You don't have permission to view activity logs.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{
+      background: "#fff",
+      padding: "30px",
+      borderRadius: "15px",
+      boxShadow: "0 10px 30px rgba(230, 126, 34, 0.1)"
+    }}>
+      <h2 style={{ color: "#e67e22", marginBottom: "25px", fontSize: "1.5rem", fontWeight: "700" }}>
+        📊 Activity Log
+      </h2>
+
+      {/* Filters */}
+      <div style={{
+        background: "#f8f9fa",
+        padding: "20px",
+        borderRadius: "10px",
+        marginBottom: "25px",
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+        gap: "15px"
+      }}>
+        <select
+          value={filters.action}
+          onChange={e => setFilters({...filters, action: e.target.value})}
+          style={inputStyle}
+        >
+          <option value="">All Actions</option>
+          <option value="LOGIN">Login</option>
+          <option value="CREATE_USER">Create User</option>
+          <option value="UPDATE_USER">Update User</option>
+          <option value="DEACTIVATE_USER">Deactivate User</option>
+          <option value="UPDATE_PERMISSION">Update Permission</option>
+          <option value="UPDATE_USER_ROLE">Update Role</option>
+          <option value="PASSWORD_CHANGE">Password Change</option>
+          <option value="PASSWORD_RESET_INITIATED">Password Reset Started</option>
+          <option value="PASSWORD_RESET_COMPLETED">Password Reset Completed</option>
+        </select>
+
+        <input
+          type="date"
+          value={filters.dateFrom}
+          onChange={e => setFilters({...filters, dateFrom: e.target.value})}
+          style={inputStyle}
+          placeholder="From Date"
+        />
+
+        <input
+          type="date"
+          value={filters.dateTo}
+          onChange={e => setFilters({...filters, dateTo: e.target.value})}
+          style={inputStyle}
+          placeholder="To Date"
+        />
+
+        <select
+          value={filters.limit}
+          onChange={e => setFilters({...filters, limit: parseInt(e.target.value)})}
+          style={inputStyle}
+        >
+          <option value={25}>25 Records</option>
+          <option value={50}>50 Records</option>
+          <option value={100}>100 Records</option>
+          <option value={200}>200 Records</option>
+        </select>
+      </div>
+
+      {/* Activity Table */}
+      {loading ? (
+        <div style={{ textAlign: "center", padding: "40px" }}>
+          <div style={{
+            width: "40px",
+            height: "40px",
+            border: "4px solid #e67e22",
+            borderTop: "4px solid transparent",
+            borderRadius: "50%",
+            animation: "spin 1s linear infinite",
+            margin: "0 auto 15px"
+          }}></div>
+          <p>Loading activities...</p>
+        </div>
+      ) : (
+        <div style={{ overflowX: "auto" }}>
+          <table style={{
+            width: "100%",
+            borderCollapse: "collapse",
+            background: "#fff",
+            borderRadius: "10px",
+            overflow: "hidden",
+            boxShadow: "0 5px 15px rgba(0,0,0,0.1)"
+          }}>
+            <thead>
+              <tr style={{ background: "linear-gradient(135deg, #e67e22, #d35400)" }}>
+                <th style={{ ...thStyle, color: "white" }}>Time</th>
+                <th style={{ ...thStyle, color: "white" }}>User</th>
+                <th style={{ ...thStyle, color: "white" }}>Action</th>
+                <th style={{ ...thStyle, color: "white" }}>Resource</th>
+                <th style={{ ...thStyle, color: "white" }}>Details</th>
+                <th style={{ ...thStyle, color: "white" }}>IP Address</th>
+              </tr>
+            </thead>
+            <tbody>
+              {activities.map((activity, index) => (
+                <tr key={activity.id} style={{
+                  background: index % 2 === 0 ? "#f8f9fa" : "white"
+                }}>
+                  <td style={tdStyle}>
+                    <div style={{ fontSize: "12px" }}>
+                      {new Date(activity.created_at).toLocaleString()}
+                    </div>
+                  </td>
+                  <td style={tdStyle}>
+                    <div>
+                      <div style={{ fontWeight: "600" }}>
+                        {activity.admin_users?.username || 'System'}
+                      </div>
+                      <div style={{ fontSize: "11px", color: "#666" }}>
+                        {activity.admin_users?.role}
+                      </div>
+                    </div>
+                  </td>
+                  <td style={tdStyle}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+                      <span>{getActionIcon(activity.action)}</span>
+                      <span style={{ fontSize: "12px", fontWeight: "600" }}>
+                        {formatActionName(activity.action)}
+                      </span>
+                    </div>
+                  </td>
+                  <td style={tdStyle}>
+                    <span style={{ fontSize: "12px" }}>
+                      {activity.resource || '-'}
+                    </span>
+                  </td>
+                  <td style={tdStyle}>
+                    <div style={{ fontSize: "11px", maxWidth: "200px" }}>
+                      {activity.details ? (
+                        <details>
+                          <summary style={{ cursor: "pointer", color: "#e67e22" }}>
+                            View Details
+                          </summary>
+                          <pre style={{ 
+                            background: "#f8f9fa", 
+                            padding: "8px", 
+                            borderRadius: "5px",
+                            fontSize: "10px",
+                            overflow: "auto",
+                            marginTop: "5px"
+                          }}>
+                            {JSON.stringify(activity.details, null, 2)}
+                          </pre>
+                        </details>
+                      ) : '-'}
+                    </div>
+                  </td>
+                  <td style={tdStyle}>
+                    <span style={{ fontSize: "11px", fontFamily: "monospace" }}>
+                      {activity.ip_address || '-'}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {activities.length === 0 && !loading && (
+        <div style={{
+          textAlign: "center",
+          padding: "40px",
+          color: "#666",
+          fontSize: "16px"
+        }}>
+          📝 No activity records found for the selected filters.
+        </div>
+      )}
+    </div>
+  );
+};
+
 export default function Admin() {
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
@@ -134,104 +405,62 @@ export default function Admin() {
   // Check authentication and authorization
   const checkAuth = useCallback(async () => {
     try {
-      // Get logged in user from localStorage (your current system)
-      const loggedInUser = localStorage.getItem("loggedInUser");
-      const userRole = localStorage.getItem("userRole");
+      // Get session token from localStorage
       const sessionToken = localStorage.getItem("sessionToken");
       
-      if (!loggedInUser || !sessionToken) {
+      if (!sessionToken) {
         navigate("/login", { replace: true });
         return false;
       }
 
-      // Verify session token in Supabase (optional security check)
-      try {
-        const { data: sessionData, error: sessionError } = await supabase
-          .from('admin_sessions')
-          .select('user_id')
-          .eq('session_token', sessionToken)
-          .eq('is_active', true)
-          .gt('expires_at', new Date().toISOString())
-          .single();
+      // Verify session token in Supabase
+      const { data: sessionData, error: sessionError } = await supabase
+        .from('admin_sessions')
+        .select(`
+          *,
+          admin_users!inner (
+            id, username, email, role, is_active,
+            admin_permissions (*)
+          )
+        `)
+        .eq('session_token', sessionToken)
+        .eq('is_active', true)
+        .gt('expires_at', new Date().toISOString())
+        .single();
 
-        // If session doesn't exist in DB, still allow if user has admin role in localStorage
-        if (sessionError && userRole !== 'admin') {
-          showToast("Session expired. Please log in again.", 'error');
-          localStorage.clear();
-          navigate("/login", { replace: true });
-          return false;
-        }
-      } catch (sessionCheckError) {
-        console.log("Session verification skipped:", sessionCheckError);
+      if (sessionError || !sessionData) {
+        showToast("Session expired. Please log in again.", 'error');
+        localStorage.clear();
+        navigate("/login", { replace: true });
+        return false;
       }
 
-      // Check if user has admin role
-      if (userRole !== 'admin') {
-        showToast("Access denied. Admin privileges required.", 'error');
+      const userData = sessionData.admin_users;
+      
+      // Check if user has admin or manager role for this panel
+      if (!['admin', 'manager'].includes(userData.role)) {
+        showToast("Access denied. Admin/Manager privileges required.", 'error');
         navigate("/", { replace: true });
         return false;
       }
 
-      // Get user details from Supabase
-      try {
-        const { data: userData, error: userError } = await supabase
-          .from('admin_users')
-          .select(`
-            *,
-            admin_permissions (*)
-          `)
-          .eq('username', loggedInUser.toLowerCase())
-          .eq('is_active', true)
-          .single();
+      // Update last activity
+      await supabase
+        .from('admin_sessions')
+        .update({ last_activity: new Date().toISOString() })
+        .eq('id', sessionData.id);
 
-        if (userData) {
-          setCurrentUser(userData);
-        } else {
-          // If user doesn't exist in Supabase but has admin role in localStorage, create basic user object
-          setCurrentUser({
-            id: 'temp-' + Date.now(),
-            username: loggedInUser,
-            role: userRole,
-            email: 'admin@syedsolarenergy.com',
-            is_active: true,
-            admin_permissions: []
-          });
-        }
-      } catch (userFetchError) {
-        console.log("User fetch from DB failed, using localStorage data:", userFetchError);
-        // Fallback to localStorage data
-        setCurrentUser({
-          id: 'temp-' + Date.now(),
-          username: loggedInUser,
-          role: userRole,
-          email: 'admin@syedsolarenergy.com',
-          is_active: true,
-          admin_permissions: []
-        });
-      }
+      setCurrentUser({
+        ...userData,
+        permissions: userData.admin_permissions?.length > 0 
+          ? unflattenPermissions(userData.admin_permissions[0]) 
+          : {}
+      });
 
       return true;
     } catch (error) {
       console.error('Auth check error:', error);
-      // Don't redirect on error, just show warning
-      showToast("Authentication check failed, but continuing with cached credentials", 'error');
-      
-      // Use localStorage as fallback
-      const loggedInUser = localStorage.getItem("loggedInUser");
-      const userRole = localStorage.getItem("userRole");
-      
-      if (loggedInUser && userRole === 'admin') {
-        setCurrentUser({
-          id: 'temp-' + Date.now(),
-          username: loggedInUser,
-          role: userRole,
-          email: 'admin@syedsolarenergy.com',
-          is_active: true,
-          admin_permissions: []
-        });
-        return true;
-      }
-      
+      showToast("Authentication check failed", 'error');
       navigate("/login", { replace: true });
       return false;
     }
@@ -247,7 +476,7 @@ export default function Admin() {
           resource,
           resource_id: resourceId,
           details,
-          ip_address: '127.0.0.1', // In production, get real IP
+          ip_address: '127.0.0.1',
           user_agent: navigator.userAgent
         });
       }
@@ -256,58 +485,38 @@ export default function Admin() {
     }
   }, [currentUser]);
 
+  // Check user permissions
+  const hasPermission = useCallback((category, action) => {
+    if (!currentUser?.permissions) return false;
+    return currentUser.permissions[category]?.[action] || false;
+  }, [currentUser]);
+
   // Load users from Supabase
   const loadUsers = useCallback(async () => {
     try {
       setLoading(true);
       
-      // Try to load from Supabase first
-      try {
-        const { data, error } = await supabase
-          .from('admin_users')
-          .select(`
-            *,
-            admin_permissions (*),
-            created_by:admin_users!admin_users_created_by_fkey (username)
-          `)
-          .order('created_at', { ascending: false });
+      const { data, error } = await supabase
+        .from('admin_users')
+        .select(`
+          *,
+          admin_permissions (*),
+          created_by:admin_users!admin_users_created_by_fkey (username)
+        `)
+        .order('created_at', { ascending: false });
 
-        if (!error && data) {
-          // Transform permissions back to nested structure
-          const transformedUsers = data.map(user => ({
-            ...user,
-            permissions: user.admin_permissions?.length > 0 
-              ? unflattenPermissions(user.admin_permissions[0]) 
-              : {}
-          }));
+      if (error) throw error;
 
-          setUsers(transformedUsers);
-          await logActivity('VIEW_USERS', 'admin_users');
-          return;
-        }
-      } catch (supabaseError) {
-        console.log("Supabase users fetch failed, using localStorage fallback:", supabaseError);
-      }
+      // Transform permissions back to nested structure
+      const transformedUsers = data.map(user => ({
+        ...user,
+        permissions: user.admin_permissions?.length > 0 
+          ? unflattenPermissions(user.admin_permissions[0]) 
+          : {}
+      }));
 
-      // Fallback to localStorage if Supabase fails
-      const localUsers = JSON.parse(localStorage.getItem("users") || "[]");
-      if (localUsers.length > 0) {
-        // Transform localStorage users to match Supabase structure
-        const transformedLocalUsers = localUsers.map(user => ({
-          ...user,
-          id: user.id || 'local-' + user.username,
-          is_active: true,
-          created_at: user.createdAt || new Date().toISOString(),
-          admin_permissions: [],
-          permissions: user.permissions || {}
-        }));
-        setUsers(transformedLocalUsers);
-        showToast("Loaded users from local storage (offline mode)", 'info');
-      } else {
-        setUsers([]);
-        showToast("No users found. Please add users to get started.", 'info');
-      }
-      
+      setUsers(transformedUsers);
+      await logActivity('VIEW_USERS', 'admin_users');
     } catch (error) {
       console.error('Error loading users:', error);
       showToast('Failed to load users: ' + error.message, 'error');
@@ -320,92 +529,71 @@ export default function Admin() {
   // Add new user
   const addUser = async () => {
     try {
+      // Check permissions
+      if (!hasPermission('userManagement', 'add')) {
+        showToast("You don't have permission to add users", 'error');
+        return;
+      }
+
       // Validation
       if (!newUser.username?.trim() || !newUser.password?.trim() || !newUser.email?.trim()) {
         showToast("Please fill all required fields", 'error');
         return;
       }
 
-      // Check if username or email already exists in current users list
-      const existingUser = users.find(u => 
-        u.username.toLowerCase() === newUser.username.trim().toLowerCase() || 
-        u.email.toLowerCase() === newUser.email.trim().toLowerCase()
-      );
+      // Check if username or email already exists
+      const { data: existingUsers, error: checkError } = await supabase
+        .from('admin_users')
+        .select('username, email')
+        .or(`username.eq.${newUser.username.trim().toLowerCase()},email.eq.${newUser.email.trim().toLowerCase()}`);
 
-      if (existingUser) {
+      if (checkError) throw checkError;
+
+      if (existingUsers && existingUsers.length > 0) {
         showToast("Username or email already exists", 'error');
         return;
       }
 
       setLoading(true);
 
-      const newUserId = 'user-' + Date.now();
-      let userAdded = false;
+      // Hash password
+      const hashedPassword = await hashPassword(newUser.password);
 
-      // Try to add to Supabase first
-      try {
-        // Hash password
-        const hashedPassword = await hashPassword(newUser.password);
-
-        // Insert user
-        const { data: userData, error: userError } = await supabase
-          .from('admin_users')
-          .insert({
-            username: newUser.username.trim().toLowerCase(),
-            password: hashedPassword,
-            email: newUser.email.trim().toLowerCase(),
-            phone: newUser.phone?.trim() || null,
-            department: newUser.department?.trim() || null,
-            role: newUser.role,
-            created_by: currentUser.id.toString().startsWith('temp-') ? null : currentUser.id,
-            is_active: true
-          })
-          .select()
-          .single();
-
-        if (!userError && userData) {
-          // Insert permissions
-          const flatPermissions = flattenPermissions(newUser.permissions);
-          await supabase
-            .from('admin_permissions')
-            .insert({
-              user_id: userData.id,
-              ...flatPermissions
-            });
-
-          userAdded = true;
-          await logActivity('CREATE_USER', 'admin_users', userData.id, {
-            username: userData.username,
-            role: userData.role
-          });
-        }
-      } catch (supabaseError) {
-        console.log("Supabase user creation failed, using localStorage:", supabaseError);
-      }
-
-      // If Supabase fails, add to localStorage
-      if (!userAdded) {
-        const localUsers = JSON.parse(localStorage.getItem("users") || "[]");
-        const newLocalUser = {
-          id: newUserId,
-          username: newUser.username.trim(),
-          password: newUser.password, // In production, this should be hashed
-          email: newUser.email.trim(),
-          phone: newUser.phone?.trim() || '',
-          department: newUser.department?.trim() || '',
+      // Insert user
+      const { data: userData, error: userError } = await supabase
+        .from('admin_users')
+        .insert({
+          username: newUser.username.trim().toLowerCase(),
+          password: hashedPassword,
+          email: newUser.email.trim().toLowerCase(),
+          phone: newUser.phone?.trim() || null,
+          department: newUser.department?.trim() || null,
           role: newUser.role,
-          permissions: newUser.permissions,
-          createdAt: new Date().toISOString(),
-          lastActive: new Date().toISOString(),
+          created_by: currentUser.id,
           is_active: true
-        };
-        
-        localUsers.push(newLocalUser);
-        localStorage.setItem("users", JSON.stringify(localUsers));
-        showToast("User added to local storage (offline mode)", 'success');
-      } else {
-        showToast("User added successfully!", 'success');
-      }
+        })
+        .select()
+        .single();
+
+      if (userError) throw userError;
+
+      // Insert permissions
+      const flatPermissions = flattenPermissions(newUser.permissions);
+      const { error: permError } = await supabase
+        .from('admin_permissions')
+        .insert({
+          user_id: userData.id,
+          ...flatPermissions
+        });
+
+      if (permError) throw permError;
+
+      await logActivity('CREATE_USER', 'admin_users', userData.id, {
+        username: userData.username,
+        role: userData.role
+      });
+
+      showToast("User added successfully!", 'success');
       
       // Reset form
       setNewUser({
@@ -431,6 +619,11 @@ export default function Admin() {
   // Toggle permission for a user
   const togglePermission = async (userId, category, permission, value) => {
     try {
+      if (!hasPermission('userManagement', 'edit')) {
+        showToast("You don't have permission to modify user permissions", 'error');
+        return;
+      }
+
       const flatKey = `${category.toLowerCase().replace(/([A-Z])/g, '_$1')}_${permission}`;
       
       const { error } = await supabase
@@ -453,7 +646,6 @@ export default function Admin() {
         })
       );
 
-      // Log activity
       await logActivity('UPDATE_PERMISSION', 'admin_permissions', userId, {
         permission: flatKey,
         value
@@ -469,6 +661,11 @@ export default function Admin() {
   // Update user role and permissions
   const updateUserRole = async (userId, newRole) => {
     try {
+      if (!hasPermission('userManagement', 'edit')) {
+        showToast("You don't have permission to modify user roles", 'error');
+        return;
+      }
+
       // Update user role
       const { error: roleError } = await supabase
         .from('admin_users')
@@ -486,7 +683,6 @@ export default function Admin() {
 
       if (permError) throw permError;
 
-      // Log activity
       await logActivity('UPDATE_USER_ROLE', 'admin_users', userId, {
         newRole,
         permissions: Object.keys(rolePermissions).length
@@ -502,19 +698,36 @@ export default function Admin() {
 
   // Deactivate user
   const deactivateUser = async (userId, username) => {
+    if (!hasPermission('userManagement', 'delete')) {
+      showToast("You don't have permission to deactivate users", 'error');
+      return;
+    }
+
     if (username === 'admin') {
       showToast("Cannot deactivate main admin user", 'error');
       return;
     }
 
+    if (userId === currentUser.id) {
+      showToast("Cannot deactivate your own account", 'error');
+      return;
+    }
+
     if (window.confirm(`Are you sure you want to deactivate user: ${username}?`)) {
       try {
-        const { error } = await supabase
+        // Deactivate user
+        const { error: userError } = await supabase
           .from('admin_users')
           .update({ is_active: false })
           .eq('id', userId);
 
-        if (error) throw error;
+        if (userError) throw userError;
+
+        // Invalidate all sessions for this user
+        await supabase
+          .from('admin_sessions')
+          .update({ is_active: false })
+          .eq('user_id', userId);
 
         await logActivity('DEACTIVATE_USER', 'admin_users', userId, { username });
         showToast(`User ${username} deactivated successfully`, 'success');
@@ -677,18 +890,6 @@ export default function Admin() {
               transition: "all 0.3s ease",
               textTransform: "capitalize"
             }}
-            onMouseOver={(e) => {
-              if (activeTab !== tab) {
-                e.target.style.transform = "translateY(-2px)";
-                e.target.style.boxShadow = "0 5px 15px rgba(0,0,0,0.15)";
-              }
-            }}
-            onMouseOut={(e) => {
-              if (activeTab !== tab) {
-                e.target.style.transform = "translateY(0)";
-                e.target.style.boxShadow = "0 3px 10px rgba(0,0,0,0.1)";
-              }
-            }}
           >
             {tab === "users" ? "👥 Users" : tab === "permissions" ? "🔐 Permissions" : "📊 Activity"}
           </button>
@@ -709,85 +910,87 @@ export default function Admin() {
           </h2>
 
           {/* Add New User Form */}
-          <div style={{
-            background: "linear-gradient(135deg, #fff8f0 0%, #fff4e6 100%)",
-            padding: "25px",
-            borderRadius: "12px",
-            marginBottom: "30px",
-            border: "2px solid #ffe8d1"
-          }}>
-            <h3 style={{ color: "#d35400", marginBottom: "20px", fontSize: "1.2rem" }}>
-              ➕ Add New User
-            </h3>
-            
+          {hasPermission('userManagement', 'add') && (
             <div style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-              gap: "15px",
-              marginBottom: "20px"
+              background: "linear-gradient(135deg, #fff8f0 0%, #fff4e6 100%)",
+              padding: "25px",
+              borderRadius: "12px",
+              marginBottom: "30px",
+              border: "2px solid #ffe8d1"
             }}>
-              <input
-                placeholder="👤 Username *"
-                value={newUser.username}
-                onChange={e => setNewUser({ ...newUser, username: e.target.value })}
-                style={inputStyle}
-                required
-              />
-              <input
-                placeholder="🔒 Password *"
-                type="password"
-                value={newUser.password}
-                onChange={e => setNewUser({ ...newUser, password: e.target.value })}
-                style={inputStyle}
-                required
-              />
-              <input
-                placeholder="📧 Email *"
-                type="email"
-                value={newUser.email}
-                onChange={e => setNewUser({ ...newUser, email: e.target.value })}
-                style={inputStyle}
-                required
-              />
-              <input
-                placeholder="📱 Phone"
-                value={newUser.phone}
-                onChange={e => setNewUser({ ...newUser, phone: e.target.value })}
-                style={inputStyle}
-              />
-              <input
-                placeholder="🏢 Department"
-                value={newUser.department}
-                onChange={e => setNewUser({ ...newUser, department: e.target.value })}
-                style={inputStyle}
-              />
-              <select
-                value={newUser.role}
-                onChange={e => handleNewUserRoleChange(e.target.value)}
-                style={inputStyle}
-              >
-                <option value="viewer">👁️ Viewer</option>
-                <option value="user">👤 User</option>
-                <option value="manager">👨‍💼 Manager</option>
-                <option value="admin">👑 Admin</option>
-              </select>
-            </div>
+              <h3 style={{ color: "#d35400", marginBottom: "20px", fontSize: "1.2rem" }}>
+                ➕ Add New User
+              </h3>
+              
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                gap: "15px",
+                marginBottom: "20px"
+              }}>
+                <input
+                  placeholder="👤 Username *"
+                  value={newUser.username}
+                  onChange={e => setNewUser({ ...newUser, username: e.target.value })}
+                  style={inputStyle}
+                  required
+                />
+                <input
+                  placeholder="🔒 Password *"
+                  type="password"
+                  value={newUser.password}
+                  onChange={e => setNewUser({ ...newUser, password: e.target.value })}
+                  style={inputStyle}
+                  required
+                />
+                <input
+                  placeholder="📧 Email *"
+                  type="email"
+                  value={newUser.email}
+                  onChange={e => setNewUser({ ...newUser, email: e.target.value })}
+                  style={inputStyle}
+                  required
+                />
+                <input
+                  placeholder="📱 Phone"
+                  value={newUser.phone}
+                  onChange={e => setNewUser({ ...newUser, phone: e.target.value })}
+                  style={inputStyle}
+                />
+                <input
+                  placeholder="🏢 Department"
+                  value={newUser.department}
+                  onChange={e => setNewUser({ ...newUser, department: e.target.value })}
+                  style={inputStyle}
+                />
+                <select
+                  value={newUser.role}
+                  onChange={e => handleNewUserRoleChange(e.target.value)}
+                  style={inputStyle}
+                >
+                  <option value="viewer">👁️ Viewer</option>
+                  <option value="user">👤 User</option>
+                  <option value="manager">👨‍💼 Manager</option>
+                  {currentUser?.role === 'admin' && <option value="admin">👑 Admin</option>}
+                </select>
+              </div>
 
-            <button
-              onClick={addUser}
-              disabled={loading}
-              style={{
-                ...buttonStyle,
-                background: loading 
-                  ? "linear-gradient(135deg, #ccc, #999)" 
-                  : "linear-gradient(135deg, #27ae60, #229954)",
-                cursor: loading ? "not-allowed" : "pointer",
-                opacity: loading ? 0.7 : 1
-              }}
-            >
-              {loading ? "⏳ Adding..." : "✅ Add User"}
-            </button>
-          </div>
+              <button
+                onClick={addUser}
+                disabled={loading}
+                style={{
+                  ...buttonStyle,
+                  background: loading 
+                    ? "linear-gradient(135deg, #ccc, #999)" 
+                    : "linear-gradient(135deg, #27ae60, #229954)",
+                  cursor: loading ? "not-allowed" : "pointer",
+                  opacity: loading ? 0.7 : 1
+                }}
+              >
+                {loading ? "⏳ Adding..." : "✅ Add User"}
+              </button>
+            </div>
+          )}
 
           {/* Users Table */}
           <div style={{ overflowX: "auto" }}>
@@ -828,25 +1031,37 @@ export default function Admin() {
                       </div>
                     </td>
                     <td style={tdStyle}>
-                      <select
-                        value={user.role}
-                        onChange={e => updateUserRole(user.id, e.target.value)}
-                        style={{
+                      {hasPermission('userManagement', 'edit') ? (
+                        <select
+                          value={user.role}
+                          onChange={e => updateUserRole(user.id, e.target.value)}
+                          style={{
+                            background: getRoleBadgeColor(user.role),
+                            border: "none",
+                            borderRadius: "15px",
+                            padding: "5px 10px",
+                            fontSize: "12px",
+                            fontWeight: "600",
+                            cursor: "pointer"
+                          }}
+                          disabled={user.username === 'admin' || user.id === currentUser.id}
+                        >
+                          <option value="viewer">Viewer</option>
+                          <option value="user">User</option>
+                          <option value="manager">Manager</option>
+                          {currentUser?.role === 'admin' && <option value="admin">Admin</option>}
+                        </select>
+                      ) : (
+                        <span style={{
                           background: getRoleBadgeColor(user.role),
-                          border: "none",
                           borderRadius: "15px",
                           padding: "5px 10px",
                           fontSize: "12px",
-                          fontWeight: "600",
-                          cursor: "pointer"
-                        }}
-                        disabled={user.username === 'admin'}
-                      >
-                        <option value="viewer">Viewer</option>
-                        <option value="user">User</option>
-                        <option value="manager">Manager</option>
-                        <option value="admin">Admin</option>
-                      </select>
+                          fontWeight: "600"
+                        }}>
+                          {user.role}
+                        </span>
+                      )}
                     </td>
                     <td style={tdStyle}>
                       <span style={{
@@ -867,24 +1082,26 @@ export default function Admin() {
                       }
                     </td>
                     <td style={tdStyle}>
-                      <button
-                        onClick={() => deactivateUser(user.id, user.username)}
-                        disabled={user.username === 'admin'}
-                        style={{
-                          background: user.username === 'admin' 
-                            ? "#ccc" 
-                            : "linear-gradient(135deg, #e74c3c, #c0392b)",
-                          color: "white",
-                          border: "none",
-                          borderRadius: "5px",
-                          padding: "5px 10px",
-                          fontSize: "11px",
-                          cursor: user.username === 'admin' ? "not-allowed" : "pointer",
-                          fontWeight: "600"
-                        }}
-                      >
-                        {user.username === 'admin' ? "🔒 Protected" : "🗑️ Deactivate"}
-                      </button>
+                      {hasPermission('userManagement', 'delete') && (
+                        <button
+                          onClick={() => deactivateUser(user.id, user.username)}
+                          disabled={user.username === 'admin' || user.id === currentUser.id}
+                          style={{
+                            background: user.username === 'admin' || user.id === currentUser.id
+                              ? "#ccc" 
+                              : "linear-gradient(135deg, #e74c3c, #c0392b)",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "5px",
+                            padding: "5px 10px",
+                            fontSize: "11px",
+                            cursor: user.username === 'admin' || user.id === currentUser.id ? "not-allowed" : "pointer",
+                            fontWeight: "600"
+                          }}
+                        >
+                          {user.username === 'admin' || user.id === currentUser.id ? "🔒 Protected" : "🗑️ Deactivate"}
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -895,7 +1112,7 @@ export default function Admin() {
       )}
 
       {/* Permissions Management Tab */}
-      {activeTab === "permissions" && (
+      {activeTab === "permissions" && hasPermission('userManagement', 'view') && (
         <div style={{
           background: "#fff",
           padding: "30px",
@@ -956,7 +1173,7 @@ export default function Admin() {
                               alignItems: "center",
                               gap: "3px",
                               fontSize: "11px",
-                              cursor: "pointer",
+                              cursor: hasPermission('userManagement', 'edit') ? "pointer" : "default",
                               padding: "2px 5px",
                               borderRadius: "5px",
                               background: user.permissions?.[category]?.[permission] 
@@ -973,10 +1190,9 @@ export default function Admin() {
                                   e.target.checked
                                 )}
                                 disabled={
-                                  user.role === "admin" && 
-                                  user.username === "admin" && 
-                                  category === "userManagement" && 
-                                  permission === "delete"
+                                  !hasPermission('userManagement', 'edit') ||
+                                  (user.role === "admin" && user.username === "admin") ||
+                                  user.id === currentUser.id
                                 }
                                 style={{ margin: 0 }}
                               />
@@ -1013,7 +1229,8 @@ export default function Admin() {
             </div>
             <ul style={{ margin: "0", paddingLeft: "20px", lineHeight: "1.6" }}>
               <li>Permission changes are saved automatically and take effect immediately</li>
-              <li>Main admin user's delete permissions cannot be revoked for security</li>
+              <li>Main admin user's permissions cannot be modified for security</li>
+              <li>You cannot modify your own permissions</li>
               <li>Role changes will reset permissions to role defaults</li>
               <li>All permission changes are logged for audit purposes</li>
             </ul>
@@ -1026,6 +1243,7 @@ export default function Admin() {
         <ActivityLog 
           currentUser={currentUser} 
           showToast={showToast}
+          hasPermission={hasPermission}
         />
       )}
 
@@ -1054,254 +1272,6 @@ export default function Admin() {
     </div>
   );
 }
-
-// Activity Log Component
-const ActivityLog = ({ currentUser, showToast }) => {
-  const [activities, setActivities] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState({
-    action: '',
-    dateFrom: '',
-    dateTo: '',
-    limit: 50
-  });
-
-  const loadActivities = useCallback(async () => {
-    try {
-      setLoading(true);
-      let query = supabase
-        .from('admin_activity_log')
-        .select(`
-          *,
-          admin_users!admin_activity_log_user_id_fkey (username, role)
-        `)
-        .order('created_at', { ascending: false })
-        .limit(filters.limit);
-
-      if (filters.action) {
-        query = query.eq('action', filters.action);
-      }
-      
-      if (filters.dateFrom) {
-        query = query.gte('created_at', filters.dateFrom);
-      }
-      
-      if (filters.dateTo) {
-        query = query.lte('created_at', filters.dateTo + 'T23:59:59');
-      }
-
-      const { data, error } = await query;
-      
-      if (error) throw error;
-      setActivities(data || []);
-    } catch (error) {
-      console.error('Error loading activities:', error);
-      showToast('Failed to load activity log: ' + error.message, 'error');
-    } finally {
-      setLoading(false);
-    }
-  }, [filters, showToast]);
-
-  useEffect(() => {
-    loadActivities();
-  }, [loadActivities]);
-
-  const getActionIcon = (action) => {
-    const icons = {
-      'LOGIN': '🔐',
-      'LOGOUT': '🚪',
-      'CREATE_USER': '👤➕',
-      'UPDATE_USER': '👤✏️',
-      'DEACTIVATE_USER': '👤❌',
-      'UPDATE_PERMISSION': '🔐✏️',
-      'UPDATE_USER_ROLE': '👑',
-      'VIEW_USERS': '👥👁️',
-      'VIEW_ACTIVITY': '📊👁️'
-    };
-    return icons[action] || '📝';
-  };
-
-  const formatActionName = (action) => {
-    return action.replace(/_/g, ' ').toLowerCase()
-      .replace(/\b\w/g, l => l.toUpperCase());
-  };
-
-  return (
-    <div style={{
-      background: "#fff",
-      padding: "30px",
-      borderRadius: "15px",
-      boxShadow: "0 10px 30px rgba(230, 126, 34, 0.1)"
-    }}>
-      <h2 style={{ color: "#e67e22", marginBottom: "25px", fontSize: "1.5rem", fontWeight: "700" }}>
-        📊 Activity Log
-      </h2>
-
-      {/* Filters */}
-      <div style={{
-        background: "#f8f9fa",
-        padding: "20px",
-        borderRadius: "10px",
-        marginBottom: "25px",
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-        gap: "15px"
-      }}>
-        <select
-          value={filters.action}
-          onChange={e => setFilters({...filters, action: e.target.value})}
-          style={inputStyle}
-        >
-          <option value="">All Actions</option>
-          <option value="LOGIN">Login</option>
-          <option value="CREATE_USER">Create User</option>
-          <option value="UPDATE_USER">Update User</option>
-          <option value="DEACTIVATE_USER">Deactivate User</option>
-          <option value="UPDATE_PERMISSION">Update Permission</option>
-          <option value="UPDATE_USER_ROLE">Update Role</option>
-        </select>
-
-        <input
-          type="date"
-          value={filters.dateFrom}
-          onChange={e => setFilters({...filters, dateFrom: e.target.value})}
-          style={inputStyle}
-          placeholder="From Date"
-        />
-
-        <input
-          type="date"
-          value={filters.dateTo}
-          onChange={e => setFilters({...filters, dateTo: e.target.value})}
-          style={inputStyle}
-          placeholder="To Date"
-        />
-
-        <select
-          value={filters.limit}
-          onChange={e => setFilters({...filters, limit: parseInt(e.target.value)})}
-          style={inputStyle}
-        >
-          <option value={25}>25 Records</option>
-          <option value={50}>50 Records</option>
-          <option value={100}>100 Records</option>
-          <option value={200}>200 Records</option>
-        </select>
-      </div>
-
-      {/* Activity Table */}
-      {loading ? (
-        <div style={{ textAlign: "center", padding: "40px" }}>
-          <div style={{
-            width: "40px",
-            height: "40px",
-            border: "4px solid #e67e22",
-            borderTop: "4px solid transparent",
-            borderRadius: "50%",
-            animation: "spin 1s linear infinite",
-            margin: "0 auto 15px"
-          }}></div>
-          <p>Loading activities...</p>
-        </div>
-      ) : (
-        <div style={{ overflowX: "auto" }}>
-          <table style={{
-            width: "100%",
-            borderCollapse: "collapse",
-            background: "#fff",
-            borderRadius: "10px",
-            overflow: "hidden",
-            boxShadow: "0 5px 15px rgba(0,0,0,0.1)"
-          }}>
-            <thead>
-              <tr style={{ background: "linear-gradient(135deg, #e67e22, #d35400)" }}>
-                <th style={{ ...thStyle, color: "white" }}>Time</th>
-                <th style={{ ...thStyle, color: "white" }}>User</th>
-                <th style={{ ...thStyle, color: "white" }}>Action</th>
-                <th style={{ ...thStyle, color: "white" }}>Resource</th>
-                <th style={{ ...thStyle, color: "white" }}>Details</th>
-                <th style={{ ...thStyle, color: "white" }}>IP Address</th>
-              </tr>
-            </thead>
-            <tbody>
-              {activities.map((activity, index) => (
-                <tr key={activity.id} style={{
-                  background: index % 2 === 0 ? "#f8f9fa" : "white"
-                }}>
-                  <td style={tdStyle}>
-                    <div style={{ fontSize: "12px" }}>
-                      {new Date(activity.created_at).toLocaleString()}
-                    </div>
-                  </td>
-                  <td style={tdStyle}>
-                    <div>
-                      <div style={{ fontWeight: "600" }}>
-                        {activity.admin_users?.username || 'System'}
-                      </div>
-                      <div style={{ fontSize: "11px", color: "#666" }}>
-                        {activity.admin_users?.role}
-                      </div>
-                    </div>
-                  </td>
-                  <td style={tdStyle}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-                      <span>{getActionIcon(activity.action)}</span>
-                      <span style={{ fontSize: "12px", fontWeight: "600" }}>
-                        {formatActionName(activity.action)}
-                      </span>
-                    </div>
-                  </td>
-                  <td style={tdStyle}>
-                    <span style={{ fontSize: "12px" }}>
-                      {activity.resource || '-'}
-                    </span>
-                  </td>
-                  <td style={tdStyle}>
-                    <div style={{ fontSize: "11px", maxWidth: "200px" }}>
-                      {activity.details ? (
-                        <details>
-                          <summary style={{ cursor: "pointer", color: "#e67e22" }}>
-                            View Details
-                          </summary>
-                          <pre style={{ 
-                            background: "#f8f9fa", 
-                            padding: "8px", 
-                            borderRadius: "5px",
-                            fontSize: "10px",
-                            overflow: "auto",
-                            marginTop: "5px"
-                          }}>
-                            {JSON.stringify(activity.details, null, 2)}
-                          </pre>
-                        </details>
-                      ) : '-'}
-                    </div>
-                  </td>
-                  <td style={tdStyle}>
-                    <span style={{ fontSize: "11px", fontFamily: "monospace" }}>
-                      {activity.ip_address || '-'}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {activities.length === 0 && !loading && (
-        <div style={{
-          textAlign: "center",
-          padding: "40px",
-          color: "#666",
-          fontSize: "16px"
-        }}>
-          📝 No activity records found for the selected filters.
-        </div>
-      )}
-    </div>
-  );
-};
 
 // Styles
 const inputStyle = {
@@ -1339,3 +1309,6 @@ const tdStyle = {
   fontSize: "13px",
   verticalAlign: "top"
 };
+
+// Export the Admin component as default
+export { ActivityLog };

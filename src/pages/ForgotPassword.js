@@ -243,51 +243,66 @@ function ForgotPassword() {
       // Hash new password
       const newPasswordHash = await hashPassword(formData.newPassword);
 
-      // Update password
-      const { error: updateError } = await supabase
+      // Get old password hash for logging
+      const { data: currentUserData } = await supabase
         .from('admin_users')
-        .update({
-          password: newPasswordHash,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', foundUser.id);
+        .select('password')
+        .eq('id', foundUser.id)
+        .single();
 
-      if (updateError) throw updateError;
+      // Start transaction-like operations
+      try {
+        // Update password
+        const { error: updateError } = await supabase
+          .from('admin_users')
+          .update({
+            password: newPasswordHash,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', foundUser.id);
 
-      // Mark token as used
-      await supabase
-        .from('admin_password_reset_tokens')
-        .update({ used_at: new Date().toISOString() })
-        .eq('id', tokenData.id);
+        if (updateError) throw updateError;
 
-      // Log password change
-      await supabase.from('admin_password_changes').insert({
-        user_id: foundUser.id,
-        old_password_hash: null, // Not available in reset
-        new_password_hash: newPasswordHash,
-        changed_by: foundUser.id,
-        ip_address: '127.0.0.1',
-        user_agent: navigator.userAgent
-      });
+        // Mark token as used
+        await supabase
+          .from('admin_password_reset_tokens')
+          .update({ used_at: new Date().toISOString() })
+          .eq('id', tokenData.id);
 
-      // Invalidate all sessions for this user
-      await supabase
-        .from('admin_sessions')
-        .update({ is_active: false })
-        .eq('user_id', foundUser.id);
+        // Log password change
+        await supabase.from('admin_password_changes').insert({
+          user_id: foundUser.id,
+          old_password_hash: currentUserData?.password || null,
+          new_password_hash: newPasswordHash,
+          changed_by: foundUser.id,
+          ip_address: '127.0.0.1',
+          user_agent: navigator.userAgent
+        });
 
-      // Log successful password reset
-      await logActivity(foundUser.id, 'PASSWORD_RESET_COMPLETED', {
-        username: foundUser.username
-      });
+        // Invalidate all sessions for this user
+        await supabase
+          .from('admin_sessions')
+          .update({ is_active: false })
+          .eq('user_id', foundUser.id);
 
-      setMessage("🎉 Password reset successful! You can now login with your new password.");
-      showToast("Password reset successful! Redirecting to login...", 'success');
-      
-      // Auto redirect to login after 3 seconds
-      setTimeout(() => {
-        navigate("/login");
-      }, 3000);
+        // Log successful password reset
+        await logActivity(foundUser.id, 'PASSWORD_RESET_COMPLETED', {
+          username: foundUser.username
+        });
+
+        setMessage("🎉 Password reset successful! You can now login with your new password.");
+        showToast("Password reset successful! Redirecting to login...", 'success');
+        
+        // Auto redirect to login after 3 seconds
+        setTimeout(() => {
+          navigate("/login");
+        }, 3000);
+
+      } catch (transactionError) {
+        // If any part fails, log the error
+        console.error('Password reset transaction error:', transactionError);
+        throw transactionError;
+      }
 
     } catch (error) {
       console.error('Error resetting password:', error);
@@ -328,6 +343,15 @@ function ForgotPassword() {
   const togglePasswordVisibility = (field) => {
     setShowPasswords(prev => ({ ...prev, [field]: !prev[field] }));
   };
+
+  // Clear any existing sessions on component mount
+  useEffect(() => {
+    // Clear any existing login data
+    localStorage.removeItem("loggedIn");
+    localStorage.removeItem("loggedInUser");
+    localStorage.removeItem("userRole");
+    localStorage.removeItem("sessionToken");
+  }, []);
 
   return (
     <div style={styles.container}>
@@ -409,6 +433,7 @@ function ForgotPassword() {
                   style={styles.input}
                   required
                   disabled={isLoading}
+                  autoFocus
                 />
               </div>
             </div>
@@ -419,7 +444,7 @@ function ForgotPassword() {
                 ...styles.submitButton,
                 ...(isLoading ? styles.submitButtonLoading : {})
               }}
-              disabled={isLoading}
+              disabled={isLoading || !formData.username.trim()}
             >
               {isLoading ? (
                 <>
@@ -461,6 +486,7 @@ function ForgotPassword() {
                     style={styles.input}
                     required
                     disabled={isLoading}
+                    autoFocus
                   />
                 </div>
               </div>
@@ -483,7 +509,7 @@ function ForgotPassword() {
                   ...(isLoading ? styles.submitButtonLoading : {}),
                   flex: 1
                 }}
-                disabled={isLoading}
+                disabled={isLoading || !formData.securityAnswer.trim()}
               >
                 {isLoading ? (
                   <>
@@ -516,6 +542,7 @@ function ForgotPassword() {
                   required
                   minLength={6}
                   disabled={isLoading}
+                  autoFocus
                 />
                 <button
                   type="button"

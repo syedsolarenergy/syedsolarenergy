@@ -1,18 +1,55 @@
-// src/pages/Login.js
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
+import { supabase } from "../supabaseClient";
+import syedSolarLogo from "../assets/logo.png";
 
-// Mock logo component
-const logo = "logo.png"; // Adjust path as needed
+// Password hashing utility
+const hashPassword = async (password) => {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password);
+  const hash = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(hash))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+};
 
-// --- Ensure default users in localStorage ---
-if (!localStorage.getItem("users")) {
-  const defaultUsers = [
-    { username: "admin", password: "Zub@12345", email: "sales@syedsolarenergy.com", role: "admin" },
-    { username: "zubair", password: "Zub@12345", email: "zkafridi317@gmail.com", role: "user" },
-  ];
-  localStorage.setItem("users", JSON.stringify(defaultUsers));
-}
+// Generate secure session token
+const generateSessionToken = () => {
+  return crypto.randomUUID() + '-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+};
+
+// Toast notification component
+const Toast = ({ message, type, onClose }) => (
+  <div style={{
+    position: 'fixed',
+    top: '20px',
+    right: '20px',
+    background: type === 'error' ? '#ff4444' : type === 'success' ? '#44ff44' : '#4444ff',
+    color: 'white',
+    padding: '12px 20px',
+    borderRadius: '8px',
+    zIndex: 10000,
+    boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+    fontSize: '14px',
+    fontWeight: '600',
+    maxWidth: '300px'
+  }}>
+    {message}
+    <button 
+      onClick={onClose}
+      style={{
+        background: 'none',
+        border: 'none',
+        color: 'white',
+        marginLeft: '10px',
+        cursor: 'pointer',
+        fontSize: '16px'
+      }}
+    >
+      ×
+    </button>
+  </div>
+);
 
 function Login() {
   const [username, setUsername] = useState("");
@@ -21,11 +58,18 @@ function Login() {
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [toast, setToast] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
   
   // Default landing page set to dashboard
-  const from = location.state?.from?.pathname || "https://syedsolarenergy.com/dashboard";
+  const from = location.state?.from?.pathname || "/dashboard";
+
+  // Show toast notification
+  const showToast = (message, type = 'info') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), type === 'error' ? 5000 : 3000);
+  };
   
   // Update time every minute
   useEffect(() => {
@@ -37,9 +81,11 @@ function Login() {
   
   // Clear previous login data and hide navbar
   useEffect(() => {
+    // Clear any existing session data
     localStorage.removeItem("loggedIn");
     localStorage.removeItem("loggedInUser");
     localStorage.removeItem("userRole");
+    localStorage.removeItem("sessionToken");
     
     // Hide navbar when on login page
     const navbar = document.querySelector('.navbar, .nav, [class*="nav"]');
@@ -55,7 +101,51 @@ function Login() {
       }
     };
   }, []);
-  
+
+  // Log activity helper
+  const logActivity = async (userId, action, details = null) => {
+    try {
+      await supabase.from('admin_activity_log').insert({
+        user_id: userId,
+        action,
+        resource: 'authentication',
+        details,
+        ip_address: '127.0.0.1',
+        user_agent: navigator.userAgent
+      });
+    } catch (error) {
+      console.error('Failed to log activity:', error);
+    }
+  };
+
+  // Create session in database
+  const createSession = async (userId) => {
+    try {
+      const sessionToken = generateSessionToken();
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 24); // 24 hours expiry
+
+      const { error } = await supabase
+        .from('admin_sessions')
+        .insert({
+          user_id: userId,
+          session_token: sessionToken,
+          ip_address: '127.0.0.1',
+          user_agent: navigator.userAgent,
+          expires_at: expiresAt.toISOString(),
+          is_active: true
+        });
+
+      if (error) throw error;
+
+      return sessionToken;
+    } catch (error) {
+      console.error('Error creating session:', error);
+      throw error;
+    }
+  };
+
+  // Handle login
   const handleLogin = async (e) => {
     e.preventDefault();
     
@@ -66,42 +156,97 @@ function Login() {
     
     setError("");
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
+
     try {
-      const users = JSON.parse(localStorage.getItem("users")) || [];
-      const user = users.find(
-        (u) =>
-          u.username.trim().toLowerCase() === username.trim().toLowerCase() &&
-          u.password === password
-      );
-      
-      if (user) {
-        localStorage.setItem("loggedIn", "true");
-        localStorage.setItem("loggedInUser", user.username);
-        localStorage.setItem("userRole", user.role || "user");
-        localStorage.setItem("loginTime", new Date().toISOString());
-        
-        // Show sidebar and hide navbar after successful login
-        setTimeout(() => {
-          const sidebar = document.querySelector('.sidebar, [class*="sidebar"]');
-          const navbar = document.querySelector('.navbar, .nav, [class*="nav"]');
+      // Hash the password
+      const passwordHash = await hashPassword(password);
+
+      // Find user in Supabase
+      const { data: users, error: fetchError } = await supabase
+        .from('admin_users')
+        .select(`
+          id, username, email, role, is_active, password,
+          admin_permissions (*)
+        `)
+        .eq('username', username.trim().toLowerCase())
+        .eq('is_active', true)
+        .limit(1);
+
+      if (fetchError) throw fetchError;
+
+      const user = users?.[0];
+
+      if (user && user.password === passwordHash) {
+        try {
+          // Create session
+          const sessionToken = await createSession(user.id);
+
+          // Update last login
+          await supabase
+            .from('admin_users')
+            .update({ last_login: new Date().toISOString() })
+            .eq('id', user.id);
+
+          // Log successful login
+          await logActivity(user.id, 'LOGIN', {
+            username: user.username,
+            role: user.role
+          });
+
+          // Store session data
+          localStorage.setItem("loggedIn", "true");
+          localStorage.setItem("loggedInUser", user.username);
+          localStorage.setItem("userRole", user.role || "user");
+          localStorage.setItem("sessionToken", sessionToken);
+          localStorage.setItem("loginTime", new Date().toISOString());
+
+          showToast("Login successful! Welcome back.", 'success');
+
+          // Show sidebar and hide navbar after successful login
+          setTimeout(() => {
+            const sidebar = document.querySelector('.sidebar, [class*="sidebar"]');
+            const navbar = document.querySelector('.navbar, .nav, [class*="nav"]');
+            
+            if (sidebar) sidebar.style.display = 'block';
+            if (navbar) navbar.style.display = 'none';
+          }, 100);
+
+          // Navigate to dashboard or intended page
+          setTimeout(() => {
+            if (from.startsWith('http')) {
+              window.location.href = from;
+            } else {
+              navigate(from, { replace: true });
+            }
+          }, 1000);
+
+        } catch (sessionError) {
+          console.error('Session creation error:', sessionError);
+          setError("❌ لاگ ان نہیں ہو سکا | Login failed. Please try again.");
           
-          if (sidebar) sidebar.style.display = 'block';
-          if (navbar) navbar.style.display = 'none';
-        }, 100);
-        
-        // Navigate to dashboard or intended page
-        if (from.startsWith('http')) {
-          window.location.href = from;
-        } else {
-          navigate(from, { replace: true });
+          await logActivity(user.id, 'LOGIN_FAILED', {
+            username: user.username,
+            reason: 'session_creation_error',
+            error: sessionError.message
+          });
         }
       } else {
         setError("❌ غلط صارف نام یا پاس ورڈ | Invalid username or password");
+        
+        await logActivity(user?.id || null, 'LOGIN_FAILED', {
+          username: username.trim().toLowerCase(),
+          reason: user ? 'invalid_password' : 'user_not_found'
+        });
       }
     } catch (error) {
+      console.error('Login error:', error);
       setError("❌ لاگ ان نہیں ہو سکا | Login failed. Please try again.");
+      
+      await logActivity(null, 'LOGIN_FAILED', {
+        username: username.trim().toLowerCase(),
+        reason: 'system_error',
+        error: error.message
+      });
     } finally {
       setIsLoading(false);
     }
@@ -158,6 +303,15 @@ function Login() {
       zIndex: "9999",
       boxSizing: "border-box"
     }}>
+
+      {/* Toast Notification */}
+      {toast && (
+        <Toast 
+          message={toast.message} 
+          type={toast.type} 
+          onClose={() => setToast(null)} 
+        />
+      )}
       
       {/* Responsive Floating Background Elements */}
       <div style={{
@@ -268,7 +422,7 @@ function Login() {
               display: "inline-block"
             }}>
               <img
-                src={logo}
+                src={syedSolarLogo}
                 alt="Syed Solar Logo"
                 style={{
                   width: "clamp(40px, 10vw, 70px)",
@@ -642,8 +796,8 @@ function Login() {
         
         {/* Enhanced Forgot Password - Responsive */}
         <div style={{ textAlign: "center", marginTop: "clamp(4px, 1vh, 8px)", marginBottom: "clamp(8px, 2vh, 15px)" }}>
-          <button 
-            onClick={() => console.log('Forgot password clicked')}
+          <Link 
+            to="/forgot-password"
             style={{
               color: "#F7931E",
               fontWeight: 600,
@@ -652,9 +806,7 @@ function Login() {
               transition: "all 0.3s ease",
               padding: "clamp(3px, 0.8vh, 6px) clamp(6px, 1.5vw, 12px)",
               borderRadius: "clamp(4px, 1vw, 8px)",
-              background: "none",
-              border: "none",
-              cursor: "pointer"
+              display: "inline-block"
             }}
             onMouseOver={(e) => {
               e.target.style.color = "#FF6B35";
@@ -666,7 +818,7 @@ function Login() {
             }}
           >
             پاس ورڈ بھول گئے؟ | Forgot Password?
-          </button>
+          </Link>
         </div>
         
         {/* Enhanced Footer - Ultra Responsive */}
