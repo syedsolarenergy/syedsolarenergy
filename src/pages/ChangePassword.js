@@ -50,12 +50,16 @@ const ToastComponent = ({ message, type, onClose }) => (
     background: type === 'error' ? '#ff4444' : type === 'success' ? '#44ff44' : '#4444ff',
     color: 'white',
     padding: '12px 20px',
-    borderRadius: '8px',
+    borderRadius: '12px',
     zIndex: 10000,
-    boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+    boxShadow: '0 8px 25px rgba(0,0,0,0.3)',
     fontSize: '14px',
     fontWeight: '600',
-    maxWidth: '300px'
+    maxWidth: '320px',
+    backdropFilter: 'blur(10px)',
+    border: '1px solid rgba(255,255,255,0.2)',
+    transform: 'translateX(0)',
+    animation: 'slideInRight 0.3s ease-out'
   }}>
     {message}
     <button 
@@ -64,9 +68,22 @@ const ToastComponent = ({ message, type, onClose }) => (
         background: 'none',
         border: 'none',
         color: 'white',
-        marginLeft: '10px',
+        marginLeft: '12px',
         cursor: 'pointer',
-        fontSize: '16px'
+        fontSize: '18px',
+        fontWeight: 'bold',
+        padding: '2px 6px',
+        borderRadius: '50%',
+        transition: 'all 0.2s ease',
+        opacity: 0.8
+      }}
+      onMouseOver={(e) => {
+        e.target.style.opacity = '1';
+        e.target.style.background = 'rgba(255,255,255,0.2)';
+      }}
+      onMouseOut={(e) => {
+        e.target.style.opacity = '0.8';
+        e.target.style.background = 'none';
       }}
     >
       ×
@@ -91,6 +108,7 @@ function ChangePassword() {
   const [initializing, setInitializing] = useState(true);
   const [toast, setToast] = useState(null);
   const [passwordStrength, setPasswordStrength] = useState(null);
+  const [focusedField, setFocusedField] = useState(null);
 
   // Show toast notification
   const showToast = (message, type = 'info') => {
@@ -372,11 +390,11 @@ function ChangePassword() {
             onClick={() => navigate(-1)}
             style={componentStyles.backButton}
             onMouseOver={(e) => {
-              e.target.style.transform = "translateY(-2px)";
-              e.target.style.boxShadow = "0 6px 20px rgba(0,0,0,0.15)";
+              e.target.style.transform = "translateY(-2px) scale(1.02)";
+              e.target.style.boxShadow = "0 8px 25px rgba(0,0,0,0.2)";
             }}
             onMouseOut={(e) => {
-              e.target.style.transform = "translateY(0)";
+              e.target.style.transform = "translateY(0) scale(1)";
               e.target.style.boxShadow = "0 4px 15px rgba(0,0,0,0.1)";
             }}
           >
@@ -389,12 +407,17 @@ function ChangePassword() {
           {/* Current Password */}
           <div style={componentStyles.inputGroup}>
             <label style={componentStyles.label}>🔒 Current Password</label>
-            <div style={componentStyles.inputContainer}>
+            <div style={{
+              ...componentStyles.inputContainer,
+              ...(focusedField === 'oldPassword' ? componentStyles.inputContainerFocused : {})
+            }}>
               <input
                 type={showPasswords.old ? "text" : "password"}
                 placeholder="Enter your current password"
                 value={formData.oldPassword}
                 onChange={(e) => handleInputChange('oldPassword', e.target.value)}
+                onFocus={() => setFocusedField('oldPassword')}
+                onBlur={() => setFocusedField(null)}
                 required
                 disabled={loading}
                 style={componentStyles.input}
@@ -402,8 +425,19 @@ function ChangePassword() {
               <button
                 type="button"
                 onClick={() => togglePasswordVisibility('old')}
-                style={componentStyles.passwordToggle}
+                style={{
+                  ...componentStyles.passwordToggle,
+                  ...(showPasswords.old ? componentStyles.passwordToggleActive : {})
+                }}
                 disabled={loading}
+                onMouseOver={(e) => {
+                  e.target.style.background = 'rgba(230, 126, 34, 0.1)';
+                  e.target.style.transform = 'scale(1.1)';
+                }}
+                onMouseOut={(e) => {
+                  e.target.style.background = showPasswords.old ? 'rgba(230, 126, 34, 0.1)' : 'rgba(0,0,0,0.05)';
+                  e.target.style.transform = 'scale(1)';
+                }}
               >
                 {showPasswords.old ? "🙈" : "👁️"}
               </button>
@@ -413,12 +447,17 @@ function ChangePassword() {
           {/* New Password */}
           <div style={componentStyles.inputGroup}>
             <label style={componentStyles.label}>🔐 New Password</label>
-            <div style={componentStyles.inputContainer}>
+            <div style={{
+              ...componentStyles.inputContainer,
+              ...(focusedField === 'newPassword' ? componentStyles.inputContainerFocused : {})
+            }}>
               <input
                 type={showPasswords.new ? "text" : "password"}
                 placeholder="Enter your new password"
                 value={formData.newPassword}
                 onChange={(e) => handleInputChange('newPassword', e.target.value)}
+                onFocus={() => setFocusedField('newPassword')}
+                onBlur={() => setFocusedField(null)}
                 required
                 disabled={loading}
                 style={componentStyles.input}
@@ -426,8 +465,19 @@ function ChangePassword() {
               <button
                 type="button"
                 onClick={() => togglePasswordVisibility('new')}
-                style={componentStyles.passwordToggle}
+                style={{
+                  ...componentStyles.passwordToggle,
+                  ...(showPasswords.new ? componentStyles.passwordToggleActive : {})
+                }}
                 disabled={loading}
+                onMouseOver={(e) => {
+                  e.target.style.background = 'rgba(230, 126, 34, 0.1)';
+                  e.target.style.transform = 'scale(1.1)';
+                }}
+                onMouseOut={(e) => {
+                  e.target.style.background = showPasswords.new ? 'rgba(230, 126, 34, 0.1)' : 'rgba(0,0,0,0.05)';
+                  e.target.style.transform = 'scale(1)';
+                }}
               >
                 {showPasswords.new ? "🙈" : "👁️"}
               </button>
@@ -447,7 +497,7 @@ function ChangePassword() {
                     style={{
                       ...componentStyles.strengthFill,
                       width: `${(passwordStrength.score / 5) * 100}%`,
-                      background: passwordStrength.color
+                      background: `linear-gradient(90deg, ${passwordStrength.color}, ${passwordStrength.color}88)`
                     }}
                   ></div>
                 </div>
@@ -461,9 +511,13 @@ function ChangePassword() {
                   }).map(([key, label]) => (
                     <div key={key} style={{
                       ...componentStyles.strengthCheck,
-                      color: passwordStrength.checks[key] ? '#44ff44' : '#ff4444'
+                      color: passwordStrength.checks[key] ? '#22c55e' : '#ef4444',
+                      fontWeight: passwordStrength.checks[key] ? '600' : '400'
                     }}>
-                      {passwordStrength.checks[key] ? '✓' : '✗'} {label}
+                      <span style={{ marginRight: '6px', fontSize: '12px' }}>
+                        {passwordStrength.checks[key] ? '✓' : '✗'}
+                      </span>
+                      {label}
                     </div>
                   ))}
                 </div>
@@ -474,25 +528,42 @@ function ChangePassword() {
           {/* Confirm New Password */}
           <div style={componentStyles.inputGroup}>
             <label style={componentStyles.label}>🔐 Confirm New Password</label>
-            <div style={componentStyles.inputContainer}>
+            <div style={{
+              ...componentStyles.inputContainer,
+              ...(focusedField === 'confirmPassword' ? componentStyles.inputContainerFocused : {}),
+              ...(formData.confirmPassword && formData.newPassword !== formData.confirmPassword ? componentStyles.inputContainerError : {})
+            }}>
               <input
                 type={showPasswords.confirm ? "text" : "password"}
                 placeholder="Confirm your new password"
                 value={formData.confirmPassword}
                 onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                onFocus={() => setFocusedField('confirmPassword')}
+                onBlur={() => setFocusedField(null)}
                 required
                 disabled={loading}
                 style={{
                   ...componentStyles.input,
                   borderColor: formData.confirmPassword && formData.newPassword !== formData.confirmPassword 
-                    ? '#ff4444' : componentStyles.input.borderColor
+                    ? '#ef4444' : componentStyles.input.borderColor
                 }}
               />
               <button
                 type="button"
                 onClick={() => togglePasswordVisibility('confirm')}
-                style={componentStyles.passwordToggle}
+                style={{
+                  ...componentStyles.passwordToggle,
+                  ...(showPasswords.confirm ? componentStyles.passwordToggleActive : {})
+                }}
                 disabled={loading}
+                onMouseOver={(e) => {
+                  e.target.style.background = 'rgba(230, 126, 34, 0.1)';
+                  e.target.style.transform = 'scale(1.1)';
+                }}
+                onMouseOut={(e) => {
+                  e.target.style.background = showPasswords.confirm ? 'rgba(230, 126, 34, 0.1)' : 'rgba(0,0,0,0.05)';
+                  e.target.style.transform = 'scale(1)';
+                }}
               >
                 {showPasswords.confirm ? "🙈" : "👁️"}
               </button>
@@ -528,7 +599,7 @@ function ChangePassword() {
             onMouseOver={(e) => {
               if (!loading && formData.oldPassword && formData.newPassword && formData.confirmPassword && formData.newPassword === formData.confirmPassword) {
                 e.target.style.transform = "translateY(-2px) scale(1.02)";
-                e.target.style.boxShadow = "0 8px 25px rgba(230, 126, 34, 0.4)";
+                e.target.style.boxShadow = "0 10px 30px rgba(230, 126, 34, 0.4)";
               }
             }}
             onMouseOut={(e) => {
@@ -584,10 +655,28 @@ function ChangePassword() {
               transform: translate(-50%, -50%) scale(1.1);
             }
           }
+
+          @keyframes slideInRight {
+            from {
+              transform: translateX(100%);
+              opacity: 0;
+            }
+            to {
+              transform: translateX(0);
+              opacity: 1;
+            }
+          }
+
+          @keyframes glow {
+            0%, 100% { box-shadow: 0 0 5px rgba(230, 126, 34, 0.3); }
+            50% { box-shadow: 0 0 15px rgba(230, 126, 34, 0.6), 0 0 25px rgba(230, 126, 34, 0.4); }
+          }
           
           input:focus {
-            outline: 2px solid rgba(230, 126, 34, 0.5) !important;
-            outline-offset: 1px !important;
+            outline: none !important;
+            border-color: #e67e22 !important;
+            box-shadow: 0 0 0 3px rgba(230, 126, 34, 0.1) !important;
+            animation: glow 2s ease-in-out infinite !important;
           }
         `}
       </style>
@@ -617,11 +706,13 @@ const componentStyles = {
   },
 
   loadingCard: {
-    background: "white",
-    padding: "30px",
-    borderRadius: "15px",
-    boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
-    textAlign: "center"
+    background: "rgba(255, 255, 255, 0.95)",
+    padding: "35px",
+    borderRadius: "20px",
+    boxShadow: "0 15px 35px rgba(0,0,0,0.15)",
+    textAlign: "center",
+    backdropFilter: "blur(10px)",
+    border: "1px solid rgba(255,255,255,0.3)"
   },
 
   loadingText: {
@@ -678,10 +769,10 @@ const componentStyles = {
   formContainer: {
     background: "rgba(255, 255, 255, 0.95)",
     padding: "40px",
-    borderRadius: "20px",
-    boxShadow: "0 20px 60px rgba(0, 0, 0, 0.15)",
+    borderRadius: "24px",
+    boxShadow: "0 25px 80px rgba(0, 0, 0, 0.15)",
     width: "100%",
-    maxWidth: "500px",
+    maxWidth: "520px",
     backdropFilter: "blur(20px)",
     border: "1px solid rgba(255, 255, 255, 0.3)",
     zIndex: 2,
@@ -690,20 +781,21 @@ const componentStyles = {
 
   header: {
     textAlign: "center",
-    marginBottom: "30px"
+    marginBottom: "35px"
   },
 
   logoSection: {
     position: "relative",
     display: "inline-block",
-    marginBottom: "20px"
+    marginBottom: "25px"
   },
 
   logo: {
-    width: "60px",
+    width: "70px",
     height: "auto",
-    borderRadius: "10px",
-    filter: "brightness(1.1)"
+    borderRadius: "12px",
+    filter: "brightness(1.1) contrast(1.1)",
+    boxShadow: "0 4px 15px rgba(230, 126, 34, 0.3)"
   },
 
   logoGlow: {
@@ -711,8 +803,8 @@ const componentStyles = {
     top: "50%",
     left: "50%",
     transform: "translate(-50%, -50%)",
-    width: "80px",
-    height: "80px",
+    width: "90px",
+    height: "90px",
     borderRadius: "50%",
     background: "radial-gradient(circle, rgba(230, 126, 34, 0.2) 0%, transparent 70%)",
     animation: "pulse 3s ease-in-out infinite",
@@ -720,201 +812,252 @@ const componentStyles = {
   },
 
   title: {
-    fontSize: "2rem",
-    marginBottom: "15px",
+    fontSize: "2.2rem",
+    marginBottom: "20px",
     color: "#e67e22",
     fontWeight: "700",
-    textShadow: "0 2px 4px rgba(0,0,0,0.1)"
+    textShadow: "0 2px 4px rgba(0,0,0,0.1)",
+    letterSpacing: "-0.5px"
   },
 
   userInfo: {
     background: "linear-gradient(135deg, #f8f9fa, #e9ecef)",
-    padding: "15px",
-    borderRadius: "12px",
-    border: "1px solid #dee2e6"
+    padding: "18px",
+    borderRadius: "15px",
+    border: "1px solid #dee2e6",
+    boxShadow: "0 2px 10px rgba(0,0,0,0.05)"
   },
 
   userDetails: {
     display: "flex",
     flexDirection: "column",
-    gap: "5px"
+    gap: "8px"
   },
 
   username: {
-    fontSize: "14px",
+    fontSize: "15px",
     fontWeight: "600",
     color: "#333"
   },
 
   role: {
-    fontSize: "12px",
+    fontSize: "13px",
     color: "#666"
   },
 
   roleBadge: {
-    background: "#e67e22",
+    background: "linear-gradient(135deg, #e67e22, #d35400)",
     color: "white",
-    padding: "2px 8px",
-    borderRadius: "10px",
-    fontSize: "10px",
-    fontWeight: "600"
+    padding: "3px 10px",
+    borderRadius: "12px",
+    fontSize: "11px",
+    fontWeight: "600",
+    boxShadow: "0 2px 5px rgba(230, 126, 34, 0.3)"
   },
 
   navigation: {
-    marginBottom: "25px"
+    marginBottom: "30px"
   },
 
   backButton: {
     background: "linear-gradient(135deg, #6c757d, #495057)",
     color: "white",
     border: "none",
-    borderRadius: "10px",
-    padding: "12px 20px",
+    borderRadius: "12px",
+    padding: "14px 24px",
     fontSize: "14px",
     fontWeight: "600",
     cursor: "pointer",
-    transition: "all 0.3s ease",
-    boxShadow: "0 4px 15px rgba(0,0,0,0.1)"
+    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+    boxShadow: "0 4px 15px rgba(0,0,0,0.1)",
+    display: "flex",
+    alignItems: "center",
+    gap: "8px"
   },
 
   form: {
     display: "flex",
     flexDirection: "column",
-    gap: "20px"
+    gap: "25px"
   },
 
   inputGroup: {
     display: "flex",
     flexDirection: "column",
-    gap: "8px"
+    gap: "10px"
   },
 
   label: {
     fontWeight: "600",
     color: "#333",
-    fontSize: "14px"
+    fontSize: "15px",
+    marginBottom: "2px"
   },
 
   inputContainer: {
-    position: "relative"
+    position: "relative",
+    borderRadius: "12px",
+    transition: "all 0.3s ease",
+    background: "white",
+    border: "2px solid transparent",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.05)"
+  },
+
+  inputContainerFocused: {
+    border: "2px solid #e67e22",
+    boxShadow: "0 4px 15px rgba(230, 126, 34, 0.15), 0 0 0 3px rgba(230, 126, 34, 0.1)"
+  },
+
+  inputContainerError: {
+    border: "2px solid #ef4444",
+    boxShadow: "0 4px 15px rgba(239, 68, 68, 0.15)"
   },
 
   input: {
     width: "100%",
-    padding: "15px",
-    paddingRight: "50px",
-    border: "2px solid #ddd",
-    borderRadius: "10px",
+    padding: "16px 55px 16px 18px",
+    border: "none",
+    borderRadius: "12px",
     fontSize: "16px",
     transition: "all 0.3s ease",
-    background: "white",
-    boxSizing: "border-box"
+    background: "transparent",
+    boxSizing: "border-box",
+    color: "#333",
+    fontWeight: "500"
   },
 
   passwordToggle: {
     position: "absolute",
-    right: "15px",
+    right: "12px",
     top: "50%",
     transform: "translateY(-50%)",
-    background: "none",
+    background: "rgba(0,0,0,0.05)",
     border: "none",
     cursor: "pointer",
     fontSize: "16px",
     color: "#666",
-    padding: "5px",
-    borderRadius: "5px",
-    transition: "all 0.3s ease"
+    padding: "8px",
+    borderRadius: "8px",
+    transition: "all 0.2s ease",
+    width: "36px",
+    height: "36px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 10
+  },
+
+  passwordToggleActive: {
+    background: "rgba(230, 126, 34, 0.1)",
+    color: "#e67e22"
   },
 
   strengthContainer: {
-    marginTop: "10px",
-    padding: "12px",
-    background: "#f8f9fa",
-    borderRadius: "8px",
-    border: "1px solid #e9ecef"
+    marginTop: "12px",
+    padding: "16px",
+    background: "linear-gradient(135deg, #f8f9fa, #ffffff)",
+    borderRadius: "12px",
+    border: "1px solid #e9ecef",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.05)"
   },
 
   strengthHeader: {
-    fontSize: "12px",
-    marginBottom: "8px",
-    fontWeight: "600"
+    fontSize: "13px",
+    marginBottom: "10px",
+    fontWeight: "600",
+    display: "flex",
+    alignItems: "center",
+    gap: "8px"
   },
 
   strengthBar: {
     width: "100%",
-    height: "6px",
+    height: "8px",
     background: "#e9ecef",
-    borderRadius: "3px",
+    borderRadius: "4px",
     overflow: "hidden",
-    marginBottom: "10px"
+    marginBottom: "12px",
+    boxShadow: "inset 0 1px 3px rgba(0,0,0,0.1)"
   },
 
   strengthFill: {
     height: "100%",
-    transition: "all 0.3s ease",
-    borderRadius: "3px"
+    transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+    borderRadius: "4px",
+    boxShadow: "0 1px 3px rgba(0,0,0,0.2)"
   },
 
   strengthChecks: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
-    gap: "5px"
+    gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+    gap: "6px"
   },
 
   strengthCheck: {
-    fontSize: "11px",
-    fontWeight: "500"
+    fontSize: "12px",
+    fontWeight: "500",
+    display: "flex",
+    alignItems: "center",
+    padding: "2px 0"
   },
 
   errorText: {
-    fontSize: "12px",
-    color: "#dc3545",
-    marginTop: "5px",
-    fontWeight: "500"
+    fontSize: "13px",
+    color: "#ef4444",
+    marginTop: "6px",
+    fontWeight: "500",
+    display: "flex",
+    alignItems: "center",
+    gap: "6px"
   },
 
   securityNotice: {
     background: "linear-gradient(135deg, #fff3cd, #ffeaa7)",
     border: "1px solid #ffc107",
-    borderRadius: "10px",
-    padding: "15px"
+    borderRadius: "12px",
+    padding: "18px",
+    boxShadow: "0 2px 8px rgba(255, 193, 7, 0.1)"
   },
 
   noticeHeader: {
     fontWeight: "700",
     color: "#856404",
-    marginBottom: "10px",
-    fontSize: "14px"
+    marginBottom: "12px",
+    fontSize: "15px",
+    display: "flex",
+    alignItems: "center",
+    gap: "8px"
   },
 
   noticeList: {
     margin: "0",
     paddingLeft: "20px",
     color: "#856404",
-    fontSize: "12px",
-    lineHeight: "1.5"
+    fontSize: "13px",
+    lineHeight: "1.6"
   },
 
   submitButton: {
     background: "linear-gradient(135deg, #e67e22, #d35400)",
     color: "white",
     border: "none",
-    borderRadius: "12px",
-    padding: "15px",
+    borderRadius: "14px",
+    padding: "18px",
     fontSize: "16px",
     fontWeight: "700",
     cursor: "pointer",
-    transition: "all 0.3s ease",
+    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
     boxShadow: "0 6px 20px rgba(230, 126, 34, 0.3)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    gap: "8px"
+    gap: "10px",
+    minHeight: "56px"
   },
 
   buttonSpinner: {
-    width: "16px",
-    height: "16px",
+    width: "18px",
+    height: "18px",
     border: "2px solid rgba(255,255,255,0.3)",
     borderTop: "2px solid white",
     borderRadius: "50%",
@@ -922,36 +1065,35 @@ const componentStyles = {
   },
 
   spinner: {
-    width: "40px",
-    height: "40px",
-    border: "4px solid #e67e22",
-    borderTop: "4px solid transparent",
+    width: "45px",
+    height: "45px",
+    border: "4px solid rgba(230, 126, 34, 0.2)",
+    borderTop: "4px solid #e67e22",
     borderRadius: "50%",
     animation: "spin 1s linear infinite",
-    margin: "0 auto 15px"
+    margin: "0 auto 20px"
   },
 
   footer: {
     textAlign: "center",
-    marginTop: "30px",
-    paddingTop: "20px",
+    marginTop: "35px",
+    paddingTop: "25px",
     borderTop: "1px solid #e9ecef"
   },
 
   footerDivider: {
-    width: "50px",
-    height: "3px",
+    width: "60px",
+    height: "4px",
     background: "linear-gradient(90deg, #e67e22, #d35400)",
     borderRadius: "2px",
-    margin: "0 auto 10px"
+    margin: "0 auto 15px",
+    boxShadow: "0 2px 4px rgba(230, 126, 34, 0.3)"
   },
 
   footerText: {
-    fontSize: "12px",
+    fontSize: "13px",
     color: "#666",
     margin: "0",
     fontWeight: "500"
   }
 };
-
-export default ChangePassword;
