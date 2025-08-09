@@ -3,103 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import syedSolarLogo from "../assets/logo.png";
 
-const [loadingUsers, setLoadingUsers] = useState(true);
-const [addingUser, setAddingUser] = useState(false);
-
-const loadUsers = useCallback(async () => {
-  try {
-    setLoadingUsers(true);
-    const { data, error } = await supabase
-      .from('admin_users')
-      .select(`
-        *,
-        admin_permissions (*),
-        created_by_user:admin_users!created_by (username)
-      `)
-      .order('created_at', { ascending: false });
-    if (error) throw error;
-
-    const transformed = (data || []).map(u => ({
-      ...u,
-      permissions: u.admin_permissions?.length ? unflattenPermissions(u.admin_permissions[0]) : {}
-    }));
-    setUsers(transformed);
-    await logActivity('VIEW_USERS', 'admin_users');
-  } catch (err) {
-    console.error('Error loading users:', err);
-    showToast('Failed to load users: ' + err.message, 'error');
-    setUsers([]);
-  } finally {
-    setLoadingUsers(false);
-  }
-}, [logActivity, showToast]);
-const addUser = async () => {
-  try {
-    if (!hasPermission('userManagement', 'add')) {
-      showToast("You don't have permission to add users", 'error');
-      return;
-    }
-    if (!newUser.username?.trim() || !newUser.password?.trim() || !newUser.email?.trim()) {
-      showToast("Please fill all required fields", 'error');
-      return;
-    }
-
-    setAddingUser(true);
-
-    const { data: existing, error: checkError } = await supabase
-      .from('admin_users')
-      .select('username, email')
-      .or(`username.eq.${newUser.username.trim().toLowerCase()},email.eq.${newUser.email.trim().toLowerCase()}`);
-    if (checkError) throw checkError;
-    if (existing?.length) {
-      showToast("Username or email already exists", 'error');
-      return;
-    }
-
-    const hashedPassword = await hashPassword(newUser.password);
-
-    const { data: userData, error: userError } = await supabase
-      .from('admin_users')
-      .insert({
-        username: newUser.username.trim().toLowerCase(),
-        password: hashedPassword,
-        email: newUser.email.trim().toLowerCase(),
-        phone: newUser.phone?.trim() || null,
-        department: newUser.department?.trim() || null,
-        role: newUser.role,
-        created_by: currentUser.id,
-        is_active: true
-      })
-      .select()
-      .single();
-    if (userError) throw userError;
-
-    const flat = flattenPermissions(newUser.permissions);
-    const { error: permError } = await supabase
-      .from('admin_permissions')
-      .insert({ user_id: userData.id, ...flat });
-    if (permError) throw permError;
-
-    await logActivity('CREATE_USER', 'admin_users', userData.id, {
-      username: userData.username,
-      role: userData.role
-    });
-
-    showToast("User added successfully!", 'success');
-    setNewUser({
-      username: "", password: "", email: "", phone: "", department: "",
-      role: "user", permissions: { ...permissionTemplates.user }
-    });
-
-    await loadUsers();
-  } catch (err) {
-    console.error('Error adding user:', err);
-    showToast('Failed to add user: ' + err.message, 'error');
-  } finally {
-    setAddingUser(false);
-  }
-};
-
 // Permission templates for different roles
 const permissionTemplates = {
   admin: {
@@ -221,12 +124,12 @@ const ActivityLog = ({ currentUser, showToast, hasPermission }) => {
       setLoading(true);
       let query = supabase
         .from('admin_activity_log')
-        .select(`
-          *,
-          admin_users!admin_activity_log_user_id_fkey (username, role)
-        `)
-        .order('created_at', { ascending: false })
-        .limit(filters.limit);
+  .select(`
+    *,
+    actor:admin_users!user_id (username, role)
+  `)
+  .order('created_at', { ascending: false })
+  .limit(filters.limit);
 
       if (filters.action) {
         query = query.eq('action', filters.action);
@@ -409,10 +312,10 @@ const ActivityLog = ({ currentUser, showToast, hasPermission }) => {
                   <td style={tdStyle}>
                     <div>
                       <div style={{ fontWeight: "600" }}>
-                        {activity.admin_users?.username || 'System'}
+                        {activity.actor?.username || 'System'}
                       </div>
                       <div style={{ fontSize: "11px", color: "#666" }}>
-                        {activity.admin_users?.role}
+                        {activity.actor?.role}
                       </div>
                     </div>
                   </td>
@@ -478,10 +381,12 @@ const ActivityLog = ({ currentUser, showToast, hasPermission }) => {
 
 export default function Admin() {
   const navigate = useNavigate();
+  const [pageLoading, setPageLoading] = useState(true);    // for auth/initial mount
+  const [loadingUsers, setLoadingUsers] = useState(false); // for fetching users list
+  const [addingUser, setAddingUser] = useState(false);     // for the add-user button
   const [users, setUsers] = useState([]);
   const [activeTab, setActiveTab] = useState("users");
   const [currentUser, setCurrentUser] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
   const [newUser, setNewUser] = useState({
     username: "",
@@ -502,11 +407,13 @@ export default function Admin() {
   // Check authentication and authorization
   const checkAuth = useCallback(async () => {
     try {
+      setPageLoading(true);
       // Get session token from localStorage
       const sessionToken = localStorage.getItem("sessionToken");
       
       if (!sessionToken) {
         navigate("/login", { replace: true });
+        
         return false;
       }
 
@@ -553,12 +460,14 @@ export default function Admin() {
           ? unflattenPermissions(userData.admin_permissions[0]) 
           : {}
       });
-
+      setPageLoading(false);
       return true;
     } catch (error) {
+      setPageLoading(false);
       console.error('Auth check error:', error);
       showToast("Authentication check failed", 'error');
       navigate("/login", { replace: true });
+
       return false;
     }
   }, [navigate, showToast]);
@@ -589,130 +498,111 @@ export default function Admin() {
   }, [currentUser]);
 
   // Load users from Supabase
-  const loadUsers = useCallback(async () => {
-    try {
-      setLoading(true);
-      
-      const { data, error } = await supabase
-        .from('admin_users')
-        .select(`
-  *,
-  admin_permissions (*),
-  created_by_user:admin_users!created_by(id, username)
-`)
+const loadUsers = useCallback(async () => {
+  try {
+    setLoadingUsers(true);
+    const { data, error } = await supabase
+      .from('admin_users')
+      .select(`
+        *,
+        admin_permissions (*),
+        created_by_user:admin_users!created_by (id, username)
+      `)
+      .order('created_at', { ascending: false });
 
-        .order('created_at', { ascending: false });
+    if (error) throw error;
 
-      if (error) throw error;
+    const transformed = (data || []).map(u => ({
+      ...u,
+      permissions: u.admin_permissions?.length
+        ? unflattenPermissions(u.admin_permissions[0])
+        : {}
+    }));
 
-      // Transform permissions back to nested structure
-      const transformedUsers = data.map(user => ({
-        ...user,
-        permissions: user.admin_permissions?.length > 0 
-          ? unflattenPermissions(user.admin_permissions[0]) 
-          : {}
-      }));
+    setUsers(transformed);
+    await logActivity('VIEW_USERS', 'admin_users');
+  } catch (err) {
+    console.error('Error loading users:', err);
+    showToast('Failed to load users: ' + err.message, 'error');
+    setUsers([]);
+  } finally {
+    setLoadingUsers(false);
+  }
+}, [logActivity, showToast]);
 
-      setUsers(transformedUsers);
-      await logActivity('VIEW_USERS', 'admin_users');
-    } catch (error) {
-      console.error('Error loading users:', error);
-      showToast('Failed to load users: ' + error.message, 'error');
-      setUsers([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [logActivity, showToast]);
+
 
   // Add new user
-  const addUser = async () => {
-    try {
-      // Check permissions
-      if (!hasPermission('userManagement', 'add')) {
-        showToast("You don't have permission to add users", 'error');
-        return;
-      }
-
-      // Validation
-      if (!newUser.username?.trim() || !newUser.password?.trim() || !newUser.email?.trim()) {
-        showToast("Please fill all required fields", 'error');
-        return;
-      }
-
-      // Check if username or email already exists
-      const { data: existingUsers, error: checkError } = await supabase
-        .from('admin_users')
-        .select('username, email')
-        .or(`username.eq.${newUser.username.trim().toLowerCase()},email.eq.${newUser.email.trim().toLowerCase()}`);
-
-      if (checkError) throw checkError;
-
-      if (existingUsers && existingUsers.length > 0) {
-        showToast("Username or email already exists", 'error');
-        return;
-      }
-
-      setLoading(true);
-
-      // Hash password
-      const hashedPassword = await hashPassword(newUser.password);
-
-      // Insert user
-      const { data: userData, error: userError } = await supabase
-        .from('admin_users')
-        .insert({
-          username: newUser.username.trim().toLowerCase(),
-          password: hashedPassword,
-          email: newUser.email.trim().toLowerCase(),
-          phone: newUser.phone?.trim() || null,
-          department: newUser.department?.trim() || null,
-          role: newUser.role,
-          created_by: currentUser.id,
-          is_active: true
-        })
-        .select()
-        .single();
-
-      if (userError) throw userError;
-
-      // Insert permissions
-      const flatPermissions = flattenPermissions(newUser.permissions);
-      const { error: permError } = await supabase
-        .from('admin_permissions')
-        .insert({
-          user_id: userData.id,
-          ...flatPermissions
-        });
-
-      if (permError) throw permError;
-
-      await logActivity('CREATE_USER', 'admin_users', userData.id, {
-        username: userData.username,
-        role: userData.role
-      });
-
-      showToast("User added successfully!", 'success');
-      
-      // Reset form
-      setNewUser({
-        username: "",
-        password: "",
-        email: "",
-        phone: "",
-        department: "",
-        role: "user",
-        permissions: { ...permissionTemplates.user },
-      });
-
-      // Reload users
-      await loadUsers();
-    } catch (error) {
-      console.error('Error adding user:', error);
-      showToast('Failed to add user: ' + error.message, 'error');
-    } finally {
-      setLoading(false);
+const addUser = async () => {
+  try {
+    if (!hasPermission('userManagement', 'add')) {
+      showToast("You don't have permission to add users", 'error');
+      return;
     }
-  };
+
+    if (!newUser.username?.trim() || !newUser.password?.trim() || !newUser.email?.trim()) {
+      showToast("Please fill all required fields", 'error');
+      return;
+    }
+
+    // pre-check duplicate
+    const { data: existing, error: checkError } = await supabase
+      .from('admin_users')
+      .select('username, email')
+      .or(`username.eq.${newUser.username.trim().toLowerCase()},email.eq.${newUser.email.trim().toLowerCase()}`);
+    if (checkError) throw checkError;
+    if (existing?.length) {
+      showToast("Username or email already exists", 'error');
+      return;
+    }
+
+    setAddingUser(true);
+
+    const hashedPassword = await hashPassword(newUser.password);
+
+    const { data: userData, error: userError } = await supabase
+      .from('admin_users')
+      .insert({
+        username: newUser.username.trim().toLowerCase(),
+        password: hashedPassword,
+        email: newUser.email.trim().toLowerCase(),
+        phone: newUser.phone?.trim() || null,
+        department: newUser.department?.trim() || null,
+        role: newUser.role,
+        created_by: currentUser.id,
+        is_active: true
+      })
+      .select()
+      .single();
+    if (userError) throw userError;
+
+    const flat = flattenPermissions(newUser.permissions);
+    const { error: permError } = await supabase
+      .from('admin_permissions')
+      .insert({ user_id: userData.id, ...flat });
+    if (permError) throw permError;
+
+    await logActivity('CREATE_USER', 'admin_users', userData.id, {
+      username: userData.username,
+      role: userData.role
+    });
+
+    showToast("User added successfully!", 'success');
+
+    setNewUser({
+      username: "", password: "", email: "", phone: "", department: "",
+      role: "user", permissions: { ...permissionTemplates.user }
+    });
+
+    await loadUsers();
+  } catch (err) {
+    console.error('Error adding user:', err);
+    showToast('Failed to add user: ' + err.message, 'error');
+  } finally {
+    setAddingUser(false);
+  }
+};
+
 
   // Toggle permission for a user
   const togglePermission = async (userId, category, permission, value) => {
@@ -866,11 +756,10 @@ export default function Admin() {
   // Initialize component
   useEffect(() => {
     const initComponent = async () => {
-      const isAuthorized = await checkAuth();
-      if (isAuthorized) {
-        await loadUsers();
-      }
-    };
+      const ok = await checkAuth();
+    if (ok) await loadUsers();
+  };
+    
     initComponent();
   }, [checkAuth, loadUsers]);
 
@@ -883,7 +772,7 @@ export default function Admin() {
     });
   };
 
-  if (loading && !currentUser) {
+if (pageLoading && !currentUser) {
     return (
       <div style={{
         minHeight: "100vh",
@@ -1072,6 +961,7 @@ export default function Admin() {
                   {currentUser?.role === 'admin' && <option value="admin">👑 Admin</option>}
                 </select>
               </div>
+
               <button
   onClick={addUser}
   disabled={addingUser}
@@ -1087,20 +977,6 @@ export default function Admin() {
   {addingUser ? "⏳ Adding..." : "✅ Add User"}
 </button>
 
-              <button
-                onClick={addUser}
-                disabled={loading}
-                style={{
-                  ...buttonStyle,
-                  background: loading 
-                    ? "linear-gradient(135deg, #ccc, #999)" 
-                    : "linear-gradient(135deg, #27ae60, #229954)",
-                  cursor: loading ? "not-allowed" : "pointer",
-                  opacity: loading ? 0.7 : 1
-                }}
-              >
-                {loading ? "⏳ Adding..." : "✅ Add User"}
-              </button>
             </div>
           )}
 
