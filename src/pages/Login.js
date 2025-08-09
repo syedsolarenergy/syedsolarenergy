@@ -118,35 +118,32 @@ function Login() {
     }
   };
 
-// Create session in database
-const createSession = async (userId) => {
-  try {
-    const sessionToken = generateSessionToken();
-    const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + 24); // 24 hours expiry
+  // Create session in database
+  const createSession = async (userId) => {
+    try {
+      const sessionToken = generateSessionToken();
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 24); // 24 hours expiry
 
-    const { error } = await supabase
-      .from('admin_sessions')
-      .upsert(
-        {
+      const { error } = await supabase
+        .from('admin_sessions')
+        .insert({
           user_id: userId,
           session_token: sessionToken,
           ip_address: '127.0.0.1',
           user_agent: navigator.userAgent,
           expires_at: expiresAt.toISOString(),
           is_active: true
-        },
-        { onConflict: 'user_id' }  // Add this conflict resolution
-      );
+        });
 
-    if (error) throw error;
+      if (error) throw error;
 
-    return sessionToken;
-  } catch (error) {
-    console.error('Error creating session:', error);
-    throw error;
-  }
-};
+      return sessionToken;
+    } catch (error) {
+      console.error('Error creating session:', error);
+      throw error;
+    }
+  };
 
   // Handle login
   const handleLogin = async (e) => {
@@ -161,16 +158,25 @@ const createSession = async (userId) => {
     setIsLoading(true);
 
     try {
-      // Use plaintext password
-    const { data: users, error: fetchError } = await supabase
-      .from('admin_users')
-      .select(`...`)
-      .eq('username', username.trim())
-      .eq('is_active', true)
-      .limit(1);
+      // Hash the password
+      const passwordHash = await hashPassword(password);
 
-    // Compare plaintext password
-    if (user && user.password === password) {
+      // Find user in Supabase
+      const { data: users, error: fetchError } = await supabase
+        .from('admin_users')
+        .select(`
+          id, username, email, role, is_active, password,
+          admin_permissions (*)
+        `)
+        .eq('username', username.trim().toLowerCase())
+        .eq('is_active', true)
+        .limit(1);
+
+      if (fetchError) throw fetchError;
+
+      const user = users?.[0];
+
+      if (user && user.password === passwordHash) {
         try {
           // Create session
           const sessionToken = await createSession(user.id);
