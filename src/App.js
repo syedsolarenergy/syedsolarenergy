@@ -16,7 +16,7 @@ import Quotation from "./pages/Quotation";
 import Careers from "./pages/Careers";
 import Contact from "./pages/Contact";
 
-// Auth Pages
+// Enhanced Auth Pages (with Supabase integration)
 import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
 
@@ -27,22 +27,28 @@ import Repairs from "./pages/Repairs";
 import Expenses from "./pages/Expenses";
 import Reports from "./pages/Reports";
 import ProductsPage from "./pages/ProductsPage";
-import Admin from "./pages/Admin";
 import FollowUps from "./pages/FollowUps";
 import Staff from "./pages/Staff";
 import Quotationsoftware from "./pages/Quotationsoftware";
+
+// Enhanced Admin & Security Pages (with Supabase integration)
+import Admin from "./pages/Admin";
 import ChangePassword from "./pages/ChangePassword";
 
-// New Admin Panel (public login)
+// Legacy Admin Panel (keeping for backward compatibility)
 import AdminPanel from "./pages/AdminPanel";
 import EmailVerified from "./pages/email-verified";
 
 function AppContent() {
   const location = useLocation();
   const isLoggedIn = !!localStorage.getItem("loggedInUser");
+  const sessionToken = localStorage.getItem("sessionToken");
+  
+  // Check if user has valid session (enhanced security)
+  const hasValidSession = isLoggedIn && sessionToken;
   
   // Define routes where navbar should be hidden
-  const authRoutes = ["/login", "/forgotpassword"];
+  const authRoutes = ["/login", "/forgot-password", "/forgotpassword"];
   
   // Define software/protected routes where navbar should be hidden
   const softwareRoutes = [
@@ -56,12 +62,13 @@ function AppContent() {
     "/followups", 
     "/staff", 
     "/quotationsoftware", 
+    "/change-password",
     "/changepassword"
   ];
   
   // Hide navbar on auth pages OR when logged in and on software pages
   const hideNavbar = authRoutes.includes(location.pathname.toLowerCase()) || 
-                   (isLoggedIn && softwareRoutes.includes(location.pathname.toLowerCase()));
+                   (hasValidSession && softwareRoutes.includes(location.pathname.toLowerCase()));
   
   // Hide sidebar on auth pages only
   const hideSidebar = authRoutes.includes(location.pathname.toLowerCase());
@@ -69,11 +76,11 @@ function AppContent() {
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>
       {/* Sidebar only for logged-in software users (not on auth pages) */}
-      {isLoggedIn && !hideSidebar && <Sidebar />}
+      {hasValidSession && !hideSidebar && <Sidebar />}
       
       <div style={{ 
         flex: 1, 
-        marginLeft: isLoggedIn && !hideSidebar ? 220 : 0,
+        marginLeft: hasValidSession && !hideSidebar ? 220 : 0,
         transition: "margin-left 0.3s ease"
       }}>
         {/* Navbar on public pages only (not on auth pages or software pages when logged in) */}
@@ -90,12 +97,14 @@ function AppContent() {
           <Route path="/careers" element={<Careers />} />
           <Route path="/contact" element={<Contact />} />
 
-          {/* Public Admin Panel (new) */}
+          {/* Legacy Admin Panel (keeping for backward compatibility) */}
           <Route path="/adminpanel" element={<AdminPanel />} />
           <Route path="/email-verified" element={<EmailVerified />} />
 
-          {/* Auth Pages */}
+          {/* Enhanced Auth Pages with Supabase Integration */}
           <Route path="/login" element={<Login />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          {/* Legacy route for backward compatibility */}
           <Route path="/forgotpassword" element={<ForgotPassword />} />
 
           {/* Protected Software Pages */}
@@ -105,10 +114,14 @@ function AppContent() {
           <Route path="/expenses" element={<PrivateRoute><Expenses /></PrivateRoute>} />
           <Route path="/reports" element={<PrivateRoute><Reports /></PrivateRoute>} />
           <Route path="/productspage" element={<PrivateRoute><ProductsPage /></PrivateRoute>} />
-          <Route path="/admin" element={<PrivateRoute><Admin /></PrivateRoute>} />
           <Route path="/followups" element={<PrivateRoute><FollowUps /></PrivateRoute>} />
           <Route path="/staff" element={<PrivateRoute><Staff /></PrivateRoute>} />
           <Route path="/quotationsoftware" element={<PrivateRoute><Quotationsoftware /></PrivateRoute>} />
+
+          {/* Enhanced Admin & Security Pages with Supabase Integration */}
+          <Route path="/admin" element={<PrivateRoute><Admin /></PrivateRoute>} />
+          <Route path="/change-password" element={<PrivateRoute><ChangePassword /></PrivateRoute>} />
+          {/* Legacy route for backward compatibility */}
           <Route path="/changepassword" element={<PrivateRoute><ChangePassword /></PrivateRoute>} />
 
           {/* Fallback Route */}
@@ -118,10 +131,53 @@ function AppContent() {
               textAlign: "center",
               color: "#666",
               fontSize: "18px",
-              fontWeight: "600"
+              fontWeight: "600",
+              minHeight: "50vh",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "center"
             }}>
-              <h2 style={{ color: "#ff6600", marginBottom: "20px" }}>404 - Page Not Found</h2>
-              <p>The page you're looking for doesn't exist.</p>
+              <h2 style={{ 
+                color: "#ff6600", 
+                marginBottom: "20px",
+                fontSize: "2.5rem",
+                fontWeight: "800"
+              }}>
+                404 - Page Not Found
+              </h2>
+              <p style={{ 
+                marginBottom: "30px",
+                maxWidth: "500px",
+                lineHeight: "1.6"
+              }}>
+                The page you're looking for doesn't exist or has been moved.
+              </p>
+              <button
+                onClick={() => window.location.href = '/'}
+                style={{
+                  background: "linear-gradient(135deg, #FF6B35, #F7931E)",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "10px",
+                  padding: "12px 25px",
+                  fontSize: "16px",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                  transition: "all 0.3s ease",
+                  boxShadow: "0 4px 15px rgba(255, 107, 53, 0.3)"
+                }}
+                onMouseOver={(e) => {
+                  e.target.style.transform = "translateY(-2px)";
+                  e.target.style.boxShadow = "0 6px 20px rgba(255, 107, 53, 0.4)";
+                }}
+                onMouseOut={(e) => {
+                  e.target.style.transform = "translateY(0)";
+                  e.target.style.boxShadow = "0 4px 15px rgba(255, 107, 53, 0.3)";
+                }}
+              >
+                🏠 Back to Home
+              </button>
             </div>
           } />
         </Routes>
