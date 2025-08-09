@@ -249,26 +249,227 @@ function ForgotPassword() {
           </div>
         )}
 
-         {step === 1 && (
-        <form onSubmit={handleStep1Submit}>
-          {/* username input bound to formData.username */}
-          {/* submit button */}
-        </form>
-      )}
+        {/* Step 1: Enter Username */}
+        {step === 1 && (
+          <form onSubmit={handleStep1Submit} style={styles.form}>
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>👤 Username</label>
+              <div style={styles.inputContainer}>
+                <input
+                  type="text"
+                  placeholder="Enter your username"
+                  value={formData.username}
+                  onChange={(e) => handleInputChange('username', e.target.value)}
+                  style={styles.input}
+                  required
+                  disabled={isLoading}
+                  autoFocus
+                />
+              </div>
+            </div>
 
-      {step === 2 && foundUser && (
-        <form onSubmit={handleStep2Submit}>
-          {/* show securityQuestion, answer input bound to formData.securityAnswer */}
-          {/* buttons */}
-        </form>
-      )}
+            <button
+              type="submit"
+              style={{
+                ...styles.submitButton,
+                ...(isLoading ? styles.submitButtonLoading : {})
+              }}
+              disabled={isLoading || !formData.username.trim()}
+            >
+              {isLoading ? (
+                <>
+                  <span style={styles.spinner}>⏳</span>
+                  Searching...
+                </>
+              ) : (
+                <>
+                  <span>🔍</span>
+                  Find Account
+                </>
+              )}
+            </button>
+          </form>
+        )}
 
-      {step === 3 && (
-        <form onSubmit={handleStep3Submit}>
-          {/* new/confirm password inputs bound to formData.newPassword/confirmPassword */}
-          {/* buttons */}
-        </form>
-      )}
+        {/* Step 2: Security Question */}
+        {step === 2 && foundUser && (
+          <form onSubmit={handleStep2Submit} style={styles.form}>
+            <div style={styles.securitySection}>
+              <div style={styles.userInfo}>
+                <strong>Account Found:</strong> {foundUser.username}
+                <br />
+                <small style={styles.userEmail}>{foundUser.email}</small>
+              </div>
+              
+              <div style={styles.inputGroup}>
+                <label style={styles.label}>🛡️ Security Question</label>
+                <div style={styles.questionBox}>
+                  {securityQuestion}
+                </div>
+                
+                <div style={styles.inputContainer}>
+                  <input
+                    type="text"
+                    placeholder="Enter your answer"
+                    value={formData.securityAnswer}
+                    onChange={(e) => handleInputChange('securityAnswer', e.target.value)}
+                    style={styles.input}
+                    required
+                    disabled={isLoading}
+                    autoFocus
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div style={styles.buttonRow}>
+              <button
+                type="button"
+                onClick={resetForm}
+                style={styles.backButton}
+                disabled={isLoading}
+              >
+                ← Back
+              </button>
+              
+              <button
+                type="submit"
+                style={{
+                  ...styles.submitButton,
+                  ...(isLoading ? styles.submitButtonLoading : {}),
+                  flex: 1
+                }}
+                disabled={isLoading || !formData.securityAnswer.trim()}
+              >
+                {isLoading ? (
+                  <>
+                    <span style={styles.spinner}>⏳</span>
+                    Verifying...
+                  </>
+                ) : (
+                  <>
+                    <span>✅</span>
+                    Verify Answer
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* Step 3: Reset Password */}
+        {step === 3 && (
+          <form onSubmit={handleStep3Submit} style={styles.form}>
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>🔐 New Password</label>
+              <div style={styles.inputContainer}>
+                <input
+                  type={showPasswords.new ? "text" : "password"}
+                  placeholder="Enter new password"
+                  value={formData.newPassword}
+                  onChange={(e) => handleInputChange('newPassword', e.target.value)}
+                  style={styles.input}
+                  required
+                  minLength={6}
+                  disabled={isLoading}
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={() => togglePasswordVisibility('new')}
+                  style={styles.passwordToggle}
+                  disabled={isLoading}
+                >
+                  {showPasswords.new ? "🙈" : "👁️"}
+                </button>
+              </div>
+            </div>
+
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>🔐 Confirm Password</label>
+              <div style={styles.inputContainer}>
+                <input
+                  type={showPasswords.confirm ? "text" : "password"}
+                  placeholder="Confirm new password"
+                  value={formData.confirmPassword}
+                  onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                  style={{
+                    ...styles.input,
+                    borderColor: formData.confirmPassword && formData.newPassword !== formData.confirmPassword 
+                      ? '#f44336' : styles.input.borderColor
+                  }}
+                  required
+                  minLength={6}
+                  disabled={isLoading}
+                />
+                <button
+                  type="button"
+                  onClick={() => togglePasswordVisibility('confirm')}
+                  style={styles.passwordToggle}
+                  disabled={isLoading}
+                >
+                  {showPasswords.confirm ? "🙈" : "👁️"}
+                </button>
+              </div>
+              {formData.confirmPassword && formData.newPassword !== formData.confirmPassword && (
+                <div style={styles.errorText}>
+                  ❌ Passwords do not match
+                </div>
+              )}
+            </div>
+
+            <div style={styles.passwordRequirements}>
+              <h4 style={styles.requirementsTitle}>Password Requirements:</h4>
+              <ul style={styles.requirementsList}>
+                <li style={{
+                  ...styles.requirement,
+                  color: formData.newPassword.length >= 6 ? '#4caf50' : '#666'
+                }}>
+                  ✓ At least 6 characters long
+                </li>
+                <li style={{
+                  ...styles.requirement,
+                  color: formData.newPassword === formData.confirmPassword && formData.newPassword ? '#4caf50' : '#666'
+                }}>
+                  ✓ Passwords match
+                </li>
+              </ul>
+            </div>
+
+            <div style={styles.buttonRow}>
+              <button
+                type="button"
+                onClick={() => setStep(2)}
+                style={styles.backButton}
+                disabled={isLoading}
+              >
+                ← Back
+              </button>
+              
+              <button
+                type="submit"
+                style={{
+                  ...styles.submitButton,
+                  ...(isLoading ? styles.submitButtonLoading : {}),
+                  flex: 1
+                }}
+                disabled={isLoading || !formData.newPassword || !formData.confirmPassword || formData.newPassword !== formData.confirmPassword}
+              >
+                {isLoading ? (
+                  <>
+                    <span style={styles.spinner}>⏳</span>
+                    Resetting...
+                  </>
+                ) : (
+                  <>
+                    <span>🔄</span>
+                    Reset Password
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        )}
 
         {/* Footer */}
         <div style={styles.footer}>
