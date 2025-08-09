@@ -340,7 +340,7 @@ function Login() {
           {/* Integrated Back Button */}
           <button
   type="button"
-  href="https://syedsolarenergy.com/home"
+  href="https://syedsolarenergy.com/"
   className="login-back-btn left"   // change to "right" if you want it on the right
   aria-label="Back"
 >
