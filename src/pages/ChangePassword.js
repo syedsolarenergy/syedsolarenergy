@@ -432,11 +432,11 @@ function ChangePassword() {
                 disabled={loading}
                 onMouseOver={(e) => {
                   e.target.style.background = 'rgba(230, 126, 34, 0.1)';
-                  e.target.style.transform = 'scale(1.1)';
+                  e.target.style.color = '#e67e22';
                 }}
                 onMouseOut={(e) => {
                   e.target.style.background = showPasswords.old ? 'rgba(230, 126, 34, 0.1)' : 'rgba(0,0,0,0.05)';
-                  e.target.style.transform = 'scale(1)';
+                  e.target.style.color = showPasswords.old ? '#e67e22' : '#666';
                 }}
               >
                 {showPasswords.old ? "🙈" : "👁️"}
@@ -472,11 +472,11 @@ function ChangePassword() {
                 disabled={loading}
                 onMouseOver={(e) => {
                   e.target.style.background = 'rgba(230, 126, 34, 0.1)';
-                  e.target.style.transform = 'scale(1.1)';
+                  e.target.style.color = '#e67e22';
                 }}
                 onMouseOut={(e) => {
                   e.target.style.background = showPasswords.new ? 'rgba(230, 126, 34, 0.1)' : 'rgba(0,0,0,0.05)';
-                  e.target.style.transform = 'scale(1)';
+                  e.target.style.color = showPasswords.new ? '#e67e22' : '#666';
                 }}
               >
                 {showPasswords.new ? "🙈" : "👁️"}
@@ -558,11 +558,11 @@ function ChangePassword() {
                 disabled={loading}
                 onMouseOver={(e) => {
                   e.target.style.background = 'rgba(230, 126, 34, 0.1)';
-                  e.target.style.transform = 'scale(1.1)';
+                  e.target.style.color = '#e67e22';
                 }}
                 onMouseOut={(e) => {
                   e.target.style.background = showPasswords.confirm ? 'rgba(230, 126, 34, 0.1)' : 'rgba(0,0,0,0.05)';
-                  e.target.style.transform = 'scale(1)';
+                  e.target.style.color = showPasswords.confirm ? '#e67e22' : '#666';
                 }}
               >
                 {showPasswords.confirm ? "🙈" : "👁️"}
@@ -940,14 +940,16 @@ const componentStyles = {
     color: "#666",
     padding: "10px",
     borderRadius: "8px",
-    transition: "all 0.2s ease",
+    transition: "background-color 0.2s ease, color 0.2s ease",
     width: "40px",
     height: "40px",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     zIndex: 100,
-    flexShrink: 0
+    flexShrink: 0,
+    minWidth: "40px",
+    minHeight: "40px"
   },
 
   passwordToggleActive: {
