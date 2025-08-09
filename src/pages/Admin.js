@@ -108,91 +108,82 @@ const Toast = ({ message, type, onClose }) => (
   </div>
 );
 
-// Activity Log Component
+// Activity Log Component (stable)
 const ActivityLog = ({ currentUser, showToast, hasPermission }) => {
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
-    action: '',
-    dateFrom: '',
-    dateTo: '',
-    limit: 50
+    action: "",
+    dateFrom: "",
+    dateTo: "",
+    limit: 50,
   });
 
-  const loadActivities = useCallback(async () => {
+  // Evaluate permission once, memoized (prevents effect ping-pong)
+  const canView = React.useMemo(
+    () => currentUser?.role === "admin" || hasPermission("settings", "view"),
+    [currentUser?.role, hasPermission]
+  );
+
+  // Single fetch function – no useCallback (keeps deps simple)
+  const fetchActivities = async (signal) => {
     try {
       setLoading(true);
-      let query = supabase
-        .from('admin_activity_log')
-  .select(`
-    *,
-    actor:admin_users!user_id (username, role)
-  `)
-  .order('created_at', { ascending: false })
-  .limit(filters.limit);
 
-      if (filters.action) {
-        query = query.eq('action', filters.action);
-      }
-      
-      if (filters.dateFrom) {
-        query = query.gte('created_at', filters.dateFrom);
-      }
-      
-      if (filters.dateTo) {
-        query = query.lte('created_at', filters.dateTo + 'T23:59:59');
-      }
+      let query = supabase
+        .from("admin_activity_log")
+        .select(
+          `
+          *,
+          actor:admin_users!user_id (username, role)
+        `
+        )
+        .order("created_at", { ascending: false })
+        .limit(filters.limit);
+
+      if (filters.action) query = query.eq("action", filters.action);
+      if (filters.dateFrom) query = query.gte("created_at", filters.dateFrom);
+      if (filters.dateTo)
+        query = query.lte("created_at", `${filters.dateTo}T23:59:59`);
 
       const { data, error } = await query;
-      
+
+      if (signal?.aborted) return; // guard if unmounted
       if (error) throw error;
+
       setActivities(data || []);
-    } catch (error) {
-      console.error('Error loading activities:', error);
-      showToast('Failed to load activity log: ' + error.message, 'error');
+    } catch (err) {
+      if (!signal?.aborted) {
+        console.error("Error loading activities:", err);
+        showToast("Failed to load activity log: " + err.message, "error");
+      }
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
-  }, [filters, showToast]);
+  };
 
+  // Only run when permission or filters actually change — nothing else
   useEffect(() => {
-    if (hasPermission('settings', 'view') || currentUser?.role === 'admin') {
-      loadActivities();
-    }
-  }, [loadActivities, hasPermission, currentUser]);
+    if (!canView) return;
 
-  const getActionIcon = (action) => {
-    const icons = {
-      'LOGIN': '🔐',
-      'LOGOUT': '🚪',
-      'CREATE_USER': '👤➕',
-      'UPDATE_USER': '👤✏️',
-      'DEACTIVATE_USER': '👤❌',
-      'UPDATE_PERMISSION': '🔐✏️',
-      'UPDATE_USER_ROLE': '👑',
-      'VIEW_USERS': '👥👁️',
-      'VIEW_ACTIVITY': '📊👁️',
-      'PASSWORD_CHANGE': '🔄🔒',
-      'PASSWORD_RESET_INITIATED': '🔄📧',
-      'PASSWORD_RESET_COMPLETED': '🔄✅'
-    };
-    return icons[action] || '📝';
-  };
+    const controller = new AbortController();
+    fetchActivities(controller.signal);
 
-  const formatActionName = (action) => {
-    return action.replace(/_/g, ' ').toLowerCase()
-      .replace(/\b\w/g, l => l.toUpperCase());
-  };
+    // cleanup aborts any in-flight request and prevents setState after unmount
+    return () => controller.abort();
+  }, [canView, filters.action, filters.dateFrom, filters.dateTo, filters.limit]);
 
-  if (!hasPermission('settings', 'view') && currentUser?.role !== 'admin') {
+  if (!canView) {
     return (
-      <div style={{
-        background: "#fff",
-        padding: "30px",
-        borderRadius: "15px",
-        boxShadow: "0 10px 30px rgba(230, 126, 34, 0.1)",
-        textAlign: "center"
-      }}>
+      <div
+        style={{
+          background: "#fff",
+          padding: "30px",
+          borderRadius: "15px",
+          boxShadow: "0 10px 30px rgba(230, 126, 34, 0.1)",
+          textAlign: "center",
+        }}
+      >
         <h2 style={{ color: "#e67e22", marginBottom: "25px" }}>🔒 Access Denied</h2>
         <p>You don't have permission to view activity logs.</p>
       </div>
@@ -200,29 +191,40 @@ const ActivityLog = ({ currentUser, showToast, hasPermission }) => {
   }
 
   return (
-    <div style={{
-      background: "#fff",
-      padding: "30px",
-      borderRadius: "15px",
-      boxShadow: "0 10px 30px rgba(230, 126, 34, 0.1)"
-    }}>
-      <h2 style={{ color: "#e67e22", marginBottom: "25px", fontSize: "1.5rem", fontWeight: "700" }}>
+    <div
+      style={{
+        background: "#fff",
+        padding: "30px",
+        borderRadius: "15px",
+        boxShadow: "0 10px 30px rgba(230, 126, 34, 0.1)",
+      }}
+    >
+      <h2
+        style={{
+          color: "#e67e22",
+          marginBottom: "25px",
+          fontSize: "1.5rem",
+          fontWeight: "700",
+        }}
+      >
         📊 Activity Log
       </h2>
 
       {/* Filters */}
-      <div style={{
-        background: "#f8f9fa",
-        padding: "20px",
-        borderRadius: "10px",
-        marginBottom: "25px",
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-        gap: "15px"
-      }}>
+      <div
+        style={{
+          background: "#f8f9fa",
+          padding: "20px",
+          borderRadius: "10px",
+          marginBottom: "25px",
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+          gap: "15px",
+        }}
+      >
         <select
           value={filters.action}
-          onChange={e => setFilters({...filters, action: e.target.value})}
+          onChange={(e) => setFilters((f) => ({ ...f, action: e.target.value }))}
           style={inputStyle}
         >
           <option value="">All Actions</option>
@@ -240,7 +242,7 @@ const ActivityLog = ({ currentUser, showToast, hasPermission }) => {
         <input
           type="date"
           value={filters.dateFrom}
-          onChange={e => setFilters({...filters, dateFrom: e.target.value})}
+          onChange={(e) => setFilters((f) => ({ ...f, dateFrom: e.target.value }))}
           style={inputStyle}
           placeholder="From Date"
         />
@@ -248,14 +250,16 @@ const ActivityLog = ({ currentUser, showToast, hasPermission }) => {
         <input
           type="date"
           value={filters.dateTo}
-          onChange={e => setFilters({...filters, dateTo: e.target.value})}
+          onChange={(e) => setFilters((f) => ({ ...f, dateTo: e.target.value }))}
           style={inputStyle}
           placeholder="To Date"
         />
 
         <select
           value={filters.limit}
-          onChange={e => setFilters({...filters, limit: parseInt(e.target.value)})}
+          onChange={(e) =>
+            setFilters((f) => ({ ...f, limit: parseInt(e.target.value, 10) }))
+          }
           style={inputStyle}
         >
           <option value={25}>25 Records</option>
@@ -268,27 +272,31 @@ const ActivityLog = ({ currentUser, showToast, hasPermission }) => {
       {/* Activity Table */}
       {loading ? (
         <div style={{ textAlign: "center", padding: "40px" }}>
-          <div style={{
-            width: "40px",
-            height: "40px",
-            border: "4px solid #e67e22",
-            borderTop: "4px solid transparent",
-            borderRadius: "50%",
-            animation: "spin 1s linear infinite",
-            margin: "0 auto 15px"
-          }}></div>
+          <div
+            style={{
+              width: "40px",
+              height: "40px",
+              border: "4px solid #e67e22",
+              borderTop: "4px solid transparent",
+              borderRadius: "50%",
+              animation: "spin 1s linear infinite",
+              margin: "0 auto 15px",
+            }}
+          />
           <p>Loading activities...</p>
         </div>
       ) : (
         <div style={{ overflowX: "auto" }}>
-          <table style={{
-            width: "100%",
-            borderCollapse: "collapse",
-            background: "#fff",
-            borderRadius: "10px",
-            overflow: "hidden",
-            boxShadow: "0 5px 15px rgba(0,0,0,0.1)"
-          }}>
+          <table
+            style={{
+              width: "100%",
+              borderCollapse: "collapse",
+              background: "#fff",
+              borderRadius: "10px",
+              overflow: "hidden",
+              boxShadow: "0 5px 15px rgba(0,0,0,0.1)",
+            }}
+          >
             <thead>
               <tr style={{ background: "linear-gradient(135deg, #e67e22, #d35400)" }}>
                 <th style={{ ...thStyle, color: "white" }}>Time</th>
@@ -301,9 +309,10 @@ const ActivityLog = ({ currentUser, showToast, hasPermission }) => {
             </thead>
             <tbody>
               {activities.map((activity, index) => (
-                <tr key={activity.id} style={{
-                  background: index % 2 === 0 ? "#f8f9fa" : "white"
-                }}>
+                <tr
+                  key={activity.id}
+                  style={{ background: index % 2 === 0 ? "#f8f9fa" : "white" }}
+                >
                   <td style={tdStyle}>
                     <div style={{ fontSize: "12px" }}>
                       {new Date(activity.created_at).toLocaleString()}
@@ -312,25 +321,41 @@ const ActivityLog = ({ currentUser, showToast, hasPermission }) => {
                   <td style={tdStyle}>
                     <div>
                       <div style={{ fontWeight: "600" }}>
-                        {activity.actor?.username || 'System'}
+                        {activity.actor?.username || "System"}
                       </div>
                       <div style={{ fontSize: "11px", color: "#666" }}>
-                        {activity.actor?.role}
+                        {activity.actor?.role || "-"}
                       </div>
                     </div>
                   </td>
                   <td style={tdStyle}>
                     <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-                      <span>{getActionIcon(activity.action)}</span>
+                      <span>
+                        {{
+                          LOGIN: "🔐",
+                          LOGOUT: "🚪",
+                          CREATE_USER: "👤➕",
+                          UPDATE_USER: "👤✏️",
+                          DEACTIVATE_USER: "👤❌",
+                          UPDATE_PERMISSION: "🔐✏️",
+                          UPDATE_USER_ROLE: "👑",
+                          VIEW_USERS: "👥👁️",
+                          VIEW_ACTIVITY: "📊👁️",
+                          PASSWORD_CHANGE: "🔄🔒",
+                          PASSWORD_RESET_INITIATED: "🔄📧",
+                          PASSWORD_RESET_COMPLETED: "🔄✅",
+                        }[activity.action] || "📝"}
+                      </span>
                       <span style={{ fontSize: "12px", fontWeight: "600" }}>
-                        {formatActionName(activity.action)}
+                        {activity.action
+                          .toLowerCase()
+                          .replace(/_/g, " ")
+                          .replace(/\b\w/g, (l) => l.toUpperCase())}
                       </span>
                     </div>
                   </td>
                   <td style={tdStyle}>
-                    <span style={{ fontSize: "12px" }}>
-                      {activity.resource || '-'}
-                    </span>
+                    <span style={{ fontSize: "12px" }}>{activity.resource || "-"}</span>
                   </td>
                   <td style={tdStyle}>
                     <div style={{ fontSize: "11px", maxWidth: "200px" }}>
@@ -339,23 +364,27 @@ const ActivityLog = ({ currentUser, showToast, hasPermission }) => {
                           <summary style={{ cursor: "pointer", color: "#e67e22" }}>
                             View Details
                           </summary>
-                          <pre style={{ 
-                            background: "#f8f9fa", 
-                            padding: "8px", 
-                            borderRadius: "5px",
-                            fontSize: "10px",
-                            overflow: "auto",
-                            marginTop: "5px"
-                          }}>
+                          <pre
+                            style={{
+                              background: "#f8f9fa",
+                              padding: "8px",
+                              borderRadius: "5px",
+                              fontSize: "10px",
+                              overflow: "auto",
+                              marginTop: "5px",
+                            }}
+                          >
                             {JSON.stringify(activity.details, null, 2)}
                           </pre>
                         </details>
-                      ) : '-'}
+                      ) : (
+                        "-"
+                      )}
                     </div>
                   </td>
                   <td style={tdStyle}>
                     <span style={{ fontSize: "11px", fontFamily: "monospace" }}>
-                      {activity.ip_address || '-'}
+                      {activity.ip_address || "-"}
                     </span>
                   </td>
                 </tr>
@@ -366,18 +395,21 @@ const ActivityLog = ({ currentUser, showToast, hasPermission }) => {
       )}
 
       {activities.length === 0 && !loading && (
-        <div style={{
-          textAlign: "center",
-          padding: "40px",
-          color: "#666",
-          fontSize: "16px"
-        }}>
+        <div
+          style={{
+            textAlign: "center",
+            padding: "40px",
+            color: "#666",
+            fontSize: "16px",
+          }}
+        >
           📝 No activity records found for the selected filters.
         </div>
       )}
     </div>
   );
 };
+
 
 export default function Admin() {
   const navigate = useNavigate();
