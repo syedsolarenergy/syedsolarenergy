@@ -575,7 +575,7 @@ function ForgotPassword() {
         {`
           @keyframes float {
             0%, 100% { transform: translateY(0px) rotate(0deg); }
-            50% { transform: translateY(-20px) rotate(5deg); }
+            50% { transform: translateY(-15px) rotate(3deg); }
           }
           
           @keyframes spin {
@@ -586,7 +586,7 @@ function ForgotPassword() {
           input:focus {
             outline: none !important;
             border-color: #FF6B35 !important;
-            box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1) !important;
+            box-shadow: 0 0 0 2px rgba(255, 107, 53, 0.1) !important;
           }
 
           button:hover:not(:disabled) {
@@ -595,6 +595,49 @@ function ForgotPassword() {
 
           button:active:not(:disabled) {
             transform: translateY(0px);
+          }
+
+          /* Mobile Responsive */
+          @media (max-width: 480px) {
+            .card {
+              padding: 15px !important;
+              margin: 5px !important;
+              border-radius: 15px !important;
+            }
+            
+            .title {
+              font-size: 1.2rem !important;
+            }
+            
+            .input {
+              padding: 10px 12px !important;
+              font-size: 0.85rem !important;
+            }
+            
+            .passwordInput {
+              padding: 10px 45px 10px 12px !important;
+              font-size: 0.85rem !important;
+            }
+            
+            .primaryButton, .secondaryButton {
+              padding: 10px 14px !important;
+              font-size: 0.8rem !important;
+            }
+          }
+
+          /* Tablet */
+          @media (min-width: 481px) and (max-width: 768px) {
+            .card {
+              padding: 18px !important;
+            }
+          }
+
+          /* Desktop */
+          @media (min-width: 1200px) {
+            .card {
+              max-width: 420px !important;
+              padding: 25px !important;
+            }
           }
         `}
       </style>
@@ -610,7 +653,7 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: '10px',
+    padding: '5px',
     position: 'relative',
     overflow: 'hidden',
   },
@@ -662,34 +705,41 @@ const styles = {
     background: 'rgba(255, 255, 255, 0.95)',
     backdropFilter: 'blur(20px)',
     borderRadius: '20px',
-    padding: '25px',
+    padding: '20px',
     width: '100%',
-    maxWidth: '400px',
+    maxWidth: '380px',
     boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15)',
     border: '1px solid rgba(255, 255, 255, 0.2)',
     position: 'relative',
     zIndex: 2,
-    maxHeight: '95vh',
+    maxHeight: '90vh',
     overflow: 'auto',
+    margin: '5px',
+    '@media (max-width: 480px)': {
+      padding: '15px',
+      maxWidth: '95vw',
+      margin: '5px',
+      borderRadius: '15px'
+    }
   },
 
   header: {
     textAlign: 'center',
-    marginBottom: '20px',
+    marginBottom: '15px',
   },
 
   logo: {
-    width: '50px',
+    width: '45px',
     height: 'auto',
     borderRadius: '8px',
-    marginBottom: '10px',
+    marginBottom: '8px',
     filter: 'brightness(1.1)'
   },
 
   title: {
-    fontSize: '1.5rem',
+    fontSize: '1.4rem',
     fontWeight: '700',
-    margin: '0 0 15px 0',
+    margin: '0 0 12px 0',
     background: 'linear-gradient(135deg, #FF6B35, #F7931E)',
     WebkitBackgroundClip: 'text',
     WebkitTextFillColor: 'transparent',
@@ -727,53 +777,55 @@ const styles = {
   successAlert: {
     background: 'linear-gradient(135deg, #d4edda, #c3e6cb)',
     border: '1px solid #28a745',
-    borderRadius: '10px',
-    padding: '12px',
-    marginBottom: '15px',
+    borderRadius: '8px',
+    padding: '10px',
+    marginBottom: '12px',
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
+    gap: '6px',
     color: '#155724',
-    fontSize: '0.85rem',
+    fontSize: '0.8rem',
     fontWeight: '500',
+    lineHeight: '1.3',
   },
 
   errorAlert: {
     background: 'linear-gradient(135deg, #f8d7da, #f5c6cb)',
     border: '1px solid #dc3545',
-    borderRadius: '10px',
-    padding: '12px',
-    marginBottom: '15px',
+    borderRadius: '8px',
+    padding: '10px',
+    marginBottom: '12px',
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
+    gap: '6px',
     color: '#721c24',
-    fontSize: '0.85rem',
+    fontSize: '0.8rem',
     fontWeight: '500',
+    lineHeight: '1.3',
   },
 
   formContainer: {
-    marginBottom: '20px',
+    marginBottom: '15px',
   },
 
   form: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '15px',
+    gap: '12px',
   },
 
   inputGroup: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '5px',
+    gap: '4px',
   },
 
   input: {
     width: '100%',
-    padding: '12px 15px',
+    padding: '11px 14px',
     border: '2px solid #e0e0e0',
     borderRadius: '10px',
-    fontSize: '0.95rem',
+    fontSize: '0.9rem',
     transition: 'all 0.3s ease',
     background: 'white',
     boxSizing: 'border-box',
@@ -787,80 +839,89 @@ const styles = {
 
   passwordInput: {
     width: '100%',
-    padding: '12px 45px 12px 15px',
+    padding: '12px 50px 12px 15px',
     border: '2px solid #e0e0e0',
     borderRadius: '10px',
-    fontSize: '0.95rem',
+    fontSize: '0.9rem',
     transition: 'all 0.3s ease',
     background: 'white',
     boxSizing: 'border-box',
+    paddingRight: '50px', // Ensure enough space for icon
   },
 
   passwordToggle: {
     position: 'absolute',
-    right: '12px',
+    right: '15px',
+    top: '50%',
+    transform: 'translateY(-50%)',
     background: 'none',
     border: 'none',
     cursor: 'pointer',
     fontSize: '16px',
     color: '#666',
-    padding: '4px',
+    padding: '5px',
     borderRadius: '4px',
     transition: 'all 0.2s ease',
-    zIndex: 1,
+    zIndex: 2,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '30px',
+    height: '30px',
   },
 
   userInfoBox: {
     background: 'linear-gradient(135deg, #e3f2fd, #bbdefb)',
-    padding: '10px 12px',
-    borderRadius: '8px',
+    padding: '8px 10px',
+    borderRadius: '6px',
     color: '#1565c0',
-    fontSize: '0.85rem',
+    fontSize: '0.8rem',
     border: '1px solid #2196f3',
     display: 'flex',
     flexDirection: 'column',
-    gap: '2px',
+    gap: '1px',
   },
 
   questionBox: {
     background: '#f8f9fa',
-    padding: '12px',
-    borderRadius: '8px',
+    padding: '10px',
+    borderRadius: '6px',
     border: '1px solid #dee2e6',
   },
 
   questionLabel: {
-    fontSize: '0.85rem',
+    fontSize: '0.8rem',
     fontWeight: '600',
     color: '#495057',
   },
 
   questionText: {
-    margin: '5px 0 0 0',
-    fontSize: '0.9rem',
+    margin: '4px 0 0 0',
+    fontSize: '0.85rem',
     color: '#212529',
     fontStyle: 'italic',
+    lineHeight: '1.3',
   },
 
   passwordRequirements: {
     background: '#f8f9fa',
-    padding: '10px 12px',
-    borderRadius: '8px',
+    padding: '8px 10px',
+    borderRadius: '6px',
     border: '1px solid #dee2e6',
     display: 'flex',
     flexDirection: 'column',
-    gap: '4px',
+    gap: '3px',
   },
 
   errorText: {
-    fontSize: '0.8rem',
+    fontSize: '0.75rem',
     color: '#dc3545',
     fontWeight: '500'
   },
 
   buttonRow: {
     display: 'flex',
-    gap: '10px',
+    gap: '8px',
     alignItems: 'center',
   },
 
@@ -868,30 +929,32 @@ const styles = {
     background: 'linear-gradient(135deg, #FF6B35, #F7931E)',
     color: 'white',
     border: 'none',
-    borderRadius: '10px',
-    padding: '12px 20px',
-    fontSize: '0.9rem',
+    borderRadius: '8px',
+    padding: '11px 16px',
+    fontSize: '0.85rem',
     fontWeight: '600',
     cursor: 'pointer',
     transition: 'all 0.3s ease',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: '6px',
-    boxShadow: '0 4px 15px rgba(255, 107, 53, 0.3)',
+    gap: '5px',
+    boxShadow: '0 3px 12px rgba(255, 107, 53, 0.3)',
+    minHeight: '40px',
   },
 
   secondaryButton: {
     background: 'linear-gradient(135deg, #6c757d, #495057)',
     color: 'white',
     border: 'none',
-    borderRadius: '10px',
-    padding: '12px 16px',
-    fontSize: '0.9rem',
+    borderRadius: '8px',
+    padding: '11px 14px',
+    fontSize: '0.85rem',
     fontWeight: '600',
     cursor: 'pointer',
     transition: 'all 0.3s ease',
     whiteSpace: 'nowrap',
+    minHeight: '40px',
   },
 
   buttonLoading: {
@@ -906,25 +969,25 @@ const styles = {
 
   footer: {
     textAlign: 'center',
-    paddingTop: '15px',
+    paddingTop: '12px',
     borderTop: '1px solid #e0e0e0',
     display: 'flex',
     flexDirection: 'column',
-    gap: '8px',
+    gap: '6px',
   },
 
   loginLink: {
     color: '#F7931E',
     textDecoration: 'none',
     fontWeight: '600',
-    fontSize: '0.9rem',
+    fontSize: '0.85rem',
     transition: 'color 0.3s ease',
   },
 
   helpText: {
-    fontSize: '0.8rem',
+    fontSize: '0.75rem',
     color: '#666',
-    lineHeight: '1.4',
+    lineHeight: '1.3',
   },
 
   toast: {
