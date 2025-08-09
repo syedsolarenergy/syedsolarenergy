@@ -3,6 +3,14 @@ import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import syedSolarLogo from "../assets/logo.png";
 
+const passwordRequirements = [
+  "At least 8 characters long",
+  "Contains uppercase letter (A-Z)",
+  "Contains lowercase letter (a-z)",
+  "Contains number (0-9)",
+  "Contains special character (!@#$%^&*)"
+];
+
 // Password hashing utility
 const hashPassword = async (password) => {
   const encoder = new TextEncoder();
@@ -157,11 +165,10 @@ function ForgotPassword() {
     setIsLoading(true);
 
     try {
-      // Hash the provided answer
-      const answerHash = await hashPassword(formData.securityAnswer.toLowerCase().trim());
-      const correctAnswerHash = foundUser.admin_security_questions[0].answer_hash;
+      // Use plaintext answer
+    const correctAnswer = foundUser.admin_security_questions[0].answer;
       
-      if (answerHash === correctAnswerHash) {
+       if (formData.securityAnswer.trim() === correctAnswer) {
         // Generate reset token
         const token = generateResetToken();
         const expiresAt = new Date();
@@ -221,6 +228,10 @@ function ForgotPassword() {
         setError("❌ Passwords do not match. Please try again.");
         setIsLoading(false);
         return;
+      }
+      if (formData.newPassword.length < 8) {
+       setError("❌ Password must be at least 8 characters long");
+       return;
       }
 
       // Verify reset token is still valid
