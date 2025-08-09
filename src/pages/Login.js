@@ -297,9 +297,8 @@ function Login() {
       position: "fixed",
       top: "0",
       left: "0",
-      overflow: "auto",
-      overflowX: "hidden",
-      padding: "clamp(5px, 1vh, 15px) clamp(5px, 1vw, 15px)",
+      overflow: "hidden",
+      padding: "0",
       zIndex: "9999",
       boxSizing: "border-box"
     }}>
@@ -312,14 +311,55 @@ function Login() {
           onClose={() => setToast(null)} 
         />
       )}
+
+      {/* Compact Back Button - Top Right */}
+      <button
+        type="button"
+        onClick={() => navigate(-1)}
+        style={{
+          position: "fixed",
+          top: "clamp(8px, 1vh, 15px)",
+          right: "clamp(8px, 1vw, 15px)",
+          zIndex: 10001,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "clamp(2px, 0.5vw, 4px)",
+          background: "linear-gradient(135deg, #FF6B35, #F7931E)",
+          color: "#fff",
+          border: "none",
+          borderRadius: "clamp(4px, 1vw, 8px)",
+          padding: "clamp(4px, 1vh, 8px) clamp(6px, 1.5vw, 12px)",
+          fontWeight: 700,
+          fontSize: "clamp(8px, 1.5vw, 11px)",
+          letterSpacing: "0.02em",
+          boxShadow: "0 3px 10px rgba(255, 171, 0, 0.3), 0 1px 5px rgba(0,0,0,0.1)",
+          cursor: "pointer",
+          transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+          textShadow: "0 1px 2px rgba(0,0,0,0.3)",
+          minHeight: "clamp(24px, 4vh, 32px)",
+          minWidth: "clamp(50px, 8vw, 70px)"
+        }}
+        onMouseOver={(e) => {
+          e.target.style.transform = "scale(1.05)";
+          e.target.style.boxShadow = "0 4px 12px rgba(255, 171, 0, 0.4), 0 2px 8px rgba(0,0,0,0.15)";
+        }}
+        onMouseOut={(e) => {
+          e.target.style.transform = "scale(1)";
+          e.target.style.boxShadow = "0 3px 10px rgba(255, 171, 0, 0.3), 0 1px 5px rgba(0,0,0,0.1)";
+        }}
+      >
+        <span style={{ fontSize: "clamp(8px, 1.5vw, 12px)" }}>←</span>
+        <span>Back</span>
+      </button>
       
-      {/* Responsive Floating Background Elements */}
+      {/* Floating Background Elements - Reduced */}
       <div style={{
         position: "absolute",
         top: "8%",
         left: "3%",
-        width: "clamp(40px, 6vw, 80px)",
-        height: "clamp(40px, 6vw, 80px)",
+        width: "clamp(30px, 4vw, 50px)",
+        height: "clamp(30px, 4vw, 50px)",
         background: "rgba(255, 255, 255, 0.08)",
         borderRadius: "50%",
         animation: "float 8s ease-in-out infinite"
@@ -328,35 +368,25 @@ function Login() {
         position: "absolute",
         top: "70%",
         right: "5%",
-        width: "clamp(35px, 5vw, 70px)",
-        height: "clamp(35px, 5vw, 70px)",
+        width: "clamp(25px, 3.5vw, 45px)",
+        height: "clamp(25px, 3.5vw, 45px)",
         background: "rgba(255, 255, 255, 0.06)",
         borderRadius: "50%",
         animation: "float 10s ease-in-out infinite reverse"
       }} />
-      <div style={{
-        position: "absolute",
-        bottom: "10%",
-        left: "10%",
-        width: "clamp(30px, 4vw, 60px)",
-        height: "clamp(30px, 4vw, 60px)",
-        background: "rgba(255, 255, 255, 0.05)",
-        borderRadius: "50%",
-        animation: "float 12s ease-in-out infinite"
-      }} />
       
       <div style={{
         background: "rgba(255, 255, 255, 0.95)",
-        borderRadius: "clamp(12px, 2vw, 25px)",
-        padding: "clamp(12px, 2vh, 30px) clamp(10px, 2vw, 25px)",
+        borderRadius: "clamp(8px, 1.5vw, 18px)",
+        padding: "clamp(8px, 1.5vh, 20px) clamp(8px, 1.5vw, 20px)",
         width: "100%",
-        maxWidth: "clamp(280px, 85vw, 480px)",
-        minWidth: "260px",
-        maxHeight: "95vh",
+        maxWidth: "clamp(260px, 90vw, 400px)",
+        minWidth: "240px",
+        maxHeight: "100vh",
         overflowY: "auto",
         boxShadow: `
-          0 20px 60px rgba(255, 171, 0, 0.3),
-          0 10px 30px rgba(0, 0, 0, 0.1),
+          0 15px 40px rgba(255, 171, 0, 0.25),
+          0 8px 20px rgba(0, 0, 0, 0.08),
           inset 0 1px 0 rgba(255, 255, 255, 0.8)
         `,
         zIndex: 2,
@@ -367,27 +397,27 @@ function Login() {
         boxSizing: "border-box"
       }}>
         
-        {/* Enhanced Header */}
-        <div style={{ textAlign: "center", marginBottom: "clamp(6px, 1.5vh, 12px)" }}>
+        {/* Compact Header */}
+        <div style={{ textAlign: "center", marginBottom: "clamp(4px, 1vh, 8px)" }}>
           
-          {/* Live Time Display - Responsive */}
+          {/* Compact Live Time Display */}
           <div style={{
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
-            gap: "clamp(4px, 1vw, 8px)",
-            marginBottom: "clamp(8px, 2vh, 15px)",
+            gap: "clamp(3px, 0.8vw, 6px)",
+            marginBottom: "clamp(6px, 1.2vh, 10px)",
             flexWrap: "wrap"
           }}>
             <div style={{
               background: "linear-gradient(135deg, #FF6B35, #F7931E)",
               color: "#FFF",
-              padding: "clamp(3px, 0.8vh, 6px) clamp(6px, 1.5vw, 12px)",
-              borderRadius: "clamp(6px, 1.5vw, 12px)",
-              fontSize: "clamp(9px, 1.8vw, 12px)",
+              padding: "clamp(2px, 0.5vh, 4px) clamp(4px, 1vw, 8px)",
+              borderRadius: "clamp(4px, 1vw, 8px)",
+              fontSize: "clamp(8px, 1.5vw, 11px)",
               fontWeight: "700",
-              textShadow: "0 1px 3px rgba(0,0,0,0.3)",
-              boxShadow: "0 3px 12px rgba(247, 147, 30, 0.3)",
+              textShadow: "0 1px 2px rgba(0,0,0,0.3)",
+              boxShadow: "0 2px 8px rgba(247, 147, 30, 0.25)",
               whiteSpace: "nowrap"
             }}>
               {formatTime(currentTime)}
@@ -395,29 +425,29 @@ function Login() {
             <div style={{
               background: "linear-gradient(135deg, #FF6B35, #F7931E)",
               color: "#FFF",
-              padding: "clamp(3px, 0.8vh, 6px) clamp(6px, 1.5vw, 12px)",
-              borderRadius: "clamp(6px, 1.5vw, 12px)",
-              fontSize: "clamp(8px, 1.5vw, 10px)",
+              padding: "clamp(2px, 0.5vh, 4px) clamp(4px, 1vw, 8px)",
+              borderRadius: "clamp(4px, 1vw, 8px)",
+              fontSize: "clamp(7px, 1.2vw, 9px)",
               fontWeight: "600",
-              textShadow: "0 1px 3px rgba(0,0,0,0.3)",
-              boxShadow: "0 3px 12px rgba(247, 147, 30, 0.3)",
+              textShadow: "0 1px 2px rgba(0,0,0,0.3)",
+              boxShadow: "0 2px 8px rgba(247, 147, 30, 0.25)",
               whiteSpace: "nowrap"
             }}>
               {formatDate(currentTime)}
             </div>
           </div>
           
-          {/* Enhanced Logo - Ultra Responsive */}
+          {/* Compact Logo */}
           <div style={{
             position: "relative",
             display: "inline-block",
-            marginBottom: "clamp(6px, 1.5vh, 10px)"
+            marginBottom: "clamp(4px, 1vh, 8px)"
           }}>
             <div style={{
-              padding: "clamp(4px, 1vh, 8px)",
-              borderRadius: "clamp(8px, 2vw, 15px)",
+              padding: "clamp(3px, 0.8vh, 6px)",
+              borderRadius: "clamp(6px, 1.5vw, 12px)",
               background: "rgba(255, 255, 255, 0.9)",
-              boxShadow: "0 8px 25px rgba(255, 171, 0, 0.3), inset 0 2px 6px rgba(255,255,255,0.8)",
+              boxShadow: "0 6px 18px rgba(255, 171, 0, 0.25), inset 0 1px 4px rgba(255,255,255,0.8)",
               border: "clamp(1px, 0.2vw, 2px) solid rgba(255, 171, 0, 0.3)",
               display: "inline-block"
             }}>
@@ -425,43 +455,43 @@ function Login() {
                 src={syedSolarLogo}
                 alt="Syed Solar Logo"
                 style={{
-                  width: "clamp(40px, 10vw, 70px)",
+                  width: "clamp(30px, 7vw, 50px)",
                   height: "auto",
-                  borderRadius: "clamp(6px, 1.5vw, 12px)",
+                  borderRadius: "clamp(4px, 1vw, 8px)",
                   filter: "brightness(1.1) contrast(1.05) saturate(1.1)",
-                  transition: "transform 0.3s ease"
+                  transition: "transform 0.2s ease"
                 }}
-                onMouseOver={(e) => e.target.style.transform = "scale(1.05)"}
+                onMouseOver={(e) => e.target.style.transform = "scale(1.03)"}
                 onMouseOut={(e) => e.target.style.transform = "scale(1)"}
               />
             </div>
             
-            {/* Logo Glow Effect */}
+            {/* Compact Logo Glow */}
             <div style={{
               position: "absolute",
               top: "50%",
               left: "50%",
               transform: "translate(-50%, -50%)",
-              width: "clamp(60px, 12vw, 100px)",
-              height: "clamp(60px, 12vw, 100px)",
+              width: "clamp(45px, 9vw, 70px)",
+              height: "clamp(45px, 9vw, 70px)",
               borderRadius: "50%",
-              background: "radial-gradient(circle, rgba(247, 147, 30, 0.2) 0%, transparent 70%)",
+              background: "radial-gradient(circle, rgba(247, 147, 30, 0.15) 0%, transparent 70%)",
               animation: "pulse 3s ease-in-out infinite",
               zIndex: -1
             }} />
           </div>
           
-          {/* Enhanced Company Title - Ultra Responsive */}
+          {/* Compact Company Title */}
           <h2 style={{
             fontWeight: 900,
-            margin: "0 0 clamp(2px, 0.8vh, 6px) 0",
+            margin: "0 0 clamp(1px, 0.5vh, 3px) 0",
             background: "linear-gradient(135deg, #FF6B35, #F7931E)",
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
             backgroundClip: "text",
-            fontSize: "clamp(1rem, 3.5vw, 1.8rem)",
-            textShadow: "0 4px 12px rgba(247, 147, 30, 0.3)",
-            letterSpacing: "-0.3px",
+            fontSize: "clamp(0.8rem, 3vw, 1.4rem)",
+            textShadow: "0 3px 8px rgba(247, 147, 30, 0.25)",
+            letterSpacing: "-0.2px",
             lineHeight: "1.1"
           }}>
             Syed Solar Energy
@@ -470,39 +500,39 @@ function Login() {
           <div style={{
             color: "#F7931E",
             fontWeight: 600,
-            letterSpacing: "0.02em",
-            fontSize: "clamp(10px, 2vw, 14px)",
-            marginBottom: "clamp(4px, 1vh, 8px)",
+            letterSpacing: "0.01em",
+            fontSize: "clamp(8px, 1.8vw, 12px)",
+            marginBottom: "clamp(3px, 0.8vh, 6px)",
             opacity: 0.9
           }}>
             Pvt Ltd
           </div>
           
-          {/* Urdu Tagline - Responsive */}
+          {/* Compact Urdu Tagline */}
           <div style={{
-            background: "linear-gradient(135deg, rgba(247, 147, 30, 0.1), rgba(255, 171, 0, 0.1))",
-            padding: "clamp(6px, 1.5vh, 12px) clamp(8px, 2vw, 15px)",
-            borderRadius: "clamp(6px, 1.5vw, 12px)",
-            border: "clamp(1px, 0.2vw, 2px) solid rgba(247, 147, 30, 0.2)",
-            marginBottom: "clamp(3px, 0.8vh, 6px)",
+            background: "linear-gradient(135deg, rgba(247, 147, 30, 0.08), rgba(255, 171, 0, 0.08))",
+            padding: "clamp(4px, 1vh, 8px) clamp(6px, 1.5vw, 12px)",
+            borderRadius: "clamp(4px, 1vw, 8px)",
+            border: "clamp(1px, 0.2vw, 2px) solid rgba(247, 147, 30, 0.15)",
+            marginBottom: "clamp(2px, 0.5vh, 4px)",
             backdropFilter: "blur(10px)"
           }}>
             <p style={{
               color: "#FF6B35",
               fontWeight: 700,
-              fontSize: "clamp(10px, 2vw, 14px)",
+              fontSize: "clamp(8px, 1.8vw, 12px)",
               fontFamily: "'Noto Nastaliq Urdu', serif",
               margin: "0",
-              textShadow: "0 2px 6px rgba(255, 107, 53, 0.3)",
-              lineHeight: "1.3"
+              textShadow: "0 1px 4px rgba(255, 107, 53, 0.25)",
+              lineHeight: "1.2"
             }}>
               صاف توانائی کے سفر کا روشن راستہ
             </p>
             <p style={{
               color: "#F7931E",
               fontWeight: 500,
-              fontSize: "clamp(7px, 1.5vw, 10px)",
-              margin: "3px 0 0 0",
+              fontSize: "clamp(6px, 1.2vw, 8px)",
+              margin: "2px 0 0 0",
               opacity: "0.8",
               fontStyle: "italic"
             }}>
@@ -513,36 +543,36 @@ function Login() {
           <div style={{
             color: "#F7931E",
             fontWeight: 600,
-            letterSpacing: "0.02em",
-            fontSize: "clamp(10px, 2vw, 14px)",
-            marginBottom: "clamp(6px, 1.5vh, 12px)"
+            letterSpacing: "0.01em",
+            fontSize: "clamp(8px, 1.8vw, 12px)",
+            marginBottom: "clamp(4px, 1vh, 8px)"
           }}>
             Solar Energy Management Login
           </div>
           
-          {/* Welcome Messages - Responsive */}
-          <div style={{ marginBottom: "clamp(4px, 1vh, 8px)" }}>
+          {/* Compact Welcome Messages */}
+          <div style={{ marginBottom: "clamp(3px, 0.8vh, 6px)" }}>
             <h3 style={{
-              fontSize: "clamp(0.9rem, 3vw, 1.2rem)",
+              fontSize: "clamp(0.8rem, 2.5vw, 1rem)",
               fontWeight: 800,
               color: "#F7931E",
-              marginBottom: "3px",
+              marginBottom: "2px",
               fontFamily: "'Noto Nastaliq Urdu', serif"
             }}>
               خوش آمدید
             </h3>
             <h4 style={{
-              fontSize: "clamp(0.8rem, 2.5vw, 1rem)",
+              fontSize: "clamp(0.7rem, 2vw, 0.9rem)",
               fontWeight: 700,
               color: "#333",
-              margin: "0 0 clamp(2px, 0.8vh, 6px) 0"
+              margin: "0 0 clamp(1px, 0.5vh, 3px) 0"
             }}>
               Welcome Back!
             </h4>
             <p style={{
-              fontSize: "clamp(9px, 1.8vw, 12px)",
+              fontSize: "clamp(7px, 1.5vw, 10px)",
               color: "#666",
-              lineHeight: "1.4",
+              lineHeight: "1.3",
               marginBottom: "0"
             }}>
               Sign in to access your solar energy management system
@@ -550,73 +580,36 @@ function Login() {
           </div>
         </div>
         
-        {/* Enhanced BACK BUTTON - Ultra Responsive */}
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "clamp(3px, 0.8vw, 6px)",
-            width: "100%",
-            margin: "0 auto clamp(8px, 2vh, 15px) auto",
-            background: "linear-gradient(135deg, #FF6B35, #F7931E)",
-            color: "#fff",
-            border: "none",
-            borderRadius: "clamp(6px, 1.5vw, 12px)",
-            padding: "clamp(6px, 1.5vh, 10px) clamp(12px, 2.5vw, 20px)",
-            fontWeight: 700,
-            fontSize: "clamp(10px, 2vw, 13px)",
-            letterSpacing: "0.03em",
-            boxShadow: "0 5px 15px rgba(255, 171, 0, 0.3), 0 2px 8px rgba(0,0,0,0.1)",
-            cursor: "pointer",
-            transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-            textShadow: "0 1px 3px rgba(0,0,0,0.3)"
-          }}
-          onMouseOver={(e) => {
-            e.target.style.transform = "translateY(-2px) scale(1.02)";
-            e.target.style.boxShadow = "0 7px 20px rgba(255, 171, 0, 0.4), 0 3px 12px rgba(0,0,0,0.15)";
-          }}
-          onMouseOut={(e) => {
-            e.target.style.transform = "translateY(0) scale(1)";
-            e.target.style.boxShadow = "0 5px 15px rgba(255, 171, 0, 0.3), 0 2px 8px rgba(0,0,0,0.1)";
-          }}
-        >
-          <span style={{ fontSize: "clamp(10px, 2vw, 14px)" }}>←</span>
-          <span>واپس | Back</span>
-        </button>
-        
-        {/* Enhanced Error message - Responsive */}
+        {/* Compact Error message */}
         {error && (
           <div style={{
             background: "linear-gradient(135deg, #FFEBEE 0%, #FFCDD2 100%)",
             border: "clamp(1px, 0.2vw, 2px) solid #f44336",
-            borderRadius: "clamp(6px, 1.5vw, 12px)",
+            borderRadius: "clamp(4px, 1vw, 8px)",
             color: "#c62828",
-            padding: "clamp(8px, 2vh, 14px)",
-            marginBottom: "clamp(8px, 2vh, 14px)",
+            padding: "clamp(6px, 1.5vh, 10px)",
+            marginBottom: "clamp(6px, 1.5vh, 10px)",
             fontWeight: 600,
-            fontSize: "clamp(9px, 1.8vw, 12px)",
-            boxShadow: "0 4px 15px rgba(244, 67, 54, 0.2)",
+            fontSize: "clamp(8px, 1.5vw, 10px)",
+            boxShadow: "0 3px 10px rgba(244, 67, 54, 0.15)",
             textAlign: "center",
             whiteSpace: "pre-line",
-            lineHeight: "1.4"
+            lineHeight: "1.3"
           }}>
             {error}
           </div>
         )}
         
-        {/* Enhanced Login Form - Ultra Responsive */}
+        {/* Compact Login Form */}
         <form onSubmit={handleLogin} autoComplete="off">
-          <div style={{ marginBottom: "clamp(10px, 2.5vh, 15px)", position: "relative" }}>
+          <div style={{ marginBottom: "clamp(6px, 1.5vh, 10px)", position: "relative" }}>
             <div style={{
               position: "absolute",
-              left: "clamp(6px, 1.5vw, 12px)",
+              left: "clamp(5px, 1vw, 8px)",
               top: "50%",
               transform: "translateY(-50%)",
               color: "#F7931E",
-              fontSize: "clamp(12px, 2vw, 16px)",
+              fontSize: "clamp(10px, 1.8vw, 14px)",
               zIndex: 1,
               pointerEvents: "none"
             }}>
@@ -632,38 +625,38 @@ function Login() {
               disabled={isLoading}
               style={{
                 width: "100%",
-                padding: "clamp(8px, 2vh, 12px) clamp(8px, 2vw, 12px) clamp(8px, 2vh, 12px) clamp(30px, 6vw, 40px)",
-                borderRadius: "clamp(6px, 1.5vw, 12px)",
+                padding: "clamp(6px, 1.5vh, 10px) clamp(6px, 1.5vw, 10px) clamp(6px, 1.5vh, 10px) clamp(24px, 5vw, 32px)",
+                borderRadius: "clamp(4px, 1vw, 8px)",
                 border: "clamp(1px, 0.2vw, 2px) solid #ffe0b2",
-                fontSize: "clamp(10px, 2vw, 14px)",
-                marginBottom: "4px",
+                fontSize: "clamp(9px, 1.8vw, 12px)",
+                marginBottom: "3px",
                 fontWeight: "500",
                 background: "#FFF",
-                boxShadow: "0 3px 12px rgba(255, 171, 0, 0.1), inset 0 1px 3px rgba(255,255,255,0.8)",
-                transition: "all 0.3s ease",
+                boxShadow: "0 2px 8px rgba(255, 171, 0, 0.08), inset 0 1px 2px rgba(255,255,255,0.8)",
+                transition: "all 0.2s ease",
                 boxSizing: "border-box"
               }}
               onFocus={(e) => {
                 e.target.style.borderColor = "#F7931E";
-                e.target.style.boxShadow = "0 5px 15px rgba(247, 147, 30, 0.25), inset 0 1px 3px rgba(255,255,255,0.8)";
+                e.target.style.boxShadow = "0 3px 12px rgba(247, 147, 30, 0.2), inset 0 1px 2px rgba(255,255,255,0.8)";
                 e.target.style.transform = "translateY(-1px)";
               }}
               onBlur={(e) => {
                 e.target.style.borderColor = "#ffe0b2";
-                e.target.style.boxShadow = "0 3px 12px rgba(255, 171, 0, 0.1), inset 0 1px 3px rgba(255,255,255,0.8)";
+                e.target.style.boxShadow = "0 2px 8px rgba(255, 171, 0, 0.08), inset 0 1px 2px rgba(255,255,255,0.8)";
                 e.target.style.transform = "translateY(0)";
               }}
             />
           </div>
           
-          <div style={{ marginBottom: "clamp(12px, 3vh, 20px)", position: "relative" }}>
+          <div style={{ marginBottom: "clamp(8px, 2vh, 12px)", position: "relative" }}>
             <div style={{
               position: "absolute",
-              left: "clamp(6px, 1.5vw, 12px)",
+              left: "clamp(5px, 1vw, 8px)",
               top: "50%",
               transform: "translateY(-50%)",
               color: "#F7931E",
-              fontSize: "clamp(12px, 2vw, 16px)",
+              fontSize: "clamp(10px, 1.8vw, 14px)",
               zIndex: 1,
               pointerEvents: "none"
             }}>
@@ -679,24 +672,24 @@ function Login() {
               disabled={isLoading}
               style={{
                 width: "100%",
-                padding: "clamp(8px, 2vh, 12px) clamp(35px, 7vw, 50px) clamp(8px, 2vh, 12px) clamp(30px, 6vw, 40px)",
-                borderRadius: "clamp(6px, 1.5vw, 12px)",
+                padding: "clamp(6px, 1.5vh, 10px) clamp(28px, 6vw, 40px) clamp(6px, 1.5vh, 10px) clamp(24px, 5vw, 32px)",
+                borderRadius: "clamp(4px, 1vw, 8px)",
                 border: "clamp(1px, 0.2vw, 2px) solid #ffe0b2",
-                fontSize: "clamp(10px, 2vw, 14px)",
+                fontSize: "clamp(9px, 1.8vw, 12px)",
                 fontWeight: "500",
                 background: "#FFF",
-                boxShadow: "0 3px 12px rgba(255, 171, 0, 0.1), inset 0 1px 3px rgba(255,255,255,0.8)",
-                transition: "all 0.3s ease",
+                boxShadow: "0 2px 8px rgba(255, 171, 0, 0.08), inset 0 1px 2px rgba(255,255,255,0.8)",
+                transition: "all 0.2s ease",
                 boxSizing: "border-box"
               }}
               onFocus={(e) => {
                 e.target.style.borderColor = "#F7931E";
-                e.target.style.boxShadow = "0 5px 15px rgba(247, 147, 30, 0.25), inset 0 1px 3px rgba(255,255,255,0.8)";
+                e.target.style.boxShadow = "0 3px 12px rgba(247, 147, 30, 0.2), inset 0 1px 2px rgba(255,255,255,0.8)";
                 e.target.style.transform = "translateY(-1px)";
               }}
               onBlur={(e) => {
                 e.target.style.borderColor = "#ffe0b2";
-                e.target.style.boxShadow = "0 3px 12px rgba(255, 171, 0, 0.1), inset 0 1px 3px rgba(255,255,255,0.8)";
+                e.target.style.boxShadow = "0 2px 8px rgba(255, 171, 0, 0.08), inset 0 1px 2px rgba(255,255,255,0.8)";
                 e.target.style.transform = "translateY(0)";
               }}
             />
@@ -704,28 +697,28 @@ function Login() {
               onClick={togglePasswordVisibility}
               style={{
                 position: "absolute",
-                right: "clamp(6px, 1.5vw, 12px)",
+                right: "clamp(5px, 1vw, 8px)",
                 top: "50%",
                 transform: "translateY(-50%)",
-                fontSize: "clamp(12px, 2vw, 16px)",
+                fontSize: "clamp(10px, 1.8vw, 14px)",
                 cursor: "pointer",
                 color: "#999",
-                transition: "all 0.3s ease",
-                padding: "clamp(5px, 1.2vw, 10px)",
+                transition: "all 0.2s ease",
+                padding: "clamp(3px, 0.8vw, 6px)",
                 zIndex: 10,
-                borderRadius: "4px",
+                borderRadius: "3px",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                width: "clamp(24px, 5vw, 30px)",
-                height: "clamp(24px, 5vw, 30px)",
+                width: "clamp(18px, 4vw, 24px)",
+                height: "clamp(18px, 4vw, 24px)",
                 userSelect: "none"
               }}
               title={showPassword ? "Hide password" : "Show password"}
               onMouseOver={(e) => {
                 e.target.style.color = "#F7931E";
-                e.target.style.background = "rgba(247, 147, 30, 0.1)";
-                e.target.style.transform = "translateY(-50%) scale(1.1)";
+                e.target.style.background = "rgba(247, 147, 30, 0.08)";
+                e.target.style.transform = "translateY(-50%) scale(1.05)";
               }}
               onMouseOut={(e) => {
                 e.target.style.color = "#999";
@@ -737,50 +730,50 @@ function Login() {
             </div>
           </div>
           
-          {/* Enhanced Login Button - Ultra Responsive */}
+          {/* Compact Login Button */}
           <button
             type="submit"
             disabled={isLoading}
             style={{
               width: "100%",
-              padding: "clamp(10px, 2.5vh, 15px)",
-              fontSize: "clamp(11px, 2.5vw, 15px)",
+              padding: "clamp(8px, 2vh, 12px)",
+              fontSize: "clamp(10px, 2vw, 13px)",
               background: isLoading 
                 ? "linear-gradient(135deg, #FFB74D 0%, #FFCC80 100%)"
                 : "linear-gradient(135deg, #FF6B35 0%, #F7931E 100%)",
               color: "white",
               border: "none",
-              borderRadius: "clamp(6px, 1.5vw, 12px)",
+              borderRadius: "clamp(4px, 1vw, 8px)",
               fontWeight: 800,
-              marginBottom: "clamp(8px, 2vh, 15px)",
+              marginBottom: "clamp(6px, 1.5vh, 10px)",
               cursor: isLoading ? "not-allowed" : "pointer",
               opacity: isLoading ? 0.85 : 1,
-              boxShadow: "0 6px 20px rgba(247, 147, 30, 0.35), 0 3px 12px rgba(0,0,0,0.1)",
-              transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-              textShadow: "0 1px 3px rgba(0,0,0,0.3)",
+              boxShadow: "0 4px 15px rgba(247, 147, 30, 0.3), 0 2px 8px rgba(0,0,0,0.08)",
+              transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+              textShadow: "0 1px 2px rgba(0,0,0,0.3)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              gap: "clamp(4px, 1vw, 8px)"
+              gap: "clamp(3px, 0.8vw, 6px)"
             }}
             onMouseOver={(e) => {
               if (!isLoading) {
-                e.target.style.transform = "translateY(-2px) scale(1.02)";
-                e.target.style.boxShadow = "0 8px 25px rgba(247, 147, 30, 0.45), 0 4px 15px rgba(0,0,0,0.15)";
+                e.target.style.transform = "translateY(-1px) scale(1.01)";
+                e.target.style.boxShadow = "0 6px 18px rgba(247, 147, 30, 0.4), 0 3px 10px rgba(0,0,0,0.12)";
               }
             }}
             onMouseOut={(e) => {
               if (!isLoading) {
                 e.target.style.transform = "translateY(0) scale(1)";
-                e.target.style.boxShadow = "0 6px 20px rgba(247, 147, 30, 0.35), 0 3px 12px rgba(0,0,0,0.1)";
+                e.target.style.boxShadow = "0 4px 15px rgba(247, 147, 30, 0.3), 0 2px 8px rgba(0,0,0,0.08)";
               }
             }}
           >
             {isLoading ? (
               <>
                 <div style={{
-                  width: "clamp(12px, 2.5vw, 18px)",
-                  height: "clamp(12px, 2.5vw, 18px)",
+                  width: "clamp(10px, 2vw, 14px)",
+                  height: "clamp(10px, 2vw, 14px)",
                   border: "2px solid rgba(255,255,255,0.3)",
                   borderTop: "2px solid white",
                   borderRadius: "50%",
@@ -794,23 +787,23 @@ function Login() {
           </button>
         </form>
         
-        {/* Enhanced Forgot Password - Responsive */}
-        <div style={{ textAlign: "center", marginTop: "clamp(4px, 1vh, 8px)", marginBottom: "clamp(8px, 2vh, 15px)" }}>
+        {/* Compact Forgot Password */}
+        <div style={{ textAlign: "center", marginTop: "clamp(3px, 0.8vh, 6px)", marginBottom: "clamp(6px, 1.5vh, 10px)" }}>
           <Link 
             to="/forgot-password"
             style={{
               color: "#F7931E",
               fontWeight: 600,
               textDecoration: "none",
-              fontSize: "clamp(9px, 1.8vw, 12px)",
-              transition: "all 0.3s ease",
-              padding: "clamp(3px, 0.8vh, 6px) clamp(6px, 1.5vw, 12px)",
-              borderRadius: "clamp(4px, 1vw, 8px)",
+              fontSize: "clamp(8px, 1.5vw, 10px)",
+              transition: "all 0.2s ease",
+              padding: "clamp(2px, 0.5vh, 4px) clamp(4px, 1vw, 8px)",
+              borderRadius: "clamp(3px, 0.8vw, 6px)",
               display: "inline-block"
             }}
             onMouseOver={(e) => {
               e.target.style.color = "#FF6B35";
-              e.target.style.background = "rgba(247, 147, 30, 0.1)";
+              e.target.style.background = "rgba(247, 147, 30, 0.08)";
             }}
             onMouseOut={(e) => {
               e.target.style.color = "#F7931E";
@@ -821,50 +814,50 @@ function Login() {
           </Link>
         </div>
         
-        {/* Enhanced Footer - Ultra Responsive */}
+        {/* Compact Footer */}
         <div style={{
           textAlign: "center",
-          marginTop: "clamp(8px, 2vh, 15px)",
-          paddingTop: "clamp(6px, 1.5vh, 12px)",
+          marginTop: "clamp(6px, 1.5vh, 10px)",
+          paddingTop: "clamp(4px, 1vh, 8px)",
           borderTop: "clamp(1px, 0.2vw, 2px) solid rgba(247, 147, 30, 0.1)"
         }}>
           <div style={{
-            width: "clamp(25px, 6vw, 50px)",
-            height: "clamp(2px, 0.4vh, 3px)",
+            width: "clamp(20px, 5vw, 35px)",
+            height: "clamp(1px, 0.3vh, 2px)",
             background: "linear-gradient(90deg, #FF6B35, #F7931E)",
-            borderRadius: "2px",
-            margin: "0 auto clamp(4px, 1vh, 8px)"
+            borderRadius: "1px",
+            margin: "0 auto clamp(3px, 0.8vh, 6px)"
           }} />
           <p style={{
-            fontSize: "clamp(8px, 1.6vw, 11px)",
+            fontSize: "clamp(7px, 1.4vw, 9px)",
             color: "#666",
             fontWeight: 600,
-            marginBottom: "clamp(4px, 1vh, 8px)"
+            marginBottom: "clamp(3px, 0.8vh, 6px)"
           }}>
             محفوظ اور قابل اعتماد | Secure & Trusted
           </p>
           <div style={{
-            fontSize: "clamp(7px, 1.4vw, 10px)",
+            fontSize: "clamp(6px, 1.2vw, 8px)",
             color: "#999",
-            lineHeight: "1.3"
+            lineHeight: "1.2"
           }}>
-            <div style={{ marginBottom: "2px" }}>📧 sales@syedsolarenergy.com</div>
+            <div style={{ marginBottom: "1px" }}>📧 sales@syedsolarenergy.com</div>
             <div>📱 03044678929</div>
           </div>
         </div>
       </div>
       
-      {/* Enhanced Animations & Media Queries */}
+      {/* Enhanced Universal Responsive Styles */}
       <style>
         {`
           @keyframes pulse {
             0%, 100% { 
-              opacity: 0.3;
+              opacity: 0.2;
               transform: translate(-50%, -50%) scale(1);
             }
             50% { 
-              opacity: 0.6;
-              transform: translate(-50%, -50%) scale(1.1);
+              opacity: 0.4;
+              transform: translate(-50%, -50%) scale(1.05);
             }
           }
           
@@ -875,69 +868,152 @@ function Login() {
           
           @keyframes float {
             0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-12px); }
+            50% { transform: translateY(-8px); }
           }
           
           @import url('https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700;800;900&display=swap');
           
-          /* Ultra Small Screens (phones in portrait) */
-          @media screen and (max-width: 320px) {
+          /* Universal Base Styles */
+          * {
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+          }
+          
+          html, body {
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            overflow-y: hidden;
+            height: 100vh;
+            width: 100vw;
+          }
+          
+          /* Ultra Small Mobile Phones (Portrait) */
+          @media screen and (max-width: 280px) {
+            body { font-size: 10px !important; }
+            .login-container { padding: 4px !important; }
+          }
+          
+          /* Small Mobile Phones (Portrait) */
+          @media screen and (min-width: 281px) and (max-width: 360px) {
+            body { font-size: 11px !important; }
+            .login-container { padding: 5px !important; }
+          }
+          
+          /* Standard Mobile Phones (Portrait) */
+          @media screen and (min-width: 361px) and (max-width: 414px) {
             body { font-size: 12px !important; }
+            .login-container { padding: 6px !important; }
           }
           
-          /* Small Screens (phones) */
-          @media screen and (max-width: 480px) {
+          /* Large Mobile Phones (Portrait) */
+          @media screen and (min-width: 415px) and (max-width: 480px) {
             body { font-size: 13px !important; }
+            .login-container { padding: 7px !important; }
           }
           
-          /* Medium Screens (tablets) */
+          /* Small Tablets (Portrait) */
           @media screen and (min-width: 481px) and (max-width: 768px) {
             body { font-size: 14px !important; }
+            .login-container { padding: 8px !important; }
           }
           
-          /* Large Screens (laptops) */
+          /* Large Tablets (Portrait/Landscape) */
           @media screen and (min-width: 769px) and (max-width: 1024px) {
             body { font-size: 15px !important; }
+            .login-container { padding: 10px !important; }
           }
           
-          /* Extra Large Screens (desktops) */
-          @media screen and (min-width: 1025px) and (max-width: 1440px) {
+          /* Small Laptops */
+          @media screen and (min-width: 1025px) and (max-width: 1366px) {
             body { font-size: 16px !important; }
+            .login-container { padding: 12px !important; }
           }
           
-          /* Ultra Large Screens (4K monitors) */
-          @media screen and (min-width: 1441px) {
+          /* Large Laptops/Desktops */
+          @media screen and (min-width: 1367px) and (max-width: 1920px) {
             body { font-size: 17px !important; }
+            .login-container { padding: 15px !important; }
           }
           
-          /* Landscape Mobile Phones - Critical Fix */
-          @media screen and (max-height: 500px) and (orientation: landscape) {
-            body {
-              overflow-y: auto !important;
-              padding: 2px !important;
-            }
-            .login-form {
-              max-height: 90vh !important;
-              overflow-y: auto !important;
-              padding: 8px !important;
-              margin: 5px auto !important;
-            }
+          /* Ultra Large Screens (4K/8K) */
+          @media screen and (min-width: 1921px) {
+            body { font-size: 18px !important; }
+            .login-container { padding: 18px !important; }
           }
           
-          /* Very Small Heights - Enable Scrolling */
-          @media screen and (max-height: 600px) {
-            body {
-              overflow-y: auto !important;
-              padding: 3px !important;
-            }
-            .login-form {
+          /* Critical Landscape Mobile Fixes */
+          @media screen and (max-height: 450px) and (orientation: landscape) {
+            .login-container {
+              transform: scale(0.85) !important;
+              transform-origin: center !important;
               max-height: 95vh !important;
               overflow-y: auto !important;
-              margin: 3px auto !important;
             }
           }
           
-          /* High DPI Displays */
+          /* Ultra Short Heights */
+          @media screen and (max-height: 500px) {
+            .login-container {
+              transform: scale(0.9) !important;
+              transform-origin: center !important;
+              max-height: 98vh !important;
+              overflow-y: auto !important;
+            }
+          }
+          
+          /* Very Short Heights */
+          @media screen and (max-height: 600px) {
+            .login-container {
+              transform: scale(0.95) !important;
+              transform-origin: center !important;
+            }
+          }
+          
+          /* iPhone SE and Similar Small Screens */
+          @media screen and (max-width: 375px) and (max-height: 667px) {
+            .login-container {
+              transform: scale(0.88) !important;
+              transform-origin: center !important;
+            }
+          }
+          
+          /* iPhone 12 mini and Similar */
+          @media screen and (max-width: 360px) and (max-height: 780px) {
+            .login-container {
+              transform: scale(0.9) !important;
+              transform-origin: center !important;
+            }
+          }
+          
+          /* Galaxy Fold and Ultra Narrow Screens */
+          @media screen and (max-width: 280px) {
+            .login-container {
+              transform: scale(0.8) !important;
+              transform-origin: center !important;
+              max-width: 95vw !important;
+            }
+          }
+          
+          /* iPad Mini and Similar Tablets */
+          @media screen and (min-width: 768px) and (max-width: 1024px) {
+            .login-container {
+              max-width: 450px !important;
+              transform: scale(1.05) !important;
+              transform-origin: center !important;
+            }
+          }
+          
+          /* Large Tablets in Landscape */
+          @media screen and (min-width: 1024px) and (max-height: 768px) and (orientation: landscape) {
+            .login-container {
+              transform: scale(0.95) !important;
+              transform-origin: center !important;
+            }
+          }
+          
+          /* High DPI/Retina Displays */
           @media screen and (-webkit-min-device-pixel-ratio: 2) {
             * {
               -webkit-font-smoothing: antialiased;
@@ -945,67 +1021,86 @@ function Login() {
             }
           }
           
-          /* Dark Mode Support */
-          @media (prefers-color-scheme: dark) {
-            body {
-              background: linear-gradient(135deg, #FF6B35 0%, #F7931E 45%, #FFAB00 100%) !important;
+          /* Touch Device Optimizations */
+          @media (hover: none) and (pointer: coarse) {
+            button, input, .clickable {
+              min-height: 32px !important;
+              min-width: 32px !important;
             }
           }
           
           /* Reduced Motion for Accessibility */
           @media (prefers-reduced-motion: reduce) {
-            * {
+            *, *::before, *::after {
               animation-duration: 0.01ms !important;
               animation-iteration-count: 1 !important;
               transition-duration: 0.01ms !important;
             }
           }
           
-          /* High Contrast Mode */
+          /* High Contrast Mode Support */
           @media (prefers-contrast: high) {
-            input {
-              border-width: 3px !important;
+            input, button {
+              border-width: 2px !important;
+              outline-width: 2px !important;
             }
           }
           
-          /* Print Styles */
-          @media print {
+          /* Dark Mode Preference */
+          @media (prefers-color-scheme: dark) {
             body {
-              background: white !important;
-              box-shadow: none !important;
+              background: linear-gradient(135deg, #FF6B35 0%, #F7931E 45%, #FFAB00 100%) !important;
             }
           }
           
-          /* Universal Input Accessibility */
-          input:focus {
-            outline: 2px solid rgba(247, 147, 30, 0.5) !important;
-            outline-offset: 1px !important;
-          }
-          
-          /* Touch Device Optimizations */
-          @media (hover: none) and (pointer: coarse) {
-            button, input {
-              min-height: 36px !important;
-            }
-          }
-          
-          /* Keyboard Navigation */
+          /* Focus Styles for Accessibility */
           *:focus-visible {
             outline: 2px solid #F7931E !important;
             outline-offset: 1px !important;
           }
           
-          /* Force Scrolling When Needed */
-          html, body {
-            overflow-x: hidden !important;
-            overflow-y: auto !important;
+          /* Input Focus Enhancement */
+          input:focus {
+            outline: 2px solid rgba(247, 147, 30, 0.4) !important;
+            outline-offset: 1px !important;
           }
           
-          /* Container Responsiveness */
+          /* Universal Container Scaling */
           .login-container {
-            transition: all 0.3s ease !important;
-            max-height: 100vh !important;
-            overflow-y: auto !important;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+          }
+          
+          /* Ultra Wide Screens (21:9, 32:9 monitors) */
+          @media screen and (min-aspect-ratio: 21/9) {
+            .login-container {
+              max-width: 420px !important;
+            }
+          }
+          
+          /* Square Screens */
+          @media screen and (aspect-ratio: 1/1) {
+            .login-container {
+              transform: scale(0.95) !important;
+              transform-origin: center !important;
+            }
+          }
+          
+          /* Foldable Devices */
+          @media screen and (min-width: 540px) and (max-width: 720px) and (max-height: 600px) {
+            .login-container {
+              transform: scale(0.9) !important;
+              transform-origin: center !important;
+            }
+          }
+          
+          /* Critical Height Constraints - Final Fallback */
+          @media screen and (max-height: 400px) {
+            .login-container {
+              transform: scale(0.75) !important;
+              transform-origin: center !important;
+              max-height: 95vh !important;
+              overflow-y: auto !important;
+            }
           }
         `}
       </style>
