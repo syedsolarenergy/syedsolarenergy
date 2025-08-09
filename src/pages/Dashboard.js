@@ -688,7 +688,7 @@ const styles = {
   },
   
   header: {
-    background: 'linear-gradient(135deg, #2c3e50, #34495e)',
+    background: 'linear-gradient(135deg, #FF6B35, #F7931E)',
     borderRadius: '16px',
     padding: '32px',
     marginBottom: '32px',
@@ -783,7 +783,7 @@ const styles = {
     fontSize: '1.4rem',
     fontWeight: '700',
     marginBottom: '20px',
-    color: '#2c3e50',
+    color: '#504a2cff',
     letterSpacing: '-0.025em',
   },
   

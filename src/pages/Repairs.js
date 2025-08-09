@@ -968,7 +968,7 @@ const styles = {
     fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif'",
   },
   header: {
-    background: 'linear-gradient(135deg, #ff9800, #ffb74d)',
+    background: 'linear-gradient(135deg, #FF6B35, #F7931E)',
     borderRadius: '16px',
     padding: '32px',
     marginBottom: '32px',

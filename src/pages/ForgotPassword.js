@@ -1,116 +1,288 @@
-// src/pages/ForgotPassword.js
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { supabase } from "../supabaseClient";
+import syedSolarLogo from "../assets/logo.png";
+
+// Password hashing utility
+const hashPassword = async (password) => {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password);
+  const hash = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(hash))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+};
+
+// Generate secure token
+const generateResetToken = () => {
+  return crypto.randomUUID() + '-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+};
+
+// Toast notification component
+const Toast = ({ message, type, onClose }) => (
+  <div style={{
+    position: 'fixed',
+    top: '20px',
+    right: '20px',
+    background: type === 'error' ? '#ff4444' : type === 'success' ? '#44ff44' : '#4444ff',
+    color: 'white',
+    padding: '12px 20px',
+    borderRadius: '8px',
+    zIndex: 10000,
+    boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+    fontSize: '14px',
+    fontWeight: '600',
+    maxWidth: '350px'
+  }}>
+    {message}
+    <button 
+      onClick={onClose}
+      style={{
+        background: 'none',
+        border: 'none',
+        color: 'white',
+        marginLeft: '10px',
+        cursor: 'pointer',
+        fontSize: '16px'
+      }}
+    >
+      ×
+    </button>
+  </div>
+);
 
 function ForgotPassword() {
   const [step, setStep] = useState(1); // 1: Enter Username, 2: Security Question, 3: Reset Password
-  const [username, setUsername] = useState("");
-  const [securityAnswer, setSecurityAnswer] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [formData, setFormData] = useState({
+    username: "",
+    securityAnswer: "",
+    newPassword: "",
+    confirmPassword: ""
+  });
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [foundUser, setFoundUser] = useState(null);
+  const [securityQuestion, setSecurityQuestion] = useState("");
+  const [resetToken, setResetToken] = useState("");
+  const [toast, setToast] = useState(null);
+  const [showPasswords, setShowPasswords] = useState({
+    new: false,
+    confirm: false
+  });
   const navigate = useNavigate();
 
-  // Security questions for password reset
-  const securityQuestions = {
-    admin: "What is the name of your first solar project?",
-    zubair: "What is your favorite solar panel brand?",
+  // Show toast notification
+  const showToast = (message, type = 'info') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), type === 'error' ? 5000 : 3000);
   };
 
-  const securityAnswers = {
-    admin: "peshawar commercial", // Case insensitive
-    zubair: "ja solar",
+  // Log activity helper
+  const logActivity = async (userId, action, details = null) => {
+    try {
+      await supabase.from('admin_activity_log').insert({
+        user_id: userId,
+        action,
+        resource: 'password_reset',
+        details,
+        ip_address: '127.0.0.1',
+        user_agent: navigator.userAgent
+      });
+    } catch (error) {
+      console.error('Failed to log activity:', error);
+    }
   };
 
+  // Step 1: Find user by username
   const handleStep1Submit = async (e) => {
     e.preventDefault();
     setError("");
     setMessage("");
     setIsLoading(true);
 
-    // Simulate loading
-    await new Promise(resolve => setTimeout(resolve, 800));
-
     try {
-      const users = JSON.parse(localStorage.getItem("users")) || [];
-      const user = users.find((u) => u.username.toLowerCase() === username.toLowerCase());
+      // Find user in Supabase
+      const { data: users, error: fetchError } = await supabase
+        .from('admin_users')
+        .select(`
+          id, username, email, is_active,
+          admin_security_questions (question, answer_hash)
+        `)
+        .eq('username', formData.username.trim().toLowerCase())
+        .eq('is_active', true)
+        .limit(1);
 
-      if (user) {
+      if (fetchError) throw fetchError;
+
+      const user = users?.[0];
+
+      if (user && user.admin_security_questions?.length > 0) {
         setFoundUser(user);
+        setSecurityQuestion(user.admin_security_questions[0].question);
         setMessage(`✅ User found! Please answer the security question to reset your password.`);
         setStep(2);
+
+        // Log password reset attempt
+        await logActivity(user.id, 'PASSWORD_RESET_INITIATED', {
+          username: user.username,
+          step: 'security_question'
+        });
+      } else if (user && !user.admin_security_questions?.length) {
+        setError("❌ No security question found for this user. Please contact administrator.");
+        await logActivity(user.id, 'PASSWORD_RESET_FAILED', {
+          username: user.username,
+          reason: 'no_security_question'
+        });
       } else {
         setError("❌ Username not found! Please check your username and try again.");
+        await logActivity(null, 'PASSWORD_RESET_FAILED', {
+          username: formData.username,
+          reason: 'user_not_found'
+        });
       }
     } catch (error) {
+      console.error('Error finding user:', error);
       setError("❌ Something went wrong. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Step 2: Verify security answer
   const handleStep2Submit = async (e) => {
     e.preventDefault();
     setError("");
     setMessage("");
     setIsLoading(true);
 
-    // Simulate loading
-    await new Promise(resolve => setTimeout(resolve, 800));
-
     try {
-      const correctAnswer = securityAnswers[foundUser.username.toLowerCase()];
+      // Hash the provided answer
+      const answerHash = await hashPassword(formData.securityAnswer.toLowerCase().trim());
+      const correctAnswerHash = foundUser.admin_security_questions[0].answer_hash;
       
-      if (securityAnswer.toLowerCase().trim() === correctAnswer) {
+      if (answerHash === correctAnswerHash) {
+        // Generate reset token
+        const token = generateResetToken();
+        const expiresAt = new Date();
+        expiresAt.setHours(expiresAt.getHours() + 1); // 1 hour expiry
+
+        // Save reset token
+        const { error: tokenError } = await supabase
+          .from('admin_password_reset_tokens')
+          .insert({
+            user_id: foundUser.id,
+            token,
+            expires_at: expiresAt.toISOString(),
+            ip_address: '127.0.0.1'
+          });
+
+        if (tokenError) throw tokenError;
+
+        setResetToken(token);
         setMessage("✅ Security question answered correctly! Now set your new password.");
         setStep(3);
+
+        await logActivity(foundUser.id, 'PASSWORD_RESET_VERIFIED', {
+          username: foundUser.username,
+          step: 'new_password'
+        });
       } else {
         setError("❌ Incorrect answer. Please try again or contact support.");
+        await logActivity(foundUser.id, 'PASSWORD_RESET_FAILED', {
+          username: foundUser.username,
+          reason: 'incorrect_security_answer'
+        });
       }
     } catch (error) {
+      console.error('Error verifying security answer:', error);
       setError("❌ Something went wrong. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Step 3: Reset password
   const handleStep3Submit = async (e) => {
     e.preventDefault();
     setError("");
     setMessage("");
     setIsLoading(true);
 
-    // Simulate loading
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
     try {
       // Validate passwords
-      if (newPassword.length < 4) {
-        setError("❌ Password must be at least 4 characters long.");
+      if (formData.newPassword.length < 6) {
+        setError("❌ Password must be at least 6 characters long.");
         setIsLoading(false);
         return;
       }
 
-      if (newPassword !== confirmPassword) {
+      if (formData.newPassword !== formData.confirmPassword) {
         setError("❌ Passwords do not match. Please try again.");
         setIsLoading(false);
         return;
       }
 
-      // Update password in localStorage
-      const users = JSON.parse(localStorage.getItem("users")) || [];
-      const updatedUsers = users.map(user => 
-        user.username.toLowerCase() === foundUser.username.toLowerCase()
-          ? { ...user, password: newPassword }
-          : user
-      );
+      // Verify reset token is still valid
+      const { data: tokenData, error: tokenError } = await supabase
+        .from('admin_password_reset_tokens')
+        .select('*')
+        .eq('token', resetToken)
+        .eq('user_id', foundUser.id)
+        .is('used_at', null)
+        .gt('expires_at', new Date().toISOString())
+        .single();
 
-      localStorage.setItem("users", JSON.stringify(updatedUsers));
+      if (tokenError || !tokenData) {
+        setError("❌ Reset token is invalid or expired. Please start over.");
+        setStep(1);
+        resetForm();
+        return;
+      }
+
+      // Hash new password
+      const newPasswordHash = await hashPassword(formData.newPassword);
+
+      // Update password
+      const { error: updateError } = await supabase
+        .from('admin_users')
+        .update({
+          password: newPasswordHash,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', foundUser.id);
+
+      if (updateError) throw updateError;
+
+      // Mark token as used
+      await supabase
+        .from('admin_password_reset_tokens')
+        .update({ used_at: new Date().toISOString() })
+        .eq('id', tokenData.id);
+
+      // Log password change
+      await supabase.from('admin_password_changes').insert({
+        user_id: foundUser.id,
+        old_password_hash: null, // Not available in reset
+        new_password_hash: newPasswordHash,
+        changed_by: foundUser.id,
+        ip_address: '127.0.0.1',
+        user_agent: navigator.userAgent
+      });
+
+      // Invalidate all sessions for this user
+      await supabase
+        .from('admin_sessions')
+        .update({ is_active: false })
+        .eq('user_id', foundUser.id);
+
+      // Log successful password reset
+      await logActivity(foundUser.id, 'PASSWORD_RESET_COMPLETED', {
+        username: foundUser.username
+      });
 
       setMessage("🎉 Password reset successful! You can now login with your new password.");
+      showToast("Password reset successful! Redirecting to login...", 'success');
       
       // Auto redirect to login after 3 seconds
       setTimeout(() => {
@@ -118,25 +290,56 @@ function ForgotPassword() {
       }, 3000);
 
     } catch (error) {
+      console.error('Error resetting password:', error);
       setError("❌ Failed to reset password. Please try again.");
+      await logActivity(foundUser?.id, 'PASSWORD_RESET_FAILED', {
+        username: foundUser?.username,
+        reason: 'system_error',
+        error: error.message
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Reset form to initial state
   const resetForm = () => {
     setStep(1);
-    setUsername("");
-    setSecurityAnswer("");
-    setNewPassword("");
-    setConfirmPassword("");
+    setFormData({
+      username: "",
+      securityAnswer: "",
+      newPassword: "",
+      confirmPassword: ""
+    });
     setMessage("");
     setError("");
     setFoundUser(null);
+    setSecurityQuestion("");
+    setResetToken("");
+    setShowPasswords({ new: false, confirm: false });
+  };
+
+  // Handle input changes
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  // Toggle password visibility
+  const togglePasswordVisibility = (field) => {
+    setShowPasswords(prev => ({ ...prev, [field]: !prev[field] }));
   };
 
   return (
     <div style={styles.container}>
+      {/* Toast Notification */}
+      {toast && (
+        <Toast 
+          message={toast.message} 
+          type={toast.type} 
+          onClose={() => setToast(null)} 
+        />
+      )}
+
       {/* Background Animation */}
       <div style={styles.backgroundAnimation}>
         <div style={styles.circle1}></div>
@@ -148,9 +351,13 @@ function ForgotPassword() {
       <div style={styles.card}>
         {/* Header */}
         <div style={styles.header}>
-          <div style={styles.logoIcon}>🔑</div>
+          <div style={styles.logoSection}>
+            <img src={syedSolarLogo} alt="Syed Solar Logo" style={styles.logo} />
+            <div style={styles.logoGlow}></div>
+          </div>
+          
           <div style={styles.headerText}>
-            <h1 style={styles.title}>Reset Password</h1>
+            <h1 style={styles.title}>🔑 Reset Password</h1>
             <p style={styles.subtitle}>
               {step === 1 && "Enter your username to begin password reset"}
               {step === 2 && "Answer the security question"}
@@ -197,8 +404,8 @@ function ForgotPassword() {
                 <input
                   type="text"
                   placeholder="Enter your username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  value={formData.username}
+                  onChange={(e) => handleInputChange('username', e.target.value)}
                   style={styles.input}
                   required
                   disabled={isLoading}
@@ -235,20 +442,22 @@ function ForgotPassword() {
             <div style={styles.securitySection}>
               <div style={styles.userInfo}>
                 <strong>Account Found:</strong> {foundUser.username}
+                <br />
+                <small style={styles.userEmail}>{foundUser.email}</small>
               </div>
               
               <div style={styles.inputGroup}>
                 <label style={styles.label}>🛡️ Security Question</label>
                 <div style={styles.questionBox}>
-                  {securityQuestions[foundUser.username.toLowerCase()] || "What is your favorite color?"}
+                  {securityQuestion}
                 </div>
                 
                 <div style={styles.inputContainer}>
                   <input
                     type="text"
                     placeholder="Enter your answer"
-                    value={securityAnswer}
-                    onChange={(e) => setSecurityAnswer(e.target.value)}
+                    value={formData.securityAnswer}
+                    onChange={(e) => handleInputChange('securityAnswer', e.target.value)}
                     style={styles.input}
                     required
                     disabled={isLoading}
@@ -271,7 +480,8 @@ function ForgotPassword() {
                 type="submit"
                 style={{
                   ...styles.submitButton,
-                  ...(isLoading ? styles.submitButtonLoading : {})
+                  ...(isLoading ? styles.submitButtonLoading : {}),
+                  flex: 1
                 }}
                 disabled={isLoading}
               >
@@ -298,15 +508,23 @@ function ForgotPassword() {
               <label style={styles.label}>🔐 New Password</label>
               <div style={styles.inputContainer}>
                 <input
-                  type="password"
+                  type={showPasswords.new ? "text" : "password"}
                   placeholder="Enter new password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
+                  value={formData.newPassword}
+                  onChange={(e) => handleInputChange('newPassword', e.target.value)}
                   style={styles.input}
                   required
-                  minLength={4}
+                  minLength={6}
                   disabled={isLoading}
                 />
+                <button
+                  type="button"
+                  onClick={() => togglePasswordVisibility('new')}
+                  style={styles.passwordToggle}
+                  disabled={isLoading}
+                >
+                  {showPasswords.new ? "🙈" : "👁️"}
+                </button>
               </div>
             </div>
 
@@ -314,16 +532,33 @@ function ForgotPassword() {
               <label style={styles.label}>🔐 Confirm Password</label>
               <div style={styles.inputContainer}>
                 <input
-                  type="password"
+                  type={showPasswords.confirm ? "text" : "password"}
                   placeholder="Confirm new password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  style={styles.input}
+                  value={formData.confirmPassword}
+                  onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                  style={{
+                    ...styles.input,
+                    borderColor: formData.confirmPassword && formData.newPassword !== formData.confirmPassword 
+                      ? '#f44336' : styles.input.borderColor
+                  }}
                   required
-                  minLength={4}
+                  minLength={6}
                   disabled={isLoading}
                 />
+                <button
+                  type="button"
+                  onClick={() => togglePasswordVisibility('confirm')}
+                  style={styles.passwordToggle}
+                  disabled={isLoading}
+                >
+                  {showPasswords.confirm ? "🙈" : "👁️"}
+                </button>
               </div>
+              {formData.confirmPassword && formData.newPassword !== formData.confirmPassword && (
+                <div style={styles.errorText}>
+                  ❌ Passwords do not match
+                </div>
+              )}
             </div>
 
             <div style={styles.passwordRequirements}>
@@ -331,13 +566,13 @@ function ForgotPassword() {
               <ul style={styles.requirementsList}>
                 <li style={{
                   ...styles.requirement,
-                  color: newPassword.length >= 4 ? '#4caf50' : '#666'
+                  color: formData.newPassword.length >= 6 ? '#4caf50' : '#666'
                 }}>
-                  ✓ At least 4 characters long
+                  ✓ At least 6 characters long
                 </li>
                 <li style={{
                   ...styles.requirement,
-                  color: newPassword === confirmPassword && newPassword ? '#4caf50' : '#666'
+                  color: formData.newPassword === formData.confirmPassword && formData.newPassword ? '#4caf50' : '#666'
                 }}>
                   ✓ Passwords match
                 </li>
@@ -358,9 +593,10 @@ function ForgotPassword() {
                 type="submit"
                 style={{
                   ...styles.submitButton,
-                  ...(isLoading ? styles.submitButtonLoading : {})
+                  ...(isLoading ? styles.submitButtonLoading : {}),
+                  flex: 1
                 }}
-                disabled={isLoading}
+                disabled={isLoading || !formData.newPassword || !formData.confirmPassword || formData.newPassword !== formData.confirmPassword}
               >
                 {isLoading ? (
                   <>
@@ -394,11 +630,42 @@ function ForgotPassword() {
           </p>
         </div>
       </div>
+
+      {/* CSS Animations */}
+      <style>
+        {`
+          @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(5deg); }
+          }
+          
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+          
+          @keyframes pulse {
+            0%, 100% { 
+              opacity: 0.3;
+              transform: translate(-50%, -50%) scale(1);
+            }
+            50% { 
+              opacity: 0.6;
+              transform: translate(-50%, -50%) scale(1.1);
+            }
+          }
+          
+          input:focus {
+            outline: 2px solid rgba(255, 107, 53, 0.5) !important;
+            outline-offset: 1px !important;
+          }
+        `}
+      </style>
     </div>
   );
 }
 
-// Beautiful Styles
+// Comprehensive Styles
 const styles = {
   container: {
     minHeight: '100vh',
@@ -473,11 +740,32 @@ const styles = {
     justifyContent: 'center',
     marginBottom: '30px',
     gap: '15px',
+    flexDirection: 'column'
   },
 
-  logoIcon: {
-    fontSize: '3.5rem',
-    filter: 'drop-shadow(0 3px 6px rgba(255, 107, 53, 0.3))',
+  logoSection: {
+    position: 'relative',
+    display: 'inline-block'
+  },
+
+  logo: {
+    width: '60px',
+    height: 'auto',
+    borderRadius: '10px',
+    filter: 'brightness(1.1)'
+  },
+
+  logoGlow: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+    width: '80px',
+    height: '80px',
+    borderRadius: '50%',
+    background: 'radial-gradient(circle, rgba(255, 107, 53, 0.2) 0%, transparent 70%)',
+    animation: 'pulse 3s ease-in-out infinite',
+    zIndex: -1
   },
 
   headerText: {
@@ -584,12 +872,28 @@ const styles = {
   input: {
     width: '100%',
     padding: '15px',
+    paddingRight: '50px',
     border: '2px solid #e0e0e0',
     borderRadius: '12px',
     fontSize: '1rem',
     transition: 'all 0.3s ease',
     background: 'white',
     boxSizing: 'border-box',
+  },
+
+  passwordToggle: {
+    position: 'absolute',
+    right: '15px',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    fontSize: '16px',
+    color: '#666',
+    padding: '5px',
+    borderRadius: '5px',
+    transition: 'all 0.3s ease'
   },
 
   securitySection: {
@@ -605,6 +909,11 @@ const styles = {
     color: '#1565c0',
     fontSize: '0.9rem',
     border: '1px solid #2196f3',
+  },
+
+  userEmail: {
+    color: '#1976d2',
+    opacity: 0.8
   },
 
   questionBox: {
@@ -641,6 +950,13 @@ const styles = {
     fontSize: '0.85rem',
     marginBottom: '5px',
     fontWeight: '500',
+  },
+
+  errorText: {
+    fontSize: '12px',
+    color: '#dc3545',
+    marginTop: '5px',
+    fontWeight: '500'
   },
 
   buttonRow: {
@@ -719,21 +1035,12 @@ const styles = {
     fontSize: '1rem',
   },
 
+  helpText: {
+    fontSize: '0.85rem',
+    color: '#BF360C',
+    lineHeight: '1.5',
+    margin: '0'
+  }
 };
-
-// Add CSS animations
-const styleSheet = document.createElement('style');
-styleSheet.textContent = `
-  @keyframes float {
-    0%, 100% { transform: translateY(0px) rotate(0deg); }
-    50% { transform: translateY(-20px) rotate(5deg); }
-  }
-  
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-`;
-document.head.appendChild(styleSheet);
 
 export default ForgotPassword;
