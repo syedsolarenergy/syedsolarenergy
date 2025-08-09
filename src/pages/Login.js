@@ -340,7 +340,7 @@ function Login() {
           {/* Integrated Back Button */}
           <button
   type="button"
-  onClick={() => navigate(-1)}
+  href="https://syedsolarenergy.com/home"
   className="login-back-btn left"   // change to "right" if you want it on the right
   aria-label="Back"
 >
@@ -681,20 +681,22 @@ function Login() {
         }
         
         .time-item {
-          background: linear-gradient(135deg, #FF6B35, #F7931E);
-          color: #FFF;
-          padding: clamp(2px, 0.5vh, 4px) clamp(4px, 1vw, 8px);
-          border-radius: clamp(4px, 1vw, 8px);
-          font-weight: 700;
-          text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-          box-shadow: 0 2px 8px rgba(247, 147, 30, 0.25);
-          white-space: nowrap;
-        }
-        
-        .time-item.date {
-          font-size: clamp(7px, 1.2vw, 9px);
-          font-weight: 600;
-        }
+  background: linear-gradient(135deg, #FF6B35, #F7931E);
+  color: #FFF;
+  padding: clamp(2px, 0.5vh, 4px) clamp(4px, 1vw, 8px);
+  border-radius: clamp(4px, 1vw, 8px);
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+  box-shadow: 0 2px 8px rgba(247, 147, 30, 0.25);
+  white-space: nowrap;
+  font-size: clamp(8px, 1.4vw, 11px); /* same size for both */
+}
+
+.time-item.date {
+  font-size: clamp(8px, 1.4vw, 11px); /* match time size */
+  font-weight: 700; /* match weight */
+}
+
         
         .logo-container {
           position: relative;
