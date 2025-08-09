@@ -3,6 +3,103 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import syedSolarLogo from "../assets/logo.png";
 
+const [loadingUsers, setLoadingUsers] = useState(true);
+const [addingUser, setAddingUser] = useState(false);
+
+const loadUsers = useCallback(async () => {
+  try {
+    setLoadingUsers(true);
+    const { data, error } = await supabase
+      .from('admin_users')
+      .select(`
+        *,
+        admin_permissions (*),
+        created_by_user:admin_users!created_by (username)
+      `)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+
+    const transformed = (data || []).map(u => ({
+      ...u,
+      permissions: u.admin_permissions?.length ? unflattenPermissions(u.admin_permissions[0]) : {}
+    }));
+    setUsers(transformed);
+    await logActivity('VIEW_USERS', 'admin_users');
+  } catch (err) {
+    console.error('Error loading users:', err);
+    showToast('Failed to load users: ' + err.message, 'error');
+    setUsers([]);
+  } finally {
+    setLoadingUsers(false);
+  }
+}, [logActivity, showToast]);
+const addUser = async () => {
+  try {
+    if (!hasPermission('userManagement', 'add')) {
+      showToast("You don't have permission to add users", 'error');
+      return;
+    }
+    if (!newUser.username?.trim() || !newUser.password?.trim() || !newUser.email?.trim()) {
+      showToast("Please fill all required fields", 'error');
+      return;
+    }
+
+    setAddingUser(true);
+
+    const { data: existing, error: checkError } = await supabase
+      .from('admin_users')
+      .select('username, email')
+      .or(`username.eq.${newUser.username.trim().toLowerCase()},email.eq.${newUser.email.trim().toLowerCase()}`);
+    if (checkError) throw checkError;
+    if (existing?.length) {
+      showToast("Username or email already exists", 'error');
+      return;
+    }
+
+    const hashedPassword = await hashPassword(newUser.password);
+
+    const { data: userData, error: userError } = await supabase
+      .from('admin_users')
+      .insert({
+        username: newUser.username.trim().toLowerCase(),
+        password: hashedPassword,
+        email: newUser.email.trim().toLowerCase(),
+        phone: newUser.phone?.trim() || null,
+        department: newUser.department?.trim() || null,
+        role: newUser.role,
+        created_by: currentUser.id,
+        is_active: true
+      })
+      .select()
+      .single();
+    if (userError) throw userError;
+
+    const flat = flattenPermissions(newUser.permissions);
+    const { error: permError } = await supabase
+      .from('admin_permissions')
+      .insert({ user_id: userData.id, ...flat });
+    if (permError) throw permError;
+
+    await logActivity('CREATE_USER', 'admin_users', userData.id, {
+      username: userData.username,
+      role: userData.role
+    });
+
+    showToast("User added successfully!", 'success');
+    setNewUser({
+      username: "", password: "", email: "", phone: "", department: "",
+      role: "user", permissions: { ...permissionTemplates.user }
+    });
+
+    await loadUsers();
+  } catch (err) {
+    console.error('Error adding user:', err);
+    showToast('Failed to add user: ' + err.message, 'error');
+  } finally {
+    setAddingUser(false);
+  }
+};
+
 // Permission templates for different roles
 const permissionTemplates = {
   admin: {
@@ -499,10 +596,11 @@ export default function Admin() {
       const { data, error } = await supabase
         .from('admin_users')
         .select(`
-          *,
-          admin_permissions (*),
-          created_by:admin_users!admin_users_created_by_fkey (username)
-        `)
+  *,
+  admin_permissions (*),
+  created_by_user:admin_users!created_by(id, username)
+`)
+
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -974,6 +1072,20 @@ export default function Admin() {
                   {currentUser?.role === 'admin' && <option value="admin">👑 Admin</option>}
                 </select>
               </div>
+              <button
+  onClick={addUser}
+  disabled={addingUser}
+  style={{
+    ...buttonStyle,
+    background: addingUser
+      ? "linear-gradient(135deg, #ccc, #999)"
+      : "linear-gradient(135deg, #27ae60, #229954)",
+    cursor: addingUser ? "not-allowed" : "pointer",
+    opacity: addingUser ? 0.7 : 1
+  }}
+>
+  {addingUser ? "⏳ Adding..." : "✅ Add User"}
+</button>
 
               <button
                 onClick={addUser}
