@@ -1097,3 +1097,5 @@ const componentStyles = {
     fontWeight: "500"
   }
 };
+
+export default ChangePassword;
