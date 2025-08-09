@@ -340,13 +340,14 @@ function Login() {
           {/* Integrated Back Button */}
           <button
   type="button"
-  href="https://syedsolarenergy.com/"
-  className="login-back-btn left"   // change to "right" if you want it on the right
-  aria-label="Back"
+  onClick={() => (window.location.href = "https://syedsolarenergy.com/")}
+  className="login-back-btn left"
+  aria-label="Back to Home"
 >
   <span className="icon">←</span>
   <span className="label">Back</span>
 </button>
+
           
           {/* Compact Logo */}
           <div className="logo-container">
