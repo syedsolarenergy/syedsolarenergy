@@ -339,13 +339,14 @@ function Login() {
           
           {/* Integrated Back Button */}
           <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="login-back-btn"
-          >
-            <span>←</span>
-            <span>Back</span>
-          </button>
+  type="button"
+  onClick={() => navigate(-1)}
+  className="login-back-btn left"   // change to "right" if you want it on the right
+  aria-label="Back"
+>
+  <span className="icon">←</span>
+  <span className="label">Back</span>
+</button>
           
           {/* Compact Logo */}
           <div className="logo-container">
@@ -562,30 +563,64 @@ function Login() {
           font-size: 16px;
         }
         
-        .login-back-btn {
-          position: absolute;
-          top: clamp(8px, 1.5vh, 12px);
-          right: clamp(8px, 1.5vw, 12px);
-          z-index: 10;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: clamp(2px, 0.5vw, 4px);
-          background: linear-gradient(135deg, #FF6B35, #F7931E);
-          color: #fff;
-          border: none;
-          border-radius: clamp(4px, 1vw, 8px);
-          padding: clamp(4px, 0.8vh, 8px) clamp(6px, 1.2vw, 10px);
-          font-weight: 700;
-          font-size: clamp(8px, 1.5vw, 11px);
-          letter-spacing: 0.02em;
-          box-shadow: 0 3px 10px rgba(255, 171, 0, 0.3), 0 1px 5px rgba(0,0,0,0.1);
-          cursor: pointer;
-          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-          text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-          min-height: clamp(24px, 4vh, 32px);
-          min-width: clamp(50px, 8vw, 70px);
-        }
+       /* Back button — compact, circular */
+.login-back-btn {
+  position: absolute !important;
+  top: 8px !important;
+  z-index: 20 !important;
+
+  /* size */
+  width: 34px !important;
+  height: 34px !important;
+  padding: 0 !important;
+  border-radius: 9999px !important;
+
+  /* look */
+  background: linear-gradient(135deg, #FF6B35, #F7931E) !important;
+  color: #fff !important;
+  border: none !important;
+  box-shadow: 0 2px 8px rgba(255,171,0,0.35) !important;
+
+  /* content */
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0 !important;
+  cursor: pointer !important;
+  transition: transform .15s ease, box-shadow .15s ease !important;
+  text-shadow: 0 1px 1px rgba(0,0,0,.25) !important;
+  line-height: 1 !important;
+}
+
+/* choose side */
+.login-back-btn.left  { left: 8px !important;  right: auto !important; }
+.login-back-btn.right { right: 8px !important; left:  auto !important; }
+
+/* icon + optional label */
+.login-back-btn .icon  { font-size: 14px !important; }
+.login-back-btn .label { 
+  margin-left: 6px; 
+  font-size: 11px; 
+  font-weight: 600; 
+  display: none;              /* hidden by default (keeps button small) */
+}
+
+/* show text label only on wider screens */
+@media (min-width: 768px) {
+  .login-back-btn {
+    width: auto !important;
+    padding: 6px 10px !important;
+    border-radius: 9999px !important;
+  }
+  .login-back-btn .label { display: inline !important; }
+}
+
+/* hover */
+.login-back-btn:hover {
+  transform: translateY(-1px) scale(1.02) !important;
+  box-shadow: 0 4px 12px rgba(255,171,0,0.45) !important;
+}
+
         
         .login-back-btn:hover {
           transform: scale(1.05);
