@@ -3,20 +3,56 @@ import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import syedSolarLogo from "../assets/logo.png";
 
-// Toast
+// Password hashing utility
+const hashPassword = async (password) => {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password);
+  const hash = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(hash))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+};
+
+// Generate secure token
+const generateResetToken = () => {
+  return crypto.randomUUID() + '-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+};
+
+// Toast notification component
 const Toast = ({ message, type, onClose }) => (
   <div style={{
-    position: 'fixed', top: 20, right: 20,
-    background: type === 'error' ? '#ff4444' : type === 'success' ? '#44aa44' : '#4444ff',
-    color: '#fff', padding: '12px 20px', borderRadius: 8, zIndex: 10000
+    position: 'fixed',
+    top: '20px',
+    right: '20px',
+    background: type === 'error' ? '#ff4444' : type === 'success' ? '#44ff44' : '#4444ff',
+    color: 'white',
+    padding: '12px 20px',
+    borderRadius: '8px',
+    zIndex: 10000,
+    boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+    fontSize: '14px',
+    fontWeight: '600',
+    maxWidth: '350px'
   }}>
     {message}
-    <button onClick={onClose} style={{ marginLeft: 10, color: '#fff', background: 'none', border: 0, cursor: 'pointer' }}>×</button>
+    <button 
+      onClick={onClose}
+      style={{
+        background: 'none',
+        border: 'none',
+        color: 'white',
+        marginLeft: '10px',
+        cursor: 'pointer',
+        fontSize: '16px'
+      }}
+    >
+      ×
+    </button>
   </div>
 );
 
 function ForgotPassword() {
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(1); // 1: Enter Username, 2: Security Question, 3: Reset Password
   const [formData, setFormData] = useState({
     username: "",
     securityAnswer: "",
@@ -26,160 +62,287 @@ function ForgotPassword() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [foundUser, setFoundUser] = useState(null); // { user_id, username, email }
+  const [foundUser, setFoundUser] = useState(null);
   const [securityQuestion, setSecurityQuestion] = useState("");
   const [resetToken, setResetToken] = useState("");
   const [toast, setToast] = useState(null);
-  const [showPasswords, setShowPasswords] = useState({ new: false, confirm: false });
+  const [showPasswords, setShowPasswords] = useState({
+    new: false,
+    confirm: false
+  });
   const navigate = useNavigate();
 
+  // Show toast notification
   const showToast = (message, type = 'info') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), type === 'error' ? 5000 : 3000);
   };
 
+  // Log activity helper
   const logActivity = async (userId, action, details = null) => {
     try {
       await supabase.from('admin_activity_log').insert({
-        user_id: userId || null,
+        user_id: userId,
         action,
         resource: 'password_reset',
         details,
         ip_address: '127.0.0.1',
         user_agent: navigator.userAgent
       });
-    } catch (_) {}
+    } catch (error) {
+      console.error('Failed to log activity:', error);
+    }
   };
 
-  useEffect(() => {
-    localStorage.removeItem("loggedIn");
-    localStorage.removeItem("loggedInUser");
-    localStorage.removeItem("userRole");
-    localStorage.removeItem("sessionToken");
-  }, []);
-
+  // Step 1: Find user by username
   const handleStep1Submit = async (e) => {
     e.preventDefault();
-    setError(""); setMessage(""); setIsLoading(true);
-    try {
-      // 🔐 RPC to fetch question
-      const { data, error: rpcError } = await supabase.rpc('get_security_question', {
-        p_username: formData.username.trim()
-      });
-      if (rpcError) throw rpcError;
+    setError("");
+    setMessage("");
+    setIsLoading(true);
 
-      const row = (data && data[0]) || null;
-      if (!row) {
-        setError("❌ Username not found or no security question set.");
-        await logActivity(null, 'PASSWORD_RESET_FAILED', { username: formData.username.trim(), reason: 'user_or_question_missing' });
-      } else {
-        setFoundUser({ id: row.user_id, username: row.username, email: row.email });
-        setSecurityQuestion(row.question);
-        setMessage("✅ User found! Please answer the security question.");
+    try {
+      // Find user in Supabase
+      const { data: users, error: fetchError } = await supabase
+        .from('admin_users')
+        .select(`
+          id, username, email, is_active,
+          admin_security_questions (question, answer_hash)
+        `)
+        .eq('username', formData.username.trim().toLowerCase())
+        .eq('is_active', true)
+        .limit(1);
+
+      if (fetchError) throw fetchError;
+
+      const user = users?.[0];
+
+      if (user && user.admin_security_questions?.length > 0) {
+        setFoundUser(user);
+        setSecurityQuestion(user.admin_security_questions[0].question);
+        setMessage(`✅ User found! Please answer the security question to reset your password.`);
         setStep(2);
-        await logActivity(row.user_id, 'PASSWORD_RESET_INITIATED', { username: row.username, step: 'security_question' });
-      }
-    } catch (err) {
-      console.error('Step1 error:', err);
-      setError("❌ Something went wrong. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
-  const handleStep2Submit = async (e) => {
-    e.preventDefault();
-    setError(""); setMessage(""); setIsLoading(true);
-    try {
-      // 🔐 RPC to verify answer + create token
-      const { data, error: rpcError } = await supabase.rpc('begin_password_reset', {
-        p_username: formData.username.trim(),
-        p_answer: formData.securityAnswer  // NOTE: exact answer, no forced lowercase
-      });
-      if (rpcError) throw rpcError;
-
-      const row = (data && data[0]) || null;
-      if (!row) {
-        setError("❌ Incorrect answer. Please try again.");
-        await logActivity(foundUser?.id || null, 'PASSWORD_RESET_FAILED', {
-          username: foundUser?.username || formData.username.trim(),
-          reason: 'incorrect_security_answer'
+        // Log password reset attempt
+        await logActivity(user.id, 'PASSWORD_RESET_INITIATED', {
+          username: user.username,
+          step: 'security_question'
+        });
+      } else if (user && !user.admin_security_questions?.length) {
+        setError("❌ No security question found for this user. Please contact administrator.");
+        await logActivity(user.id, 'PASSWORD_RESET_FAILED', {
+          username: user.username,
+          reason: 'no_security_question'
         });
       } else {
-        setResetToken(row.reset_token);
-        setMessage("✅ Security answer correct! Please set your new password.");
-        setStep(3);
-        await logActivity(row.user_id, 'PASSWORD_RESET_VERIFIED', { username: foundUser?.username, step: 'new_password' });
+        setError("❌ Username not found! Please check your username and try again.");
+        await logActivity(null, 'PASSWORD_RESET_FAILED', {
+          username: formData.username,
+          reason: 'user_not_found'
+        });
       }
-    } catch (err) {
-      console.error('Step2 error:', err);
+    } catch (error) {
+      console.error('Error finding user:', error);
       setError("❌ Something went wrong. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Step 2: Verify security answer
+  const handleStep2Submit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setMessage("");
+    setIsLoading(true);
+
+    try {
+      // Hash the provided answer
+      const answerHash = await hashPassword(formData.securityAnswer.toLowerCase().trim());
+      const correctAnswerHash = foundUser.admin_security_questions[0].answer_hash;
+      
+      if (answerHash === correctAnswerHash) {
+        // Generate reset token
+        const token = generateResetToken();
+        const expiresAt = new Date();
+        expiresAt.setHours(expiresAt.getHours() + 1); // 1 hour expiry
+
+        // Save reset token
+        const { error: tokenError } = await supabase
+          .from('admin_password_reset_tokens')
+          .insert({
+            user_id: foundUser.id,
+            token,
+            expires_at: expiresAt.toISOString(),
+            ip_address: '127.0.0.1'
+          });
+
+        if (tokenError) throw tokenError;
+
+        setResetToken(token);
+        setMessage("✅ Security question answered correctly! Now set your new password.");
+        setStep(3);
+
+        await logActivity(foundUser.id, 'PASSWORD_RESET_VERIFIED', {
+          username: foundUser.username,
+          step: 'new_password'
+        });
+      } else {
+        setError("❌ Incorrect answer. Please try again or contact support.");
+        await logActivity(foundUser.id, 'PASSWORD_RESET_FAILED', {
+          username: foundUser.username,
+          reason: 'incorrect_security_answer'
+        });
+      }
+    } catch (error) {
+      console.error('Error verifying security answer:', error);
+      setError("❌ Something went wrong. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Step 3: Reset password
   const handleStep3Submit = async (e) => {
     e.preventDefault();
-    setError(""); setMessage(""); setIsLoading(true);
+    setError("");
+    setMessage("");
+    setIsLoading(true);
+
     try {
+      // Validate passwords
       if (formData.newPassword.length < 6) {
         setError("❌ Password must be at least 6 characters long.");
         setIsLoading(false);
         return;
       }
+
       if (formData.newPassword !== formData.confirmPassword) {
         setError("❌ Passwords do not match. Please try again.");
         setIsLoading(false);
         return;
       }
 
-      // 🔐 RPC to reset password with token (bcrypt inside DB)
-      const { data, error: rpcError } = await supabase.rpc('reset_password_with_token', {
-        p_token: resetToken,
-        p_new_password: formData.newPassword
-      });
-      if (rpcError) throw rpcError;
+      // Verify reset token is still valid
+      const { data: tokenData, error: tokenError } = await supabase
+        .from('admin_password_reset_tokens')
+        .select('*')
+        .eq('token', resetToken)
+        .eq('user_id', foundUser.id)
+        .is('used_at', null)
+        .gt('expires_at', new Date().toISOString())
+        .single();
 
-      const ok = data === true || data?.[0] === true;
-      if (!ok) {
+      if (tokenError || !tokenData) {
         setError("❌ Reset token is invalid or expired. Please start over.");
         setStep(1);
+        resetForm();
         return;
       }
 
-      setMessage("🎉 Password reset successful! You can now login.");
-      showToast("Password reset successful! Redirecting to login...", "success");
+      // Hash new password
+      const newPasswordHash = await hashPassword(formData.newPassword);
 
-      await logActivity(foundUser?.id || null, 'PASSWORD_RESET_COMPLETED', { username: foundUser?.username });
+      // Get old password hash for logging
+      const { data: currentUserData } = await supabase
+        .from('admin_users')
+        .select('password')
+        .eq('id', foundUser.id)
+        .single();
 
-      setTimeout(() => navigate("/login"), 2000);
+      // Start transaction-like operations
+      try {
+        // Update password
+        const { error: updateError } = await supabase
+          .from('admin_users')
+          .update({
+            password: newPasswordHash,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', foundUser.id);
 
-    } catch (err) {
-      console.error('Step3 error:', err);
+        if (updateError) throw updateError;
+
+        // Mark token as used
+        await supabase
+          .from('admin_password_reset_tokens')
+          .update({ used_at: new Date().toISOString() })
+          .eq('id', tokenData.id);
+
+        // Log password change
+        await supabase.from('admin_password_changes').insert({
+          user_id: foundUser.id,
+          old_password_hash: currentUserData?.password || null,
+          new_password_hash: newPasswordHash,
+          changed_by: foundUser.id,
+          ip_address: '127.0.0.1',
+          user_agent: navigator.userAgent
+        });
+
+        // Invalidate all sessions for this user
+        await supabase
+          .from('admin_sessions')
+          .update({ is_active: false })
+          .eq('user_id', foundUser.id);
+
+        // Log successful password reset
+        await logActivity(foundUser.id, 'PASSWORD_RESET_COMPLETED', {
+          username: foundUser.username
+        });
+
+        setMessage("🎉 Password reset successful! You can now login with your new password.");
+        showToast("Password reset successful! Redirecting to login...", 'success');
+        
+        // Auto redirect to login after 3 seconds
+        setTimeout(() => {
+          navigate("/login");
+        }, 3000);
+
+      } catch (transactionError) {
+        // If any part fails, log the error
+        console.error('Password reset transaction error:', transactionError);
+        throw transactionError;
+      }
+
+    } catch (error) {
+      console.error('Error resetting password:', error);
       setError("❌ Failed to reset password. Please try again.");
-      await logActivity(foundUser?.id || null, 'PASSWORD_RESET_FAILED', {
-        username: foundUser?.username || formData.username.trim(),
+      await logActivity(foundUser?.id, 'PASSWORD_RESET_FAILED', {
+        username: foundUser?.username,
         reason: 'system_error',
-        error: err.message
+        error: error.message
       });
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Reset form to initial state
   const resetForm = () => {
     setStep(1);
-    setFormData({ username: "", securityAnswer: "", newPassword: "", confirmPassword: "" });
-    setMessage(""); setError("");
+    setFormData({
+      username: "",
+      securityAnswer: "",
+      newPassword: "",
+      confirmPassword: ""
+    });
+    setMessage("");
+    setError("");
     setFoundUser(null);
     setSecurityQuestion("");
     setResetToken("");
     setShowPasswords({ new: false, confirm: false });
   };
 
-  const handleInputChange = (field, v) => setFormData(prev => ({ ...prev, [field]: v }));
-  const togglePasswordVisibility = (field) => setShowPasswords(prev => ({ ...prev, [field]: !prev[field] }));
+  // Handle input changes
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  // Toggle password visibility
+  const togglePasswordVisibility = (field) => {
+    setShowPasswords(prev => ({ ...prev, [field]: !prev[field] }));
+  };
 
   // Clear any existing sessions on component mount
   useEffect(() => {
@@ -192,7 +355,14 @@ function ForgotPassword() {
 
   return (
     <div style={styles.container}>
-      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+      {/* Toast Notification */}
+      {toast && (
+        <Toast 
+          message={toast.message} 
+          type={toast.type} 
+          onClose={() => setToast(null)} 
+        />
+      )}
 
       {/* Background Animation */}
       <div style={styles.backgroundAnimation}>

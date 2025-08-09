@@ -3,20 +3,51 @@ import { useNavigate, Link, useLocation } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import syedSolarLogo from "../assets/logo.png";
 
+// Password hashing utility
+const hashPassword = async (password) => {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password);
+  const hash = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(hash))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+};
+
 // Generate secure session token
-const generateSessionToken = () =>
-  crypto.randomUUID() + "-" + Date.now() + "-" + Math.random().toString(36).slice(2, 11);
+const generateSessionToken = () => {
+  return crypto.randomUUID() + '-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+};
 
-
-// Toast
+// Toast notification component
 const Toast = ({ message, type, onClose }) => (
   <div style={{
-    position: 'fixed', top: 20, right: 20,
-    background: type === 'error' ? '#ff4444' : type === 'success' ? '#44aa44' : '#4444ff',
-    color: '#fff', padding: '12px 20px', borderRadius: 8, zIndex: 10000
+    position: 'fixed',
+    top: '20px',
+    right: '20px',
+    background: type === 'error' ? '#ff4444' : type === 'success' ? '#44ff44' : '#4444ff',
+    color: 'white',
+    padding: '12px 20px',
+    borderRadius: '8px',
+    zIndex: 10000,
+    boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+    fontSize: '14px',
+    fontWeight: '600',
+    maxWidth: '300px'
   }}>
     {message}
-    <button onClick={onClose} style={{ marginLeft: 10, color: '#fff', background: 'none', border: 0, cursor: 'pointer' }}>×</button>
+    <button 
+      onClick={onClose}
+      style={{
+        background: 'none',
+        border: 'none',
+        color: 'white',
+        marginLeft: '10px',
+        cursor: 'pointer',
+        fontSize: '16px'
+      }}
+    >
+      ×
+    </button>
   </div>
 );
 
@@ -30,121 +61,213 @@ function Login() {
   const [toast, setToast] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
+  
+  // Default landing page set to dashboard
   const from = location.state?.from?.pathname || "/dashboard";
 
-  const showToast = (message, type = "info") => {
+  // Show toast notification
+  const showToast = (message, type = 'info') => {
     setToast({ message, type });
-    setTimeout(() => setToast(null), type === "error" ? 5000 : 3000);
+    setTimeout(() => setToast(null), type === 'error' ? 5000 : 3000);
   };
   
+  // Update time every minute
   useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 60000);
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000);
     return () => clearInterval(timer);
   }, []);
-
+  
+  // Clear previous login data and hide navbar
   useEffect(() => {
+    // Clear any existing session data
     localStorage.removeItem("loggedIn");
     localStorage.removeItem("loggedInUser");
     localStorage.removeItem("userRole");
     localStorage.removeItem("sessionToken");
-
+    
+    // Hide navbar when on login page
     const navbar = document.querySelector('.navbar, .nav, [class*="nav"]');
-    if (navbar) navbar.style.display = 'none';
-    return () => { if (navbar) navbar.style.display = 'block'; };
+    if (navbar) {
+      navbar.style.display = 'none';
+    }
+    
+    // Cleanup function to show navbar when leaving login
+    return () => {
+      const navbar = document.querySelector('.navbar, .nav, [class*="nav"]');
+      if (navbar) {
+        navbar.style.display = 'block';
+      }
+    };
   }, []);
 
+  // Log activity helper
   const logActivity = async (userId, action, details = null) => {
     try {
       await supabase.from('admin_activity_log').insert({
-        user_id: userId || null,
+        user_id: userId,
         action,
         resource: 'authentication',
         details,
         ip_address: '127.0.0.1',
         user_agent: navigator.userAgent
       });
-    } catch (_) {}
+    } catch (error) {
+      console.error('Failed to log activity:', error);
+    }
   };
 
+  // Create session in database
   const createSession = async (userId) => {
-    const sessionToken = generateSessionToken();
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-    const { error } = await supabase.from('admin_sessions').insert({
-      user_id: userId,
-      session_token: sessionToken,
-      ip_address: '127.0.0.1',
-      user_agent: navigator.userAgent,
-      expires_at: expiresAt,
-      is_active: true
-    });
-    if (error) throw error;
-    return sessionToken;
+    try {
+      const sessionToken = generateSessionToken();
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 24); // 24 hours expiry
+
+      const { error } = await supabase
+        .from('admin_sessions')
+        .insert({
+          user_id: userId,
+          session_token: sessionToken,
+          ip_address: '127.0.0.1',
+          user_agent: navigator.userAgent,
+          expires_at: expiresAt.toISOString(),
+          is_active: true
+        });
+
+      if (error) throw error;
+
+      return sessionToken;
+    } catch (error) {
+      console.error('Error creating session:', error);
+      throw error;
+    }
   };
 
+  // Handle login
   const handleLogin = async (e) => {
     e.preventDefault();
+    
     if (!username || !password) {
-      setError("❌ براہ کرم تمام فیلڈز بھریں | Please fill all fields");
+      setError("❌ خرابی | براہ کرم تمام فیلڈز بھریں\nPlease fill all fields");
       return;
     }
+    
     setError("");
     setIsLoading(true);
+
     try {
-      // 🔐 Call RPC to verify bcrypt in DB
-      const { data, error: rpcError } = await supabase.rpc('auth_login', {
-        p_username: username.trim(),
-        p_password: password
-      });
+      // Hash the password
+      const passwordHash = await hashPassword(password);
 
-      if (rpcError) throw rpcError;
+      // Find user in Supabase
+      const { data: users, error: fetchError } = await supabase
+        .from('admin_users')
+        .select(`
+          id, username, email, role, is_active, password,
+          admin_permissions (*)
+        `)
+        .eq('username', username.trim().toLowerCase())
+        .eq('is_active', true)
+        .limit(1);
 
-      const user = (data && data[0]) || null;
-      if (!user) {
+      if (fetchError) throw fetchError;
+
+      const user = users?.[0];
+
+      if (user && user.password === passwordHash) {
+        try {
+          // Create session
+          const sessionToken = await createSession(user.id);
+
+          // Update last login
+          await supabase
+            .from('admin_users')
+            .update({ last_login: new Date().toISOString() })
+            .eq('id', user.id);
+
+          // Log successful login
+          await logActivity(user.id, 'LOGIN', {
+            username: user.username,
+            role: user.role
+          });
+
+          // Store session data
+          localStorage.setItem("loggedIn", "true");
+          localStorage.setItem("loggedInUser", user.username);
+          localStorage.setItem("userRole", user.role || "user");
+          localStorage.setItem("sessionToken", sessionToken);
+          localStorage.setItem("loginTime", new Date().toISOString());
+
+          showToast("Login successful! Welcome back.", 'success');
+
+          // Show sidebar and hide navbar after successful login
+          setTimeout(() => {
+            const sidebar = document.querySelector('.sidebar, [class*="sidebar"]');
+            const navbar = document.querySelector('.navbar, .nav, [class*="nav"]');
+            
+            if (sidebar) sidebar.style.display = 'block';
+            if (navbar) navbar.style.display = 'none';
+          }, 100);
+
+          // Navigate to dashboard or intended page
+          setTimeout(() => {
+            if (from.startsWith('http')) {
+              window.location.href = from;
+            } else {
+              navigate(from, { replace: true });
+            }
+          }, 1000);
+
+        } catch (sessionError) {
+          console.error('Session creation error:', sessionError);
+          setError("❌ لاگ ان نہیں ہو سکا | Login failed. Please try again.");
+          
+          await logActivity(user.id, 'LOGIN_FAILED', {
+            username: user.username,
+            reason: 'session_creation_error',
+            error: sessionError.message
+          });
+        }
+      } else {
         setError("❌ غلط صارف نام یا پاس ورڈ | Invalid username or password");
-        await logActivity(null, 'LOGIN_FAILED', { username: username.trim(), reason: 'invalid_credentials' });
-        setIsLoading(false);
-        return;
+        
+        await logActivity(user?.id || null, 'LOGIN_FAILED', {
+          username: username.trim().toLowerCase(),
+          reason: user ? 'invalid_password' : 'user_not_found'
+        });
       }
-
-      // Create session, update last_login, log
-      const sessionToken = await createSession(user.id);
-      await supabase.from('admin_users').update({ last_login: new Date().toISOString() }).eq('id', user.id);
-      await logActivity(user.id, 'LOGIN', { username: user.username, role: user.role });
-
-      // Store local
-      localStorage.setItem("loggedIn", "true");
-      localStorage.setItem("loggedInUser", user.username);
-      localStorage.setItem("userRole", user.role || "user");
-      localStorage.setItem("sessionToken", sessionToken);
-      localStorage.setItem("loginTime", new Date().toISOString());
-
-      showToast("Login successful! Welcome back.", "success");
-
-      setTimeout(() => {
-        const sidebar = document.querySelector('.sidebar, [class*="sidebar"]');
-        const navbar = document.querySelector('.navbar, .nav, [class*="nav"]');
-        if (sidebar) sidebar.style.display = 'block';
-        if (navbar) navbar.style.display = 'none';
-      }, 100);
-
-      setTimeout(() => {
-        if (from.startsWith("http")) window.location.href = from;
-        else navigate(from, { replace: true });
-      }, 800);
-
-    } catch (err) {
-      console.error('Login error:', err);
+    } catch (error) {
+      console.error('Login error:', error);
       setError("❌ لاگ ان نہیں ہو سکا | Login failed. Please try again.");
-      await logActivity(null, 'LOGIN_FAILED', { username: username.trim(), reason: 'system_error', error: err.message });
+      
+      await logActivity(null, 'LOGIN_FAILED', {
+        username: username.trim().toLowerCase(),
+        reason: 'system_error',
+        error: error.message
+      });
     } finally {
       setIsLoading(false);
     }
   };
-
-  const formatTime = (d) => d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-  const formatDate = (d) => d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
-
   
+  const formatTime = (date) => {
+    return date.toLocaleTimeString('en-US', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: true 
+    });
+  };
+  
+  const formatDate = (date) => {
+    return date.toLocaleDateString('en-US', { 
+      weekday: 'long',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
   // Handle password visibility toggle
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
@@ -181,7 +304,14 @@ function Login() {
       boxSizing: "border-box"
     }}>
 
-{toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+      {/* Toast Notification */}
+      {toast && (
+        <Toast 
+          message={toast.message} 
+          type={toast.type} 
+          onClose={() => setToast(null)} 
+        />
+      )}
       
       {/* Responsive Floating Background Elements */}
       <div style={{
