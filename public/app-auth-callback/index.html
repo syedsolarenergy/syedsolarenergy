@@ -1,56 +1,273 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <title>Opening Solar Olagawa…</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body{font-family:Arial,system-ui,-apple-system,Segoe UI,Roboto;margin:0;padding:24px;background:#FFFBE6;color:#333}
-    .card{max-width:520px;margin:40px auto;background:#fff;border:1px solid #FFE0B2;border-radius:12px;padding:24px;text-align:center}
-    .btn{display:inline-block;padding:12px 18px;border-radius:10px;text-decoration:none;font-weight:700}
-    .primary{background:#E65100;color:#fff}
-    .muted{color:#888;font-size:12px;margin-top:14px}
+    body {
+      font-family: Arial, system-ui, -apple-system, 'Segoe UI', Roboto;
+      margin: 0;
+      padding: 24px;
+      background: linear-gradient(135deg, #FF9800, #E65100);
+      color: #333;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .card {
+      max-width: 420px;
+      background: #fff;
+      border-radius: 16px;
+      padding: 32px;
+      text-align: center;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    }
+    
+    .logo {
+      width: 60px;
+      height: 60px;
+      background: linear-gradient(135deg, #FF9800, #E65100);
+      border-radius: 50%;
+      margin: 0 auto 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      color: white;
+      font-weight: bold;
+    }
+    
+    h2 {
+      color: #E65100;
+      margin: 0 0 12px;
+      font-size: 20px;
+      font-weight: 700;
+    }
+    
+    p {
+      margin: 0 0 20px;
+      color: #666;
+      line-height: 1.5;
+    }
+    
+    .btn {
+      display: inline-block;
+      padding: 14px 24px;
+      border-radius: 12px;
+      text-decoration: none;
+      font-weight: 700;
+      transition: all 0.2s;
+      margin: 8px;
+    }
+    
+    .primary {
+      background: linear-gradient(135deg, #FF9800, #E65100);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(230, 81, 0, 0.3);
+    }
+    
+    .primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(230, 81, 0, 0.4);
+    }
+    
+    .secondary {
+      background: #fff;
+      color: #E65100;
+      border: 2px solid #E65100;
+    }
+    
+    .muted {
+      color: #888;
+      font-size: 12px;
+      margin-top: 16px;
+    }
+    
+    .status {
+      padding: 12px;
+      border-radius: 8px;
+      margin: 16px 0;
+      font-size: 14px;
+    }
+    
+    .loading {
+      background: #E3F2FD;
+      color: #1976D2;
+      border: 1px solid #BBDEFB;
+    }
+    
+    .error {
+      background: #FFEBEE;
+      color: #C62828;
+      border: 1px solid #FFCDD2;
+    }
+    
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid #1976D2;
+      border-radius: 50%;
+      border-top-color: transparent;
+      animation: spin 1s ease-in-out infinite;
+      margin-right: 8px;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
   </style>
-  <script>
-    (function () {
-      // Keep all query params from Supabase (type=recovery, access_token, etc.)
-      var qs = window.location.search || '';
-      var appUrl = 'olagawa://auth-callback' + qs;
-
-      function showFallback(){
-        var f = document.getElementById('fallback');
-        if (f){ f.style.display = 'block'; }
-        var a = document.getElementById('openApp');
-        if (a){ a.href = appUrl; }
-      }
-
-      // Only auto-open on mobile. On desktop, just show the button.
-      var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-      if (isMobile) {
-        // Give the DOM a tick, then try to open the app
-        setTimeout(function(){
-          try { window.location.href = appUrl; } catch(e) {}
-          // Always show fallback after 1.2s in case deep link is blocked
-          setTimeout(showFallback, 1200);
-        }, 100);
-      } else {
-        showFallback();
-      }
-    })();
-  </script>
-  <noscript>
-    <style>#fallback{display:block!important}</style>
-  </noscript>
 </head>
 <body>
   <div class="card">
-    <h2 style="color:#E65100;margin:0 0 8px">Opening Solar Olagawa…</h2>
-    <p style="margin:0 0 16px">If the app doesn’t open automatically, tap the button below.</p>
-    <div id="fallback" style="display:none;">
-      <a id="openApp" class="btn primary" href="#">Open in App</a>
-      <p class="muted">If the app is not installed, open it from your apps and try again.</p>
+    <div class="logo">☀️</div>
+    <h2>Opening Solar Olagawa…</h2>
+    <p>Please wait while we redirect you to the app for password reset.</p>
+    
+    <div id="status" class="status loading">
+      <span class="spinner"></span>
+      Attempting to open app...
+    </div>
+    
+    <div id="fallback" style="display: none;">
+      <a id="openApp" class="btn primary" href="#">Open Solar Olagawa</a>
+      <br>
+      <a href="https://play.google.com/store/apps/details?id=your.app.id" class="btn secondary">Download App</a>
+      <p class="muted">
+        If the app doesn't open, make sure Solar Olagawa is installed on your device.
+      </p>
     </div>
   </div>
+
+  <script>
+    (function() {
+      const statusEl = document.getElementById('status');
+      const fallbackEl = document.getElementById('fallback');
+      const openAppBtn = document.getElementById('openApp');
+      
+      // Get all URL parameters (including Supabase auth tokens)
+      const urlParams = window.location.search;
+      
+      // Check if this is a password recovery flow
+      const isPasswordRecovery = urlParams.includes('type=recovery');
+      
+      // Create deep link URL with all parameters
+      const appScheme = 'olagawa://auth-callback';
+      const deepLinkUrl = appScheme + urlParams;
+      
+      // Update button href
+      if (openAppBtn) {
+        openAppBtn.href = deepLinkUrl;
+      }
+      
+      function showError(message) {
+        statusEl.className = 'status error';
+        statusEl.innerHTML = '❌ ' + message;
+        setTimeout(() => {
+          fallbackEl.style.display = 'block';
+        }, 1000);
+      }
+      
+      function showFallback() {
+        statusEl.style.display = 'none';
+        fallbackEl.style.display = 'block';
+      }
+      
+      // Check if we're on mobile
+      const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      
+      if (!urlParams) {
+        showError('No authentication data found');
+        return;
+      }
+      
+      if (!isPasswordRecovery) {
+        showError('Invalid request type');
+        return;
+      }
+      
+      // Log for debugging
+      console.log('Deep link URL:', deepLinkUrl);
+      console.log('Is mobile:', isMobile);
+      
+      // Attempt to open the app
+      let attemptCount = 0;
+      function attemptOpen() {
+        attemptCount++;
+        
+        if (attemptCount > 3) {
+          showError('Unable to open app automatically');
+          return;
+        }
+        
+        try {
+          if (isMobile) {
+            // On mobile, try multiple methods
+            if (attemptCount === 1) {
+              // Method 1: Direct location change
+              window.location.href = deepLinkUrl;
+            } else if (attemptCount === 2) {
+              // Method 2: Create invisible iframe
+              const iframe = document.createElement('iframe');
+              iframe.style.display = 'none';
+              iframe.src = deepLinkUrl;
+              document.body.appendChild(iframe);
+              setTimeout(() => document.body.removeChild(iframe), 1000);
+            } else {
+              // Method 3: Create invisible link and click it
+              const link = document.createElement('a');
+              link.href = deepLinkUrl;
+              link.style.display = 'none';
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+            }
+          } else {
+            // On desktop, just show the manual button
+            showFallback();
+            return;
+          }
+          
+          // Try next method if current one fails
+          setTimeout(attemptOpen, 800);
+          
+        } catch (error) {
+          console.error('Error opening app:', error);
+          setTimeout(attemptOpen, 800);
+        }
+      }
+      
+      // Start the process after a short delay
+      setTimeout(() => {
+        statusEl.innerHTML = '<span class="spinner"></span>Opening Solar Olagawa app...';
+        attemptOpen();
+      }, 500);
+      
+      // Always show fallback after reasonable time
+      setTimeout(showFallback, isMobile ? 3000 : 1000);
+      
+      // Handle visibility change (app switch detection)
+      let hidden = false;
+      document.addEventListener('visibilitychange', function() {
+        if (document.hidden && !hidden) {
+          hidden = true;
+          // App likely opened successfully
+          statusEl.className = 'status loading';
+          statusEl.innerHTML = '✅ App opened successfully!';
+        }
+      });
+      
+    })();
+  </script>
+  
+  <noscript>
+    <style>
+      #status { display: none !important; }
+      #fallback { display: block !important; }
+    </style>
+  </noscript>
 </body>
 </html>
