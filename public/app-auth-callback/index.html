@@ -13,20 +13,35 @@
   </style>
   <script>
     (function () {
-      // Supabase sends query params: ?type=recovery&access_token=...&refresh_token=...
+      // Keep all query params from Supabase (type=recovery, access_token, etc.)
       var qs = window.location.search || '';
       var appUrl = 'olagawa://auth-callback' + qs;
 
-      // Try to open the app immediately
-      window.location.replace(appUrl);
+      function showFallback(){
+        var f = document.getElementById('fallback');
+        if (f){ f.style.display = 'block'; }
+        var a = document.getElementById('openApp');
+        if (a){ a.href = appUrl; }
+      }
 
-      // Fallback UI in case the app doesn’t capture the deep link
-      setTimeout(function(){
-        document.getElementById('fallback').style.display = 'block';
-        document.getElementById('openApp').href = appUrl;
-      }, 1500);
+      // Only auto-open on mobile. On desktop, just show the button.
+      var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+      if (isMobile) {
+        // Give the DOM a tick, then try to open the app
+        setTimeout(function(){
+          try { window.location.href = appUrl; } catch(e) {}
+          // Always show fallback after 1.2s in case deep link is blocked
+          setTimeout(showFallback, 1200);
+        }, 100);
+      } else {
+        showFallback();
+      }
     })();
   </script>
+  <noscript>
+    <style>#fallback{display:block!important}</style>
+  </noscript>
 </head>
 <body>
   <div class="card">
