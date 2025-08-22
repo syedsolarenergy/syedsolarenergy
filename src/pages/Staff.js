@@ -25,7 +25,7 @@ function Staff() {
     name: "Syed Solar Energy Pvt Ltd",
     email: "sales@syedsolarenergy.com",
     phone: "+92 307 5596695",
-    address: "Jalil Market Umar Gull Chowck Bara Road Near Bacha Khan International Airport, Peshawar",
+    address: "Jalil Market Umar Gull Chowck Bara Road, Peshawar",
     brand: {
       primary: "#FF6B35",
       primaryDark: "#E85F2F",
@@ -55,7 +55,7 @@ function Staff() {
 
   const departments = ["Technical", "Sales", "Administration", "Management", "Support"];
   const positions = ["Technician", "Senior Technician", "Sales Manager", "Admin", "CEO", "Assistant"];
-  const statusOptions = ["active", "inactive", "on_leave"];
+  const statusOptions = ["active", "inactive", "on_leave", "Left"];
 
   useEffect(() => {
     loadStaffData();
@@ -322,43 +322,47 @@ function Staff() {
       let y = margin;
 
       // Header: logo + company block
-      try {
-        const logoImg = await loadImage(logo);
-        const logoW = 26;
-        const logoH = (logoImg.height / logoImg.width) * logoW;
-        pdf.addImage(logoImg, "PNG", margin, y, logoW, logoH);
-      } catch {
-        // text fallback
-        pdf.setFont("helvetica", "bold");
-        pdf.setTextColor(primary);
-        pdf.setFontSize(14);
-        pdf.text("SYED SOLAR ENERGY", margin, y + 10);
-      }
+try {
+    const logoImg = await loadImage(logo);
+    const logoW = 26;
+    const logoH = (logoImg.height / logoImg.width) * logoW;
+    pdf.addImage(logoImg, "PNG", margin, y, logoW, logoH);
+} catch {
+    // text fallback
+    pdf.setFont("helvetica", "bold");
+    pdf.setTextColor(primary);
+    pdf.setFontSize(14);
+    pdf.text("SYED SOLAR ENERGY", margin, y + 10);
+}
 
-      pdf.setFont("helvetica", "bold");
-      pdf.setTextColor(grey);
-      pdf.setFontSize(16);
-      pdf.text(COMPANY.name, margin + 32, y + 6);
+// Company details
+pdf.setFont("helvetica", "bold");
+pdf.setTextColor(grey);
+pdf.setFontSize(16);
+pdf.text(COMPANY.name, margin + 32, y + 6);
 
-      pdf.setFont("helvetica", "normal");
-      pdf.setTextColor(lightGrey);
-      pdf.setFontSize(10);
-      pdf.text(`${COMPANY.address} • ${COMPANY.phone} • ${COMPANY.email}`, margin + 32, y + 12);
+pdf.setFont("helvetica", "normal");
+pdf.setTextColor(lightGrey);
+pdf.setFontSize(10);
+pdf.text(COMPANY.address, margin + 32, y + 12 ); // Address on its own line
+pdf.text(COMPANY.phone, margin + 32, y + 18); // Phone on the next line
+pdf.text(COMPANY.email, margin + 32, y + 24); // Email on the last line
 
-      y += 24;
+y += 32; // Adjust the Y-coordinate to accommodate the new height of the block
 
-      // Title
-      pdf.setFont("helvetica", "bold");
-      pdf.setTextColor(grey);
-      pdf.setFontSize(22);
-      pdf.text("CERTIFICATE OF EXPERIENCE", pageWidth / 2, y, { align: "center" });
-      y += titleH;
+// ---
+// Title
+pdf.setFont("helvetica", "bold");
+pdf.setTextColor(grey);
+pdf.setFontSize(22);
+pdf.text("CERTIFICATE OF EXPERIENCE", pageWidth / 2, y, { align: "center" });
+y += titleH;
 
-      // Sub-title (To Whom It May Concern)
-      pdf.setFontSize(12);
-      pdf.setTextColor(primaryDark);
-      pdf.text("TO WHOM IT MAY CONCERN", pageWidth / 2, y, { align: "center" });
-      y += titleH;
+// Sub-title (To Whom It May Concern)
+pdf.setFontSize(12);
+pdf.setTextColor(primaryDark);
+pdf.text("TO WHOM IT MAY CONCERN", pageWidth / 2, y, { align: "center" });
+y += titleH;
 
       // Content utilities (wrap + page-break)
       const addWrapped = (text, x = margin, fontSize = 12, color = grey, weight = "normal") => {
@@ -455,29 +459,29 @@ function Staff() {
           width: 100,
           margin: 1,
           color: {
-            dark: "#000000", // Black dots
+            dark: "#252020ff", // Black dots
             light: "#FFFFFF", // White background
           },
         });
         
-        // Add border around QR code for better visibility
-        pdf.setDrawColor(200, 200, 200);
-        pdf.rect(pageWidth - 42, pageHeight - 47, 32, 32);
-        
-        // Add QR code to PDF
-        pdf.addImage(
-          qrCodeDataUrl, 
-          'PNG', 
-          pageWidth - 40, 
-          pageHeight - 45, 
-          28, 
-          28
-        );
+// Add border around QR code for better visibility
+pdf.setDrawColor(200, 200, 200);
+pdf.rect(pageWidth - 50, pageHeight - 50, 32, 32);
+
+// Add QR code to PDF, perfectly centered and fit
+pdf.addImage(
+  qrCodeDataUrl,
+  'PNG',
+  pageWidth - 49, // New X-position
+  pageHeight - 49, // New Y-position
+  30,
+  30
+);
         
         // Add text below QR code
         pdf.setFontSize(8);
-        pdf.setTextColor(lightGrey);
-        pdf.text("Scan to verify", pageWidth - 26, pageHeight - 48, { align: "center" });
+        pdf.setTextColor(grey);
+        pdf.text("Scan to verify", pageWidth - 34, pageHeight - 15, { align: "center" });
       } catch (error) {
         console.error("Error generating QR code:", error);
         // Continue without QR code if there's an error
@@ -488,7 +492,7 @@ function Staff() {
         const stampImg = await loadImage(stamp);
         const stampSize = 42; // mm
         const stampX = margin;
-        const stampY = pageHeight - stampSize - 16;
+        const stampY = pageHeight - stampSize - 35;
         
         // Add stamp with full opacity
         pdf.addImage(
@@ -502,7 +506,7 @@ function Staff() {
         
         // Add text over the stamp
         const midX = stampX + stampSize / 2;
-        const textYStart = stampY + stampSize / 2 - 6;
+        const textYStart = pageHeight-33;
         pdf.setFont("helvetica", "bold");
         pdf.setFontSize(10);
         pdf.setTextColor(primaryDark);
@@ -518,9 +522,9 @@ function Staff() {
         pdf.text(`Issue: ${issueDateStr}`, midX, textYStart + 14, { align: "center" });
       } catch {
         // Simple circular fallback if image not found
-        const r = 20;
+        const r = 30;
         const cx = margin + r;
-        const cy = pageHeight - 16 - r;
+        const cy = pageHeight - 25 - r;
         pdf.setDrawColor(primary);
         pdf.setFillColor(255, 247, 240);
         pdf.circle(cx, cy, r, "FD");
@@ -540,9 +544,8 @@ function Staff() {
       const certNumber = `SSE-SEC03-2025`; // Using the specific certificate ID from the example
       pdf.setFont("helvetica", "normal");
       pdf.setFontSize(9);
-      pdf.setTextColor(lightGrey);
-      pdf.text(`Certificate ID: ${certNumber}`, margin, pageHeight - 12);
-      pdf.text(`Issue Date: ${new Date().toLocaleDateString()}`, margin, pageHeight - 7);
+      pdf.setTextColor(grey);
+      pdf.text(`Certificate ID: ${certNumber}`, margin, pageHeight - 15);
 
       // Save PDF
       pdf.save(`Experience_Certificate_${employee.name.replace(/\s+/g, "_")}.pdf`);
