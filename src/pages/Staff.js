@@ -7,6 +7,7 @@ function Staff() {
   const [staffList, setStaffList] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterDepartment, setFilterDepartment] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("all");
   const [sortBy, setSortBy] = useState("name");
   const [viewMode, setViewMode] = useState("grid");
   const [showAddForm, setShowAddForm] = useState(false);
@@ -24,6 +25,7 @@ function Staff() {
     department: "",
     salary: "",
     join_date: "",
+    leaving_date: "",
     photo: "",
     emergency_contact: "",
     skills: "",
@@ -35,6 +37,7 @@ function Staff() {
 
   const departments = ["Technical", "Sales", "Administration", "Management", "Support"];
   const positions = ["Technician", "Senior Technician", "Sales Manager", "Admin", "CEO", "Assistant"];
+  const statusOptions = ["active", "inactive", "on_leave"];
 
   useEffect(() => {
     loadStaffData();
@@ -64,6 +67,7 @@ function Staff() {
             department: "Technical",
             salary: 35000,
             join_date: "2023-01-15",
+            leaving_date: "",
             photo: "",
             emergency_contact: "+92 300 7654321",
             skills: "Solar Installation, Electrical Work, Troubleshooting",
@@ -86,6 +90,7 @@ function Staff() {
             department: "Technical",
             salary: 25000,
             join_date: "2023-03-01",
+            leaving_date: "",
             photo: "",
             emergency_contact: "+92 301 8765432",
             skills: "Solar Maintenance, Customer Service",
@@ -229,7 +234,7 @@ function Staff() {
   const resetForm = () => {
     setFormData({
       name: "", email: "", phone: "", address: "", position: "", department: "",
-      salary: "", join_date: "", photo: "", emergency_contact: "", skills: "",
+      salary: "", join_date: "", leaving_date: "", photo: "", emergency_contact: "", skills: "",
       education: "", experience: "", employee_id: "", status: "active"
     });
   };
@@ -288,19 +293,25 @@ function Staff() {
         day: 'numeric'
       });
       
-      const currentDate = new Date().toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
+      const endDate = employee.leaving_date 
+        ? new Date(employee.leaving_date).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          })
+        : new Date().toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          });
       
-      const workingPeriod = calculateWorkingPeriod(employee.join_date);
+      const workingPeriod = calculateWorkingPeriod(employee.join_date, employee.leaving_date);
       
       const certificateText = [
         "TO WHOM IT MAY CONCERN",
         "",
         `This is to certify that ${employee.name} (Employee ID: ${employee.employee_id}) has been employed with`,
-        "Syed Solar Energy Pvt Ltd from " + joinDate + " to " + currentDate + ".",
+        "Syed Solar Energy Pvt Ltd from " + joinDate + " to " + endDate + ".",
         "",
         `During this period, ${employee.name.split(' ')[0]} served as ${employee.position} in the ${employee.department} department`,
         "and performed duties with dedication, professionalism, and integrity.",
@@ -392,10 +403,10 @@ function Staff() {
     }
   };
 
-  const calculateWorkingPeriod = (joinDate) => {
+  const calculateWorkingPeriod = (joinDate, leavingDate) => {
     const join = new Date(joinDate);
-    const now = new Date();
-    const diffTime = Math.abs(now - join);
+    const end = leavingDate ? new Date(leavingDate) : new Date();
+    const diffTime = Math.abs(end - join);
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     const years = Math.floor(diffDays / 365);
     const months = Math.floor((diffDays % 365) / 30);
@@ -413,7 +424,8 @@ function Staff() {
                           emp.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           emp.employee_id.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesDepartment = filterDepartment === "all" || emp.department === filterDepartment;
-      return matchesSearch && matchesDepartment;
+      const matchesStatus = filterStatus === "all" || emp.status === filterStatus;
+      return matchesSearch && matchesDepartment && matchesStatus;
     })
     .sort((a, b) => {
       switch (sortBy) {
@@ -477,6 +489,16 @@ function Staff() {
             ))}
           </select>
           <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            style={styles.filterSelect}
+          >
+            <option value="all">All Status</option>
+            {statusOptions.map(status => (
+              <option key={status} value={status}>{status.charAt(0).toUpperCase() + status.slice(1)}</option>
+            ))}
+          </select>
+          <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
             style={styles.filterSelect}
@@ -531,8 +553,8 @@ function Staff() {
                 <label style={styles.label}>🆔 Employee ID</label>
                 <input
                   type="text"
-                  value={formData.employeeId}
-                  onChange={(e) => setFormData({...formData, employeeId: e.target.value})}
+                  value={formData.employee_id}
+                  onChange={(e) => setFormData({...formData, employee_id: e.target.value})}
                   style={styles.input}
                   placeholder="Auto-generated if empty"
                 />
@@ -614,18 +636,41 @@ function Staff() {
                 <label style={styles.label}>📅 Join Date</label>
                 <input
                   type="date"
-                  value={formData.joinDate}
-                  onChange={(e) => setFormData({...formData, joinDate: e.target.value})}
+                  value={formData.join_date}
+                  onChange={(e) => setFormData({...formData, join_date: e.target.value})}
                   style={styles.input}
                 />
+              </div>
+
+              <div style={styles.inputGroup}>
+                <label style={styles.label}>📅 Leaving Date</label>
+                <input
+                  type="date"
+                  value={formData.leaving_date}
+                  onChange={(e) => setFormData({...formData, leaving_date: e.target.value})}
+                  style={styles.input}
+                />
+              </div>
+
+              <div style={styles.inputGroup}>
+                <label style={styles.label}>📊 Status</label>
+                <select
+                  value={formData.status}
+                  onChange={(e) => setFormData({...formData, status: e.target.value})}
+                  style={styles.input}
+                >
+                  {statusOptions.map(status => (
+                    <option key={status} value={status}>{status.charAt(0).toUpperCase() + status.slice(1)}</option>
+                  ))}
+                </select>
               </div>
 
               <div style={styles.inputGroup}>
                 <label style={styles.label}>🚨 Emergency Contact</label>
                 <input
                   type="text"
-                  value={formData.emergencyContact}
-                  onChange={(e) => setFormData({...formData, emergencyContact: e.target.value})}
+                  value={formData.emergency_contact}
+                  onChange={(e) => setFormData({...formData, emergency_contact: e.target.value})}
                   style={styles.input}
                   placeholder="+92 300 7654321"
                 />
@@ -701,12 +746,18 @@ function Staff() {
                   <h2 style={styles.employeeName}>{selectedEmployee.name}</h2>
                   <p style={styles.employeeTitle}>{selectedEmployee.position}</p>
                   <p style={styles.employeeDept}>{selectedEmployee.department}</p>
+                  <p style={styles.employeeStatus}>
+                    Status: <span style={{
+                      color: selectedEmployee.status === 'active' ? '#4caf50' : 
+                             selectedEmployee.status === 'inactive' ? '#f44336' : '#ff9800'
+                    }}>{selectedEmployee.status}</span>
+                  </p>
                 </div>
               </div>
 
               <div style={styles.detailsGrid}>
                 <div style={styles.detailItem}>
-                  <strong>Employee ID:</strong> {selectedEmployee.employeeId}
+                  <strong>Employee ID:</strong> {selectedEmployee.employee_id}
                 </div>
                 <div style={styles.detailItem}>
                   <strong>Email:</strong> {selectedEmployee.email}
@@ -715,20 +766,25 @@ function Staff() {
                   <strong>Phone:</strong> {selectedEmployee.phone}
                 </div>
                 <div style={styles.detailItem}>
-                  <strong>Join Date:</strong> {new Date(selectedEmployee.joinDate).toLocaleDateString()}
+                  <strong>Join Date:</strong> {new Date(selectedEmployee.join_date).toLocaleDateString()}
                 </div>
+                {selectedEmployee.leaving_date && (
+                  <div style={styles.detailItem}>
+                    <strong>Leaving Date:</strong> {new Date(selectedEmployee.leaving_date).toLocaleDateString()}
+                  </div>
+                )}
                 <div style={styles.detailItem}>
                   <strong>Current Salary:</strong> Rs {selectedEmployee.salary.toLocaleString()}
                 </div>
                 <div style={styles.detailItem}>
-                  <strong>Experience:</strong> {calculateWorkingPeriod(selectedEmployee.joinDate)}
+                  <strong>Experience:</strong> {calculateWorkingPeriod(selectedEmployee.join_date, selectedEmployee.leaving_date)}
                 </div>
               </div>
 
-              {selectedEmployee.salaryHistory && selectedEmployee.salaryHistory.length > 0 && (
+              {selectedEmployee.salary_history && selectedEmployee.salary_history.length > 0 && (
                 <div style={styles.salaryHistory}>
                   <h4>💰 Salary History</h4>
-                  {selectedEmployee.salaryHistory.map((history, index) => (
+                  {selectedEmployee.salary_history.map((history, index) => (
                     <div key={index} style={styles.historyItem}>
                       <span>{new Date(history.date).toLocaleDateString()}</span>
                       <span>Rs {history.amount.toLocaleString()}</span>
@@ -768,10 +824,19 @@ function Staff() {
 
       {/* Staff List */}
       <div style={styles.staffSection}>
-        {viewMode === "grid" ? (
+        {loading ? (
+          <div style={styles.loadingState}>
+            <div style={styles.loadingSpinner}></div>
+            <p>Loading staff data...</p>
+          </div>
+        ) : viewMode === "grid" ? (
           <div style={styles.staffGrid}>
             {filteredStaff.map(employee => (
-              <div key={employee.id} style={styles.employeeCard}>
+              <div key={employee.id} style={{
+                ...styles.employeeCard,
+                borderLeft: `5px solid ${employee.status === 'active' ? '#4caf50' : 
+                             employee.status === 'inactive' ? '#f44336' : '#ff9800'}`
+              }}>
                 <div style={styles.cardHeader}>
                   <div style={styles.avatar}>
                     {employee.name.charAt(0).toUpperCase()}
@@ -807,7 +872,18 @@ function Staff() {
                   <p style={styles.cardDepartment}>{employee.department}</p>
                   <p style={styles.cardSalary}>Rs {employee.salary.toLocaleString()}/month</p>
                   <p style={styles.cardJoinDate}>
-                    Joined: {new Date(employee.joinDate).toLocaleDateString()}
+                    Joined: {new Date(employee.join_date).toLocaleDateString()}
+                  </p>
+                  {employee.leaving_date && (
+                    <p style={styles.cardLeavingDate}>
+                      Left: {new Date(employee.leaving_date).toLocaleDateString()}
+                    </p>
+                  )}
+                  <p style={styles.cardStatus}>
+                    Status: <span style={{
+                      color: employee.status === 'active' ? '#4caf50' : 
+                             employee.status === 'inactive' ? '#f44336' : '#ff9800'
+                    }}>{employee.status}</span>
                   </p>
                 </div>
 
@@ -832,6 +908,7 @@ function Staff() {
                   <th style={styles.th}>Department</th>
                   <th style={styles.th}>Salary</th>
                   <th style={styles.th}>Join Date</th>
+                  <th style={styles.th}>Status</th>
                   <th style={styles.th}>Actions</th>
                 </tr>
               </thead>
@@ -845,14 +922,27 @@ function Staff() {
                         </div>
                         <div>
                           <div style={styles.tableName}>{employee.name}</div>
-                          <div style={styles.tableId}>{employee.employeeId}</div>
+                          <div style={styles.tableId}>{employee.employee_id}</div>
                         </div>
                       </div>
                     </td>
                     <td style={styles.td}>{employee.position}</td>
                     <td style={styles.td}>{employee.department}</td>
                     <td style={styles.td}>Rs {employee.salary.toLocaleString()}</td>
-                    <td style={styles.td}>{new Date(employee.joinDate).toLocaleDateString()}</td>
+                    <td style={styles.td}>{new Date(employee.join_date).toLocaleDateString()}</td>
+                    <td style={styles.td}>
+                      <span style={{
+                        padding: '4px 8px',
+                        borderRadius: '4px',
+                        fontSize: '0.85rem',
+                        backgroundColor: employee.status === 'active' ? '#e8f5e9' : 
+                                        employee.status === 'inactive' ? '#ffebee' : '#fff8e1',
+                        color: employee.status === 'active' ? '#4caf50' : 
+                               employee.status === 'inactive' ? '#f44336' : '#ff9800'
+                      }}>
+                        {employee.status}
+                      </span>
+                    </td>
                     <td style={styles.td}>
                       <div style={styles.tableActions}>
                         <button
@@ -892,12 +982,12 @@ function Staff() {
           </div>
         )}
 
-        {filteredStaff.length === 0 && (
+        {!loading && filteredStaff.length === 0 && (
           <div style={styles.emptyState}>
             <div style={styles.emptyIcon}>👥</div>
             <h3>No employees found</h3>
             <p>
-              {searchTerm || filterDepartment !== "all" 
+              {searchTerm || filterDepartment !== "all" || filterStatus !== "all"
                 ? "Try adjusting your search or filters"
                 : "Add your first employee to get started"
               }
@@ -1471,6 +1561,43 @@ const styles = {
     fontSize: '4rem',
     marginBottom: '20px',
   },
+  loadingState: {
+    textAlign: 'center',
+    padding: '40px',
+  },
+  loadingSpinner: {
+    border: '4px solid #f3f3f3',
+    borderTop: '4px solid #FF6B35',
+    borderRadius: '50%',
+    width: '40px',
+    height: '40px',
+    animation: 'spin 1s linear infinite',
+    margin: '0 auto 20px',
+  },
+  cardLeavingDate: {
+    fontSize: '0.85rem',
+    color: '#f44336',
+    margin: '5px 0',
+  },
+  cardStatus: {
+    fontSize: '0.85rem',
+    color: '#666',
+    margin: '5px 0',
+  },
+  employeeStatus: {
+    fontSize: '0.9rem',
+    color: '#666',
+    margin: '5px 0',
+  },
 };
+// Add CSS animation for loading spinner
+const styleSheet = document.styleSheets[0];
+styleSheet.insertRule(`
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+`, styleSheet.cssRules.length);
+
 
 export default Staff;

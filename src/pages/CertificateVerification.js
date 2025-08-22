@@ -48,11 +48,27 @@ function CertificateVerification() {
     }
   };
 
+  const calculateWorkingPeriod = (joinDate, leavingDate) => {
+    const join = new Date(joinDate);
+    const end = leavingDate ? new Date(leavingDate) : new Date();
+    const diffTime = Math.abs(end - join);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const years = Math.floor(diffDays / 365);
+    const months = Math.floor((diffDays % 365) / 30);
+    
+    if (years > 0) {
+      return `${years} year${years > 1 ? 's' : ''} and ${months} month${months > 1 ? 's' : ''}`;
+    } else {
+      return `${months} month${months > 1 ? 's' : ''}`;
+    }
+  };
+
   if (loading) {
     return (
       <div style={styles.container}>
         <div style={styles.header}>
           <h1>Verifying Certificate...</h1>
+          <div style={styles.loadingSpinner}></div>
         </div>
       </div>
     );
@@ -110,6 +126,12 @@ function CertificateVerification() {
                     <h2 style={styles.employeeName}>{employee.name}</h2>
                     <p style={styles.employeeTitle}>{employee.position}</p>
                     <p style={styles.employeeDept}>{employee.department} Department</p>
+                    <p style={styles.employeeStatus}>
+                      Status: <span style={{
+                        color: employee.status === 'active' ? '#4caf50' : 
+                               employee.status === 'inactive' ? '#f44336' : '#ff9800'
+                      }}>{employee.status}</span>
+                    </p>
                   </div>
                 </div>
 
@@ -118,13 +140,16 @@ function CertificateVerification() {
                     <strong>Employee ID:</strong> {employee.employee_id}
                   </div>
                   <div style={styles.detailItem}>
-                    <strong>Employment Period:</strong> {new Date(employee.join_date).toLocaleDateString()} to Present
+                    <strong>Employment Period:</strong> {new Date(employee.join_date).toLocaleDateString()} to {employee.leaving_date ? new Date(employee.leaving_date).toLocaleDateString() : 'Present'}
                   </div>
                   <div style={styles.detailItem}>
-                    <strong>Experience:</strong> {calculateWorkingPeriod(employee.join_date)}
+                    <strong>Experience:</strong> {calculateWorkingPeriod(employee.join_date, employee.leaving_date)}
                   </div>
                   <div style={styles.detailItem}>
                     <strong>Last Position:</strong> {employee.position}
+                  </div>
+                  <div style={styles.detailItem}>
+                    <strong>Last Salary:</strong> Rs {employee.salary.toLocaleString()}
                   </div>
                 </div>
               </div>
@@ -148,6 +173,7 @@ function CertificateVerification() {
                 <li>The certificate ID is invalid or expired</li>
                 <li>The certificate has been altered or tampered with</li>
                 <li>The QR code was scanned incorrectly</li>
+                <li>The employee record has been removed from our system</li>
               </ul>
               <p style={styles.statusText}>
                 Please contact Syed Solar Energy HR department for assistance.
@@ -160,51 +186,42 @@ function CertificateVerification() {
   );
 }
 
-// Helper function to calculate working period
-const calculateWorkingPeriod = (joinDate) => {
-  const join = new Date(joinDate);
-  const now = new Date();
-  const diffTime = Math.abs(now - join);
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  const years = Math.floor(diffDays / 365);
-  const months = Math.floor((diffDays % 365) / 30);
-  
-  if (years > 0) {
-    return `${years} year${years > 1 ? 's' : ''} and ${months} month${months > 1 ? 's' : ''}`;
-  } else {
-    return `${months} month${months > 1 ? 's' : ''}`;
-  }
-};
-
 const styles = {
   container: {
     padding: '20px',
     fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
     maxWidth: '800px',
     margin: '0 auto',
+    minHeight: '100vh',
+    background: 'linear-gradient(135deg, #FFF8F0 0%, #FFEBDD 100%)',
   },
   header: {
     textAlign: 'center',
     marginBottom: '30px',
-    padding: '20px',
+    padding: '30px',
     background: 'linear-gradient(135deg, #FF6B35, #F7931E)',
-    borderRadius: '15px',
+    borderRadius: '20px',
     color: 'white',
+    boxShadow: '0 10px 30px rgba(255, 107, 53, 0.3)',
   },
   title: {
-    fontSize: '2.2rem',
+    fontSize: '2.5rem',
+    fontWeight: '700',
     margin: '0 0 10px 0',
+    textShadow: '0 2px 10px rgba(0,0,0,0.2)',
   },
   subtitle: {
     fontSize: '1.1rem',
     opacity: '0.9',
     margin: 0,
+    fontWeight: '300',
   },
   content: {
     background: 'white',
-    borderRadius: '15px',
-    padding: '25px',
-    boxShadow: '0 5px 15px rgba(0,0,0,0.1)',
+    borderRadius: '20px',
+    padding: '30px',
+    boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
+    marginBottom: '30px',
   },
   verificationSuccess: {
     textAlign: 'center',
@@ -225,13 +242,16 @@ const styles = {
     fontSize: '1rem',
     color: '#666',
     lineHeight: '1.6',
+    maxWidth: '600px',
+    margin: '0 auto',
   },
   detailsCard: {
     background: '#f9f9f9',
-    borderRadius: '10px',
-    padding: '20px',
-    marginBottom: '20px',
+    borderRadius: '15px',
+    padding: '25px',
+    marginBottom: '25px',
     textAlign: 'left',
+    border: '1px solid #e0e0e0',
   },
   detailsTitle: {
     fontSize: '1.4rem',
@@ -246,9 +266,9 @@ const styles = {
     gap: '15px',
   },
   detailItem: {
-    padding: '10px',
+    padding: '15px',
     background: 'white',
-    borderRadius: '8px',
+    borderRadius: '10px',
     border: '1px solid #e0e0e0',
   },
   verifiedBadge: {
@@ -261,10 +281,11 @@ const styles = {
   },
   employeeCard: {
     background: '#f9f9f9',
-    borderRadius: '10px',
-    padding: '20px',
-    marginBottom: '20px',
+    borderRadius: '15px',
+    padding: '25px',
+    marginBottom: '25px',
     textAlign: 'left',
+    border: '1px solid #e0e0e0',
   },
   employeeDetails: {
     marginTop: '15px',
@@ -274,19 +295,20 @@ const styles = {
     alignItems: 'center',
     gap: '20px',
     marginBottom: '20px',
-    padding: '15px',
+    padding: '20px',
     background: 'white',
-    borderRadius: '10px',
+    borderRadius: '15px',
+    border: '1px solid #e0e0e0',
   },
   employeeAvatar: {
-    width: '60px',
-    height: '60px',
+    width: '80px',
+    height: '80px',
     borderRadius: '50%',
     background: 'linear-gradient(135deg, #FF6B35, #F7931E)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontSize: '1.5rem',
+    fontSize: '2rem',
     fontWeight: '700',
     color: 'white',
   },
@@ -294,19 +316,24 @@ const styles = {
     flex: 1,
   },
   employeeName: {
-    fontSize: '1.5rem',
+    fontSize: '2rem',
     fontWeight: '700',
     margin: '0 0 5px 0',
     color: '#333',
   },
   employeeTitle: {
-    fontSize: '1.1rem',
+    fontSize: '1.2rem',
     color: '#666',
     margin: '0 0 5px 0',
   },
   employeeDept: {
     fontSize: '1rem',
     color: '#999',
+    margin: '0 0 5px 0',
+  },
+  employeeStatus: {
+    fontSize: '1rem',
+    color: '#666',
     margin: '0',
   },
   actions: {
@@ -316,11 +343,12 @@ const styles = {
     background: 'linear-gradient(135deg, #2196f3, #1976d2)',
     color: 'white',
     border: 'none',
-    borderRadius: '8px',
+    borderRadius: '10px',
     padding: '12px 24px',
     cursor: 'pointer',
     fontSize: '1rem',
     fontWeight: '600',
+    boxShadow: '0 5px 15px rgba(33, 150, 243, 0.3)',
   },
   verificationError: {
     textAlign: 'center',
@@ -330,6 +358,15 @@ const styles = {
     display: 'inline-block',
     margin: '15px 0',
     color: '#d32f2f',
+  },
+  loadingSpinner: {
+    border: '4px solid rgba(255, 255, 255, 0.3)',
+    borderTop: '4px solid white',
+    borderRadius: '50%',
+    width: '40px',
+    height: '40px',
+    animation: 'spin 1s linear infinite',
+    margin: '20px auto',
   },
 };
 
