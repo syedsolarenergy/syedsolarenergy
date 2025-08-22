@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import jsPDF from "jspdf";
+import QRCode from "qrcode";
 
 function Staff() {
   const [staffList, setStaffList] = useState([]);
@@ -185,83 +186,169 @@ function Staff() {
     setShowAddForm(true);
   };
 
-  const generateExperienceCertificate = (employee) => {
+const generateExperienceCertificate = async (employee) => {
+  try {
     const pdf = new jsPDF();
     const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
     
-    // Header
-    pdf.setFontSize(20);
-    pdf.setFont("helvetica", "bold");
-    pdf.text("SYED SOLAR ENERGY PVT LTD", pageWidth / 2, 30, { align: "center" });
+    // Add background color with company theme
+    pdf.setFillColor(255, 107, 53); // Orange color
+    pdf.rect(0, 0, pageWidth, pageHeight, 'F');
     
-    pdf.setFontSize(12);
-    pdf.setFont("helvetica", "normal");
-    pdf.text("Jalil Market Umar Gull Chwock Bara Road near Bacha Khan International Airport, Peshawar", pageWidth / 2, 40, { align: "center" });
-    pdf.text("📞 0304-4678929 | 📧 sales@syedsolarenergy.com", pageWidth / 2, 50, { align: "center" });
+    // White content area
+    pdf.setFillColor(255, 255, 255);
+    pdf.rect(10, 10, pageWidth - 20, pageHeight - 20, 'F');
+    
+    // Load and add company logo
+    try {
+      const logoResponse = await fetch('/logo.png');
+      const logoBlob = await logoResponse.blob();
+      const logoDataUrl = await new Promise(resolve => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.readAsDataURL(logoBlob);
+      });
+      
+      pdf.addImage(logoDataUrl, 'PNG', pageWidth/2 - 25, 20, 50, 50);
+    } catch (error) {
+      console.log("Logo not found, using text fallback");
+      pdf.setFontSize(20);
+      pdf.setFont("helvetica", "bold");
+      pdf.setTextColor(255, 107, 53);
+      pdf.text("SYED SOLAR ENERGY", pageWidth / 2, 40, { align: "center" });
+    }
+    
+    // Certificate border with company colors
+    pdf.setDrawColor(255, 107, 53);
+    pdf.setLineWidth(1);
+    pdf.rect(15, 15, pageWidth - 30, pageHeight - 30);
     
     // Certificate Title
-    pdf.setFontSize(18);
+    pdf.setFontSize(24);
     pdf.setFont("helvetica", "bold");
-    pdf.text("EXPERIENCE CERTIFICATE", pageWidth / 2, 80, { align: "center" });
+    pdf.setTextColor(40, 40, 40);
+    pdf.text("CERTIFICATE OF EXPERIENCE", pageWidth / 2, 90, { align: "center" });
+    
+    // Decorative elements
+    pdf.setDrawColor(255, 107, 53);
+    pdf.setLineWidth(0.5);
+    pdf.line(50, 95, pageWidth/2 - 40, 95);
+    pdf.line(pageWidth/2 + 40, 95, pageWidth - 50, 95);
     
     // Content
     pdf.setFontSize(12);
     pdf.setFont("helvetica", "normal");
     
-    const joinDate = new Date(employee.joinDate).toLocaleDateString();
-    const currentDate = new Date().toLocaleDateString();
+    const joinDate = new Date(employee.joinDate).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    
+    const currentDate = new Date().toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    
     const workingPeriod = calculateWorkingPeriod(employee.joinDate);
     
     const certificateText = [
-      "",
       "TO WHOM IT MAY CONCERN",
       "",
-      `This is to certify that Mr./Ms. ${employee.name} (Employee ID: ${employee.employeeId})`,
-      `has been working with Syed Solar Energy Pvt Ltd as ${employee.position}`,
-      `in the ${employee.department} department.`,
+      `This is to certify that ${employee.name} (Employee ID: ${employee.employeeId}) has been employed with`,
+      "Syed Solar Energy Pvt Ltd from " + joinDate + " to " + currentDate + ".",
       "",
-      `Period of Employment: ${joinDate} to ${currentDate}`,
-      `Total Experience: ${workingPeriod}`,
+      `During this period, ${employee.name.split(' ')[0]} served as ${employee.position} in the ${employee.department} department`,
+      "and performed duties with dedication, professionalism, and integrity.",
       "",
-      "During the employment period, the employee has shown:",
-      "• Dedication and commitment to work",
-      "• Professional competence in solar energy systems",
-      "• Good conduct and discipline",
-      "• Teamwork and collaboration skills",
+      `${employee.name.split(' ')[0]}'s key responsibilities included:`,
+      "• Installation and maintenance of solar energy systems",
+      "• Technical troubleshooting and problem resolution",
+      "• Customer service and support",
+      "• Quality assurance and compliance with industry standards",
       "",
-      `Last drawn salary: Rs. ${employee.salary.toLocaleString()} per month`,
+      `Throughout ${employee.name.split(' ')[0]}'s employment, ${employee.gender === 'female' ? 'she' : 'he'} demonstrated:`,
+      "• Exceptional technical skills and knowledge",
+      "• Strong work ethic and reliability",
+      "• Excellent teamwork and communication abilities",
+      "• Commitment to company values and customer satisfaction",
       "",
-      "We wish him/her all the best for future endeavors.",
+      `${employee.name.split(' ')[0]}'s last drawn salary was Rs. ${employee.salary.toLocaleString()} per month.`,
       "",
-      "This certificate is issued upon request for official purposes.",
+      `We wish ${employee.name.split(' ')[0]} the very best in ${employee.gender === 'female' ? 'her' : 'his'} future endeavors and`,
+      "have no doubt that ${employee.gender === 'female' ? 'she' : 'he'} will be a valuable asset to any organization.",
+      "",
+      "This certificate is issued upon request and for official purposes.",
     ];
     
-    let yPosition = 110;
+    let yPosition = 120;
     certificateText.forEach(line => {
       if (line === "TO WHOM IT MAY CONCERN") {
         pdf.setFont("helvetica", "bold");
+        pdf.setTextColor(255, 107, 53);
         pdf.text(line, pageWidth / 2, yPosition, { align: "center" });
         pdf.setFont("helvetica", "normal");
+        pdf.setTextColor(40, 40, 40);
       } else {
-        pdf.text(line, 20, yPosition);
+        pdf.text(line, pageWidth / 2, yPosition, { align: "center" });
       }
-      yPosition += 10;
+      yPosition += 6;
     });
     
-    // Footer
-    yPosition += 30;
-    pdf.setFont("helvetica", "bold");
-    pdf.text("SYED SOLAR ENERGY PVT LTD", 20, yPosition);
-    yPosition += 20;
-    pdf.text("_________________________", 20, yPosition);
-    pdf.text("Authorized Signatory", 20, yPosition + 10);
+    // Generate verification QR code
+    const verificationUrl = `${window.location.origin}/verify-certificate?id=${employee.employeeId}`;
+    const qrCodeDataUrl = await QRCode.toDataURL(verificationUrl, {
+      width: 80,
+      margin: 1,
+      color: {
+        dark: '#FF6B35',
+        light: '#FFFFFF'
+      }
+    });
     
-    pdf.text(`Date: ${currentDate}`, pageWidth - 80, yPosition);
-    pdf.text("Seal:", pageWidth - 80, yPosition + 20);
+    // Add QR code to PDF
+    pdf.addImage(qrCodeDataUrl, 'PNG', pageWidth - 50, pageHeight - 60, 40, 40);
+    pdf.setFontSize(8);
+    pdf.setTextColor(100, 100, 100);
+    pdf.text("Scan to verify authenticity", pageWidth - 30, pageHeight - 65, { align: "center" });
+    
+    // Add digital stamp
+    pdf.setDrawColor(255, 107, 53);
+    pdf.setFillColor(255, 236, 179);
+    pdf.circle(50, pageHeight - 50, 20, 'FD');
+    
+    pdf.setFontSize(10);
+    pdf.setTextColor(255, 107, 53);
+    pdf.setFont("helvetica", "bold");
+    pdf.text("VERIFIED", 50, pageHeight - 52, { align: "center" });
+    pdf.text("DIGITAL", 50, pageHeight - 47, { align: "center" });
+    pdf.text("STAMP", 50, pageHeight - 42, { align: "center" });
+    
+    // Add signature area
+    pdf.setDrawColor(200, 200, 200);
+    pdf.line(pageWidth - 100, pageHeight - 80, pageWidth - 20, pageHeight - 80);
+    
+    pdf.setFontSize(10);
+    pdf.setTextColor(40, 40, 40);
+    pdf.text("Authorized Signatory", pageWidth - 60, pageHeight - 70, { align: "center" });
+    pdf.text("Syed Solar Energy Pvt Ltd", pageWidth - 60, pageHeight - 65, { align: "center" });
+    
+    // Certificate number and issue date
+    const certNumber = `SSE-${employee.employeeId}-${new Date().getFullYear()}`;
+    pdf.setFontSize(8);
+    pdf.setTextColor(100, 100, 100);
+    pdf.text(`Certificate ID: ${certNumber}`, 20, pageHeight - 20);
+    pdf.text(`Issue Date: ${new Date().toLocaleDateString()}`, 20, pageHeight - 15);
     
     // Save PDF
     pdf.save(`Experience_Certificate_${employee.name.replace(/\s+/g, '_')}.pdf`);
-  };
+  } catch (error) {
+    console.error("Error generating certificate:", error);
+    alert("Failed to generate certificate. Please try again.");
+  }
+};
 
   const calculateWorkingPeriod = (joinDate) => {
     const join = new Date(joinDate);

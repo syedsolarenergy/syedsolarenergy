@@ -38,6 +38,7 @@ import ChangePassword from "./pages/ChangePassword";
 // Legacy Admin Panel (keeping for backward compatibility)
 import AdminPanel from "./pages/AdminPanel";
 import EmailVerified from "./pages/email-verified";
+import CertificateVerification from './pages/CertificateVerification';
 
 function AppContent() {
   const location = useLocation();
@@ -100,6 +101,7 @@ function AppContent() {
           {/* Legacy Admin Panel (keeping for backward compatibility) */}
           <Route path="/adminpanel" element={<AdminPanel />} />
           <Route path="/email-verified" element={<EmailVerified />} />
+          <Route path="/verify-certificate" element={<CertificateVerification />} />
 
           {/* Enhanced Auth Pages with Supabase Integration */}
           <Route path="/login" element={<Login />} />
