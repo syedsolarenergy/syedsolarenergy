@@ -478,64 +478,37 @@ const generateExperienceCertificate = async (employee) => {
   }
 };
 
-// Helper function to calculate working period
-const calculateWorkingPeriod = (joinDate) => {
-  const join = new Date(joinDate);
-  const now = new Date();
-  const diffTime = Math.abs(now - join);
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  const years = Math.floor(diffDays / 365);
-  const months = Math.floor((diffDays % 365) / 30);
-  
-  if (years > 0 && months > 0) {
-    return `${years} year${years > 1 ? 's' : ''} and ${months} month${months > 1 ? 's' : ''}`;
-  } else if (years > 0) {
-    return `${years} year${years > 1 ? 's' : ''}`;
-  } else {
-    return `${months} month${months > 1 ? 's' : ''}`;
-  }
-};
-
-// Helper function to convert numbers to words (basic implementation)
-const numberToWords = (num) => {
-  const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'];
-  const teens = ['Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
-  const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
-  
-  if (num === 0) return 'Zero';
-  
-  function convertHundreds(n) {
-    let result = '';
+  const calculateWorkingPeriod = (joinDate) => {
+    const join = new Date(joinDate);
+    const now = new Date();
+    const diffTime = Math.abs(now - join);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const years = Math.floor(diffDays / 365);
+    const months = Math.floor((diffDays % 365) / 30);
     
-    if (n >= 100) {
-      result += ones[Math.floor(n / 100)] + ' Hundred ';
-      n %= 100;
-    }
-    
-    if (n >= 10 && n < 20) {
-      result += teens[n - 10] + ' ';
+    if (years > 0) {
+      return `${years} year${years > 1 ? 's' : ''} and ${months} month${months > 1 ? 's' : ''}`;
     } else {
-      if (n >= 20) {
-        result += tens[Math.floor(n / 10)] + ' ';
-        n %= 10;
-      }
-      if (n > 0) {
-        result += ones[n] + ' ';
-      }
+      return `${months} month${months > 1 ? 's' : ''}`;
     }
-    
-    return result;
-  }
-  
-  if (num >= 100000) {
-    return convertHundreds(Math.floor(num / 100000)) + 'Lakh ' + convertHundreds(num % 100000).replace('Hundred', 'Thousand');
-  } else if (num >= 1000) {
-    return convertHundreds(Math.floor(num / 1000)) + 'Thousand ' + convertHundreds(num % 1000);
-  } else {
-    return convertHundreds(num);
-  }
-};
+  };
 
+  const filteredStaff = staffList
+    .filter(emp => {
+      const matchesSearch = emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          emp.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          emp.employeeId.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesDepartment = filterDepartment === "all" || emp.department === filterDepartment;
+      return matchesSearch && matchesDepartment;
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case "name": return a.name.localeCompare(b.name);
+        case "salary": return b.salary - a.salary;
+        case "joinDate": return new Date(b.joinDate) - new Date(a.joinDate);
+        default: return 0;
+      }
+    });
 
   return (
     <div style={styles.container}>
