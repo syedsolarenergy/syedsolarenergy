@@ -188,199 +188,354 @@ function Staff() {
 
 const generateExperienceCertificate = async (employee) => {
   try {
-    const pdf = new jsPDF();
+    const pdf = new jsPDF('portrait', 'mm', 'a4');
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
     
-    // Add background color with company theme
-    pdf.setFillColor(255, 107, 53); // Orange color
+    // Company colors
+    const primaryColor = [255, 107, 53]; // Orange
+    const secondaryColor = [40, 40, 40]; // Dark gray
+    const lightGray = [245, 245, 245];
+    
+    // Add elegant background
+    pdf.setFillColor(...lightGray);
     pdf.rect(0, 0, pageWidth, pageHeight, 'F');
     
-    // White content area
+    // Main content area with white background
     pdf.setFillColor(255, 255, 255);
-    pdf.rect(10, 10, pageWidth - 20, pageHeight - 20, 'F');
+    pdf.roundedRect(10, 10, pageWidth - 20, pageHeight - 20, 3, 3, 'F');
     
-    // Load and add company logo
+    // Decorative header background
+    pdf.setFillColor(...primaryColor);
+    pdf.roundedRect(15, 15, pageWidth - 30, 25, 2, 2, 'F');
+    
+    // Company logo and header
+    let logoYPosition = 45;
     try {
       const logoResponse = await fetch('/logo.png');
-      const logoBlob = await logoResponse.blob();
-      const logoDataUrl = await new Promise(resolve => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result);
-        reader.readAsDataURL(logoBlob);
-      });
-      
-      pdf.addImage(logoDataUrl, 'PNG', pageWidth/2 - 25, 20, 50, 50);
+      if (logoResponse.ok) {
+        const logoBlob = await logoResponse.blob();
+        const logoDataUrl = await new Promise(resolve => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.readAsDataURL(logoBlob);
+        });
+        
+        // Add logo
+        pdf.addImage(logoDataUrl, 'PNG', pageWidth/2 - 15, 25, 30, 30);
+        logoYPosition = 65;
+      } else {
+        throw new Error('Logo not found');
+      }
     } catch (error) {
-      console.log("Logo not found, using text fallback");
-      pdf.setFontSize(20);
+      console.log("Logo not found, using company name");
+      pdf.setFontSize(16);
       pdf.setFont("helvetica", "bold");
-      pdf.setTextColor(255, 107, 53);
-      pdf.text("SYED SOLAR ENERGY", pageWidth / 2, 40, { align: "center" });
+      pdf.setTextColor(255, 255, 255);
+      pdf.text("SYED SOLAR ENERGY", pageWidth / 2, 30, { align: "center" });
+      logoYPosition = 45;
     }
     
-    // Certificate border with company colors
-    pdf.setDrawColor(255, 107, 53);
-    pdf.setLineWidth(1);
-    pdf.rect(15, 15, pageWidth - 30, pageHeight - 30);
-    
-    // Certificate Title
-    pdf.setFontSize(24);
+    // Company name and details
+    pdf.setFontSize(22);
     pdf.setFont("helvetica", "bold");
-    pdf.setTextColor(40, 40, 40);
-    pdf.text("CERTIFICATE OF EXPERIENCE", pageWidth / 2, 90, { align: "center" });
+    pdf.setTextColor(...primaryColor);
+    pdf.text("SYED SOLAR ENERGY PVT LTD", pageWidth / 2, logoYPosition, { align: "center" });
     
-    // Decorative elements
-    pdf.setDrawColor(255, 107, 53);
+    pdf.setFontSize(10);
+    pdf.setFont("helvetica", "normal");
+    pdf.setTextColor(...secondaryColor);
+    pdf.text("Renewable Energy Solutions | Solar Installation & Maintenance", pageWidth / 2, logoYPosition + 6, { align: "center" });
+    pdf.text("Email: info@syedsolarenergy.com | Phone: +92-XXX-XXXXXXX", pageWidth / 2, logoYPosition + 11, { align: "center" });
+    pdf.text("Address: [Company Address], Pakistan", pageWidth / 2, logoYPosition + 16, { align: "center" });
+    
+    // Decorative line
+    pdf.setDrawColor(...primaryColor);
     pdf.setLineWidth(0.5);
-    pdf.line(50, 95, pageWidth/2 - 40, 95);
-    pdf.line(pageWidth/2 + 40, 95, pageWidth - 50, 95);
+    pdf.line(30, logoYPosition + 22, pageWidth - 30, logoYPosition + 22);
     
-    // Content
+    // Certificate title with elegant styling
+    const titleY = logoYPosition + 35;
+    pdf.setFillColor(250, 250, 250);
+    pdf.roundedRect(25, titleY - 8, pageWidth - 50, 16, 2, 2, 'F');
+    
+    pdf.setFontSize(24);
+    pdf.setFont("times", "bold");
+    pdf.setTextColor(...primaryColor);
+    pdf.text("EXPERIENCE CERTIFICATE", pageWidth / 2, titleY, { align: "center" });
+    
+    // Certificate number and date (top right)
+    const certNumber = `SSE-EXP-${employee.employeeId}-${new Date().getFullYear()}`;
+    pdf.setFontSize(8);
+    pdf.setFont("helvetica", "normal");
+    pdf.setTextColor(100, 100, 100);
+    pdf.text(`Certificate No: ${certNumber}`, pageWidth - 20, 25, { align: "right" });
+    pdf.text(`Date: ${new Date().toLocaleDateString('en-GB')}`, pageWidth - 20, 30, { align: "right" });
+    
+    // Main content area
+    const contentStartY = titleY + 25;
     pdf.setFontSize(12);
     pdf.setFont("helvetica", "normal");
+    pdf.setTextColor(...secondaryColor);
     
-    const joinDate = new Date(employee.joinDate).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-    
-    const currentDate = new Date().toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-    
+    // Calculate dates and period
+    const joinDate = new Date(employee.joinDate);
+    const currentDate = new Date();
     const workingPeriod = calculateWorkingPeriod(employee.joinDate);
     
-    const certificateText = [
-      "TO WHOM IT MAY CONCERN",
-      "",
-      `This is to certify that ${employee.name} (Employee ID: ${employee.employeeId}) has been employed with`,
-      "Syed Solar Energy Pvt Ltd from " + joinDate + " to " + currentDate + ".",
-      "",
-      `During this period, ${employee.name.split(' ')[0]} served as ${employee.position} in the ${employee.department} department`,
-      "and performed duties with dedication, professionalism, and integrity.",
-      "",
-      `${employee.name.split(' ')[0]}'s key responsibilities included:`,
-      "• Installation and maintenance of solar energy systems",
-      "• Technical troubleshooting and problem resolution",
-      "• Customer service and support",
-      "• Quality assurance and compliance with industry standards",
-      "",
-      `Throughout ${employee.name.split(' ')[0]}'s employment, ${employee.gender === 'female' ? 'she' : 'he'} demonstrated:`,
-      "• Exceptional technical skills and knowledge",
-      "• Strong work ethic and reliability",
-      "• Excellent teamwork and communication abilities",
-      "• Commitment to company values and customer satisfaction",
-      "",
-      `${employee.name.split(' ')[0]}'s last drawn salary was Rs. ${employee.salary.toLocaleString()} per month.`,
-      "",
-      `We wish ${employee.name.split(' ')[0]} the very best in ${employee.gender === 'female' ? 'her' : 'his'} future endeavors and`,
-      "have no doubt that ${employee.gender === 'female' ? 'she' : 'he'} will be a valuable asset to any organization.",
-      "",
-      "This certificate is issued upon request and for official purposes.",
+    const joinDateStr = joinDate.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    
+    const currentDateStr = currentDate.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    
+    // Content with proper spacing
+    let yPos = contentStartY;
+    const lineHeight = 6;
+    const marginLeft = 25;
+    const marginRight = 25;
+    const contentWidth = pageWidth - marginLeft - marginRight;
+    
+    // TO WHOM IT MAY CONCERN
+    pdf.setFont("helvetica", "bold");
+    pdf.setTextColor(...primaryColor);
+    pdf.text("TO WHOM IT MAY CONCERN", pageWidth / 2, yPos, { align: "center" });
+    yPos += lineHeight * 2;
+    
+    // Main certificate text
+    pdf.setFont("helvetica", "normal");
+    pdf.setTextColor(...secondaryColor);
+    
+    const paragraphs = [
+      `This is to certify that Mr./Ms. ${employee.name} (Employee ID: ${employee.employeeId}) was employed with Syed Solar Energy Pvt Ltd as ${employee.position} in the ${employee.department} Department from ${joinDateStr} to ${currentDateStr}.`,
+      
+      `During this employment period of ${workingPeriod}, ${employee.name.split(' ')[0]} has served the organization with utmost dedication, professionalism, and integrity. ${employee.gender === 'female' ? 'She' : 'He'} consistently demonstrated exceptional performance in ${employee.gender === 'female' ? 'her' : 'his'} assigned duties and responsibilities.`,
+      
+      `${employee.name.split(' ')[0]}'s primary responsibilities included:
+      • Planning, installation, and commissioning of solar PV systems
+      • Conducting site assessments and technical feasibility studies
+      • Maintenance and troubleshooting of solar energy installations
+      • Quality control and compliance with safety standards
+      • Customer relationship management and technical support
+      • Training and mentoring junior technical staff`,
+      
+      `Throughout ${employee.gender === 'female' ? 'her' : 'his'} tenure, ${employee.name.split(' ')[0]} consistently exhibited:
+      • Outstanding technical competency and problem-solving skills
+      • Strong leadership qualities and team collaboration
+      • Commitment to workplace safety and environmental standards
+      • Professional conduct and excellent communication abilities
+      • Innovation in sustainable energy solutions`,
+      
+      `${employee.name.split(' ')[0]}'s last drawn gross monthly salary was Rs. ${employee.salary.toLocaleString()}/- (Rupees ${numberToWords(employee.salary)} only).`,
+      
+      `We found ${employee.gender === 'female' ? 'her' : 'him'} to be honest, hardworking, and reliable during ${employee.gender === 'female' ? 'her' : 'his'} association with our organization. ${employee.gender === 'female' ? 'She' : 'He'} is leaving the organization on ${employee.gender === 'female' ? 'her' : 'his'} own accord for career advancement.`,
+      
+      `We wish ${employee.name.split(' ')[0]} all the best in ${employee.gender === 'female' ? 'her' : 'his'} future endeavors and strongly recommend ${employee.gender === 'female' ? 'her' : 'him'} for any suitable position in ${employee.gender === 'female' ? 'her' : 'his'} field of expertise.`,
+      
+      `This certificate is issued upon request and is valid for all official purposes without any alteration.`
     ];
     
-    let yPosition = 120;
-    certificateText.forEach(line => {
-      if (line === "TO WHOM IT MAY CONCERN") {
-        pdf.setFont("helvetica", "bold");
-        pdf.setTextColor(255, 107, 53);
-        pdf.text(line, pageWidth / 2, yPosition, { align: "center" });
-        pdf.setFont("helvetica", "normal");
-        pdf.setTextColor(40, 40, 40);
-      } else {
-        pdf.text(line, pageWidth / 2, yPosition, { align: "center" });
-      }
-      yPosition += 6;
+    paragraphs.forEach((paragraph, index) => {
+      const lines = pdf.splitTextToSize(paragraph, contentWidth);
+      lines.forEach(line => {
+        if (yPos > pageHeight - 80) { // Reserve space for footer elements
+          // Add new page if needed
+          pdf.addPage();
+          yPos = 30;
+        }
+        pdf.text(line, marginLeft, yPos);
+        yPos += lineHeight;
+      });
+      yPos += lineHeight * 0.5; // Extra space between paragraphs
     });
     
-    // Generate verification QR code
-    const verificationUrl = `${window.location.origin}/verify-certificate?id=${employee.employeeId}`;
-    const qrCodeDataUrl = await QRCode.toDataURL(verificationUrl, {
-      width: 80,
-      margin: 1,
-      color: {
-        dark: '#FF6B35',
-        light: '#FFFFFF'
-      }
-    });
+    // Ensure we have space for signature and footer
+    if (yPos > pageHeight - 70) {
+      pdf.addPage();
+      yPos = 30;
+    }
     
-    // Add QR code to PDF
-    pdf.addImage(qrCodeDataUrl, 'PNG', pageWidth - 50, pageHeight - 60, 40, 40);
-    pdf.setFontSize(8);
-    pdf.setTextColor(100, 100, 100);
-    pdf.text("Scan to verify authenticity", pageWidth - 30, pageHeight - 65, { align: "center" });
+    // Signature section
+    yPos = Math.max(yPos + 10, pageHeight - 60);
     
-    // Add digital stamp
-    pdf.setDrawColor(255, 107, 53);
-    pdf.setFillColor(255, 236, 179);
-    pdf.circle(50, pageHeight - 50, 20, 'FD');
+    // Digital stamp (left side)
+    const stampX = 40;
+    const stampY = yPos - 5;
+    pdf.setDrawColor(...primaryColor);
+    pdf.setFillColor(255, 248, 240);
+    pdf.circle(stampX, stampY, 18, 'FD');
     
     pdf.setFontSize(10);
-    pdf.setTextColor(255, 107, 53);
+    pdf.setTextColor(...primaryColor);
     pdf.setFont("helvetica", "bold");
-    pdf.text("VERIFIED", 50, pageHeight - 52, { align: "center" });
-    pdf.text("DIGITAL", 50, pageHeight - 47, { align: "center" });
-    pdf.text("STAMP", 50, pageHeight - 42, { align: "center" });
+    pdf.text("DIGITALLY", stampX, stampY - 8, { align: "center" });
+    pdf.text("VERIFIED", stampX, stampY - 3, { align: "center" });
+    pdf.text("AUTHENTIC", stampX, stampY + 2, { align: "center" });
     
-    // Add signature area
-    pdf.setDrawColor(200, 200, 200);
-    pdf.line(pageWidth - 100, pageHeight - 80, pageWidth - 20, pageHeight - 80);
-    
-    pdf.setFontSize(10);
-    pdf.setTextColor(40, 40, 40);
-    pdf.text("Authorized Signatory", pageWidth - 60, pageHeight - 70, { align: "center" });
-    pdf.text("Syed Solar Energy Pvt Ltd", pageWidth - 60, pageHeight - 65, { align: "center" });
-    
-    // Certificate number and issue date
-    const certNumber = `SSE-${employee.employeeId}-${new Date().getFullYear()}`;
+    const currentYear = new Date().getFullYear();
     pdf.setFontSize(8);
-    pdf.setTextColor(100, 100, 100);
-    pdf.text(`Certificate ID: ${certNumber}`, 20, pageHeight - 20);
-    pdf.text(`Issue Date: ${new Date().toLocaleDateString()}`, 20, pageHeight - 15);
+    pdf.text(currentYear.toString(), stampX, stampY + 8, { align: "center" });
+    
+    // Signature area (right side)
+    const signatureX = pageWidth - 60;
+    pdf.setDrawColor(150, 150, 150);
+    pdf.setLineWidth(0.5);
+    pdf.line(signatureX - 30, yPos + 5, signatureX + 10, yPos + 5);
+    
+    pdf.setFontSize(11);
+    pdf.setTextColor(...secondaryColor);
+    pdf.setFont("helvetica", "bold");
+    pdf.text("Authorized Signatory", signatureX - 10, yPos + 12, { align: "center" });
+    
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(10);
+    pdf.text("Human Resources Department", signatureX - 10, yPos + 17, { align: "center" });
+    pdf.text("Syed Solar Energy Pvt Ltd", signatureX - 10, yPos + 22, { align: "center" });
+    
+    // Generate verification QR code with proper error correction
+    const verificationData = {
+      certificateId: certNumber,
+      employeeId: employee.employeeId,
+      employeeName: employee.name,
+      issueDate: new Date().toISOString(),
+      department: employee.department,
+      position: employee.position,
+      companyName: "Syed Solar Energy Pvt Ltd"
+    };
+    
+    const verificationUrl = `${window.location.origin}/verify-certificate?data=${btoa(JSON.stringify(verificationData))}`;
+    
+    try {
+      const qrCodeDataUrl = await QRCode.toDataURL(verificationUrl, {
+        width: 200,
+        margin: 2,
+        errorCorrectionLevel: 'M',
+        type: 'image/png',
+        quality: 1,
+        color: {
+          dark: '#FF6B35',
+          light: '#FFFFFF'
+        }
+      });
+      
+      // Add QR code (bottom right corner with proper spacing)
+      const qrSize = 35;
+      const qrX = pageWidth - qrSize - 15;
+      const qrY = pageHeight - qrSize - 15;
+      
+      // QR code background
+      pdf.setFillColor(255, 255, 255);
+      pdf.roundedRect(qrX - 2, qrY - 2, qrSize + 4, qrSize + 4, 1, 1, 'F');
+      
+      pdf.addImage(qrCodeDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
+      
+      pdf.setFontSize(7);
+      pdf.setTextColor(100, 100, 100);
+      pdf.text("Scan to verify", qrX + (qrSize/2), qrY + qrSize + 5, { align: "center" });
+      pdf.text("certificate authenticity", qrX + (qrSize/2), qrY + qrSize + 8, { align: "center" });
+    } catch (error) {
+      console.error("Error generating QR code:", error);
+    }
+    
+    // Footer with certificate details
+    pdf.setFontSize(7);
+    pdf.setTextColor(120, 120, 120);
+    pdf.text(`Certificate ID: ${certNumber} | Generated on: ${new Date().toLocaleString()}`, 15, pageHeight - 8);
+    pdf.text("This is a computer generated certificate and does not require physical signature.", 15, pageHeight - 5);
+    
+    // Border
+    pdf.setDrawColor(...primaryColor);
+    pdf.setLineWidth(0.8);
+    pdf.roundedRect(12, 12, pageWidth - 24, pageHeight - 24, 2, 2);
     
     // Save PDF
-    pdf.save(`Experience_Certificate_${employee.name.replace(/\s+/g, '_')}.pdf`);
+    const fileName = `Experience_Certificate_${employee.name.replace(/\s+/g, '_')}_${certNumber}.pdf`;
+    pdf.save(fileName);
+    
+    // Store certificate data for verification
+    const certificateRecord = {
+      ...verificationData,
+      fileName: fileName,
+      generatedAt: new Date().toISOString()
+    };
+    
+    // Save to localStorage for verification
+    const existingCertificates = JSON.parse(localStorage.getItem("issuedCertificates") || "[]");
+    existingCertificates.push(certificateRecord);
+    localStorage.setItem("issuedCertificates", JSON.stringify(existingCertificates));
+    
+    return certificateRecord;
+    
   } catch (error) {
     console.error("Error generating certificate:", error);
-    alert("Failed to generate certificate. Please try again.");
+    throw new Error("Failed to generate certificate. Please try again.");
   }
 };
 
-  const calculateWorkingPeriod = (joinDate) => {
-    const join = new Date(joinDate);
-    const now = new Date();
-    const diffTime = Math.abs(now - join);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    const years = Math.floor(diffDays / 365);
-    const months = Math.floor((diffDays % 365) / 30);
-    
-    if (years > 0) {
-      return `${years} year${years > 1 ? 's' : ''} and ${months} month${months > 1 ? 's' : ''}`;
-    } else {
-      return `${months} month${months > 1 ? 's' : ''}`;
-    }
-  };
+// Helper function to calculate working period
+const calculateWorkingPeriod = (joinDate) => {
+  const join = new Date(joinDate);
+  const now = new Date();
+  const diffTime = Math.abs(now - join);
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  const years = Math.floor(diffDays / 365);
+  const months = Math.floor((diffDays % 365) / 30);
+  
+  if (years > 0 && months > 0) {
+    return `${years} year${years > 1 ? 's' : ''} and ${months} month${months > 1 ? 's' : ''}`;
+  } else if (years > 0) {
+    return `${years} year${years > 1 ? 's' : ''}`;
+  } else {
+    return `${months} month${months > 1 ? 's' : ''}`;
+  }
+};
 
-  const filteredStaff = staffList
-    .filter(emp => {
-      const matchesSearch = emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          emp.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          emp.employeeId.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesDepartment = filterDepartment === "all" || emp.department === filterDepartment;
-      return matchesSearch && matchesDepartment;
-    })
-    .sort((a, b) => {
-      switch (sortBy) {
-        case "name": return a.name.localeCompare(b.name);
-        case "salary": return b.salary - a.salary;
-        case "joinDate": return new Date(b.joinDate) - new Date(a.joinDate);
-        default: return 0;
+// Helper function to convert numbers to words (basic implementation)
+const numberToWords = (num) => {
+  const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'];
+  const teens = ['Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+  const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+  
+  if (num === 0) return 'Zero';
+  
+  function convertHundreds(n) {
+    let result = '';
+    
+    if (n >= 100) {
+      result += ones[Math.floor(n / 100)] + ' Hundred ';
+      n %= 100;
+    }
+    
+    if (n >= 10 && n < 20) {
+      result += teens[n - 10] + ' ';
+    } else {
+      if (n >= 20) {
+        result += tens[Math.floor(n / 10)] + ' ';
+        n %= 10;
       }
-    });
+      if (n > 0) {
+        result += ones[n] + ' ';
+      }
+    }
+    
+    return result;
+  }
+  
+  if (num >= 100000) {
+    return convertHundreds(Math.floor(num / 100000)) + 'Lakh ' + convertHundreds(num % 100000).replace('Hundred', 'Thousand');
+  } else if (num >= 1000) {
+    return convertHundreds(Math.floor(num / 1000)) + 'Thousand ' + convertHundreds(num % 1000);
+  } else {
+    return convertHundreds(num);
+  }
+};
+
 
   return (
     <div style={styles.container}>
