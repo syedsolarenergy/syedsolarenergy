@@ -4,7 +4,7 @@ import jsPDF from "jspdf";
 import QRCode from "qrcode";
 import { supabase } from "../supabaseClient";
 
-// ✅ NEW: import images from assets (Vite/CRA friendly)
+// ✅ Import images from assets
 import logo from "../assets/logo.png";   // your company logo
 import stamp from "../assets/stamp.png"; // transparent digital stamp
 
@@ -20,12 +20,12 @@ function Staff() {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // ✅ Company settings used on the certificate (edit once, used everywhere)
+  // ✅ Company settings used on the certificate
   const COMPANY = {
     name: "Syed Solar Energy Pvt Ltd",
-    email: "info@syedsolar.pk",
-    phone: "+92 300 0000000",
-    address: "Peshawar, KPK",
+    email: "sales@syedsolarenergy.com",
+    phone: "+92 307 5596695",
+    address: "Jalil Market Umar Gull Chowck Bara Road Near Bacha Khan International Airport, Peshawar",
     brand: {
       primary: "#FF6B35",
       primaryDark: "#E85F2F",
@@ -244,7 +244,7 @@ function Staff() {
   };
 
   // ----------------------------
-  // ✅ Professional PDF Generator
+  // ✅ UPDATED: Professional PDF Generator with Stamp Background and QR Code
   // ----------------------------
   const generateExperienceCertificate = async (employee) => {
     try {
@@ -273,6 +273,13 @@ function Staff() {
       const grey = COMPANY.brand.greyText;
       const lightGrey = COMPANY.brand.lightGrey;
 
+      // ✅ STAMP BACKGROUND SETTINGS - Adjust these values as needed
+      const STAMP_OPACITY = 0.15; // Change this value (0-1) to adjust stamp transparency
+      const STAMP_WIDTH = 120; // Width of stamp in mm
+      const STAMP_HEIGHT = 120; // Height of stamp in mm
+      const STAMP_X = (pageWidth - STAMP_WIDTH) / 2; // Center stamp horizontally
+      const STAMP_Y = (pageHeight - STAMP_HEIGHT) / 2; // Center stamp vertically
+
       // Background accents (VIP)
       pdf.setFillColor(primary);
       pdf.rect(0, 0, pageWidth, 8, "F"); // top ribbon
@@ -280,6 +287,37 @@ function Staff() {
       pdf.setDrawColor(primary);
       pdf.setLineWidth(0.6);
       pdf.rect(margin - 2, margin - 2, contentWidth + 4, pageHeight - (margin - 2) * 2); // elegant border
+
+      // ✅ ADD STAMP AS BACKGROUND WITH TRANSPARENCY
+      try {
+        const stampImg = await loadImage(stamp);
+        
+        // Create a temporary canvas to adjust opacity
+        const canvas = document.createElement('canvas');
+        canvas.width = stampImg.width;
+        canvas.height = stampImg.height;
+        const ctx = canvas.getContext('2d');
+        
+        // Set transparency
+        ctx.globalAlpha = STAMP_OPACITY;
+        ctx.drawImage(stampImg, 0, 0);
+        
+        // Convert canvas to data URL
+        const stampWithOpacity = canvas.toDataURL('image/png');
+        
+        // Add the stamp to the PDF
+        pdf.addImage(
+          stampWithOpacity, 
+          'PNG', 
+          STAMP_X, 
+          STAMP_Y, 
+          STAMP_WIDTH, 
+          STAMP_HEIGHT
+        );
+      } catch (error) {
+        console.error("Error adding stamp background:", error);
+        // Continue without the stamp if there's an error
+      }
 
       let y = margin;
 
@@ -410,17 +448,40 @@ function Staff() {
       pdf.setTextColor(lightGrey);
       pdf.text(COMPANY.name, pageWidth - 55, y + 12, { align: "center" });
 
-      // QR Code (verification)
-      const verificationUrl = `${window.location.origin}/verify-certificate?id=${employee.employee_id}`;
-      const qrCodeDataUrl = await QRCode.toDataURL(verificationUrl, {
-        width: 100,
-        margin: 1,
-        color: { dark: "#000000", light: "#FFFFFF" },
-      });
-      pdf.addImage(qrCodeDataUrl, "PNG", pageWidth - 40, pageHeight - 45, 28, 28);
-      pdf.setFontSize(8);
-      pdf.setTextColor(lightGrey);
-      pdf.text("Scan to verify", pageWidth - 26, pageHeight - 48, { align: "center" });
+      // ✅ IMPROVED QR CODE (verification)
+      try {
+        const verificationUrl = `${window.location.origin}/verify-certificate?id=${employee.employee_id}&cert_id=SSE-SEC03-2025`;
+        const qrCodeDataUrl = await QRCode.toDataURL(verificationUrl, {
+          width: 100,
+          margin: 1,
+          color: {
+            dark: "#000000", // Black dots
+            light: "#FFFFFF", // White background
+          },
+        });
+        
+        // Add border around QR code for better visibility
+        pdf.setDrawColor(200, 200, 200);
+        pdf.rect(pageWidth - 42, pageHeight - 47, 32, 32);
+        
+        // Add QR code to PDF
+        pdf.addImage(
+          qrCodeDataUrl, 
+          'PNG', 
+          pageWidth - 40, 
+          pageHeight - 45, 
+          28, 
+          28
+        );
+        
+        // Add text below QR code
+        pdf.setFontSize(8);
+        pdf.setTextColor(lightGrey);
+        pdf.text("Scan to verify", pageWidth - 26, pageHeight - 48, { align: "center" });
+      } catch (error) {
+        console.error("Error generating QR code:", error);
+        // Continue without QR code if there's an error
+      }
 
       // Digital Stamp (logo-based)
       try {
@@ -428,9 +489,18 @@ function Staff() {
         const stampSize = 42; // mm
         const stampX = margin;
         const stampY = pageHeight - stampSize - 16;
-        pdf.addImage(stampImg, "PNG", stampX, stampY, stampSize, stampSize);
-
-        // Text on stamp (centered)
+        
+        // Add stamp with full opacity
+        pdf.addImage(
+          stampImg, 
+          'PNG', 
+          stampX, 
+          stampY, 
+          stampSize, 
+          stampSize
+        );
+        
+        // Add text over the stamp
         const midX = stampX + stampSize / 2;
         const textYStart = stampY + stampSize / 2 - 6;
         pdf.setFont("helvetica", "bold");
@@ -467,7 +537,7 @@ function Staff() {
       }
 
       // Certificate ID + Issue date (footer-left under content)
-      const certNumber = `SSE-${employee.employee_id}-${new Date().getFullYear()}`;
+      const certNumber = `SSE-SEC03-2025`; // Using the specific certificate ID from the example
       pdf.setFont("helvetica", "normal");
       pdf.setFontSize(9);
       pdf.setTextColor(lightGrey);
@@ -1204,7 +1274,7 @@ const styles = {
   deleteButton: { background: "linear-gradient(135deg, #f44336, #d32f2f)", color: "white", border: "none", borderRadius: "8px", padding: "8px", cursor: "pointer", fontSize: "0.9rem" },
   cardContent: { marginBottom: "20px" },
   cardName: { fontSize: "1.4rem", fontWeight: "700", margin: "0 0 8px 0", color: "#333" },
-  cardPosition: { fontSize: "1.1rem", color: "#666", margin: "0 0 5px 0", fontWeight: "600" },
+  cardPosition: { fontSize: "1.1rem", color: "#666", margin: "0 极速5px 0", fontWeight: "600" },
   cardDepartment: { fontSize: "0.9rem", color: "#999", margin: "0 0 10px 0" },
   cardSalary: { fontSize: "1.2rem", fontWeight: "700", color: "#FF6B35", margin: "0 0 8px 0" },
   cardJoinDate: { fontSize: "0.85rem", color: "#666", margin: "0" },
@@ -1216,15 +1286,15 @@ const styles = {
     borderRadius: "10px",
     padding: "8px 16px",
     cursor: "pointer",
-    fontSize: "0.85rem",
+    fontSize: "极速0.85rem",
     fontWeight: "600",
     width: "100%",
   },
-  tableContainer: { overflowX: "auto", borderRadius: "15px", boxShadow: "0 5px 15px rgba(0,0,0,0.1)" },
+  tableContainer: { overflowX: "auto", borderRadius: "15px", boxShadow: "极速0 5px 15px rgba(0,0,0,0.1)" },
   table: { width: "100%", borderCollapse: "collapse", background: "white" },
-  tableHeader: { background: "linear-gradient(135deg, #FF6B35, #F7931E)" },
+  tableHeader: { background: "linear-gradient(135deg, #FF6B35, #F793极速1E)" },
   th: { padding: "20px 15px", textAlign: "left", color: "white", fontWeight: "600", fontSize: "1rem" },
-  tableRow: { borderBottom: "1px solid #e0e0e0", transition: "background-color 0.3s ease" },
+  table极速Row: { borderBottom: "1px solid #e0e0e0", transition: "background-color 0.3s ease" },
   td: { padding: "15px", verticalAlign: "middle" },
   employeeTableCell: { display: "flex", alignItems: "center", gap: "15px" },
   tableAvatar: {
@@ -1242,7 +1312,7 @@ const styles = {
   tableName: { fontWeight: "600", color: "#333", marginBottom: "3px" },
   tableId: { fontSize: "0.85rem", color: "#666" },
   tableActions: { display: "flex", gap: "8px" },
-  actionBtn: { background: "linear-gradient(135deg, #2196f3, #1976d2)", color: "white", border: "none", borderRadius: "6px", padding: "6px 8px", cursor: "pointer", fontSize: "0.8rem" },
+  actionBtn: { background: "linear-gradient(135deg, #2196f3, #1976d2)", color: "white", border: "none", borderRadius: "6px", padding: "6px 8极速px", cursor: "极速pointer", fontSize: "0.8rem" },
   actionBtnDanger: { background: "linear-gradient(135deg, #f44336, #d32f2f)", color: "white", border: "none", borderRadius: "6px", padding: "6px 8px", cursor: "pointer", fontSize: "0.8rem" },
   emptyState: { textAlign: "center", padding: "60px 20px", color: "#666" },
   emptyIcon: { fontSize: "4rem", marginBottom: "20px" },
@@ -1252,7 +1322,7 @@ const styles = {
     borderTop: "4px solid #FF6B35",
     borderRadius: "50%",
     width: "40px",
-    height: "40px",
+    height: "40极速px",
     animation: "spin 1s linear infinite",
     margin: "0 auto 20px",
   },
