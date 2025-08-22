@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
+import { supabase } from '../supabaseClient';
 
 function CertificateVerification() {
   const [searchParams] = useSearchParams();
@@ -7,28 +8,44 @@ function CertificateVerification() {
   const [employee, setEmployee] = useState(null);
   const [loading, setLoading] = useState(true);
   const [certificateData, setCertificateData] = useState(null);
+  const [verificationStatus, setVerificationStatus] = useState("pending");
 
   useEffect(() => {
     verifyCertificate();
   }, [employeeId]);
 
-  const verifyCertificate = () => {
-    // In a real application, this would verify against a backend database
-    // For this demo, we'll check against localStorage
-    const staffList = JSON.parse(localStorage.getItem("staffList")) || [];
-    const foundEmployee = staffList.find(emp => emp.employeeId === employeeId);
-    
-    if (foundEmployee) {
-      setEmployee(foundEmployee);
-      setCertificateData({
-        issueDate: new Date().toLocaleDateString(),
-        certificateId: `SSE-${foundEmployee.employeeId}-${new Date().getFullYear()}`,
-        status: "Verified",
-        verificationDate: new Date().toLocaleDateString()
-      });
+  const verifyCertificate = async () => {
+    try {
+      if (!employeeId) {
+        setVerificationStatus("invalid");
+        setLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('staff')
+        .select('*')
+        .eq('employee_id', employeeId)
+        .single();
+      
+      if (error || !data) {
+        setVerificationStatus("invalid");
+      } else {
+        setEmployee(data);
+        setCertificateData({
+          issueDate: new Date().toLocaleDateString(),
+          certificateId: `SSE-${data.employee_id}-${new Date().getFullYear()}`,
+          status: "Verified",
+          verificationDate: new Date().toLocaleDateString()
+        });
+        setVerificationStatus("verified");
+      }
+    } catch (error) {
+      console.error("Error verifying certificate:", error);
+      setVerificationStatus("error");
+    } finally {
+      setLoading(false);
     }
-    
-    setLoading(false);
   };
 
   if (loading) {
@@ -51,7 +68,7 @@ function CertificateVerification() {
       </div>
 
       <div style={styles.content}>
-        {employee ? (
+        {verificationStatus === "verified" ? (
           <div style={styles.verificationSuccess}>
             <div style={styles.statusHeader}>
               <div style={styles.statusIcon}>✅</div>
@@ -98,13 +115,13 @@ function CertificateVerification() {
 
                 <div style={styles.detailsGrid}>
                   <div style={styles.detailItem}>
-                    <strong>Employee ID:</strong> {employee.employeeId}
+                    <strong>Employee ID:</strong> {employee.employee_id}
                   </div>
                   <div style={styles.detailItem}>
-                    <strong>Employment Period:</strong> {new Date(employee.joinDate).toLocaleDateString()} to Present
+                    <strong>Employment Period:</strong> {new Date(employee.join_date).toLocaleDateString()} to Present
                   </div>
                   <div style={styles.detailItem}>
-                    <strong>Experience:</strong> {calculateWorkingPeriod(employee.joinDate)}
+                    <strong>Experience:</strong> {calculateWorkingPeriod(employee.join_date)}
                   </div>
                   <div style={styles.detailItem}>
                     <strong>Last Position:</strong> {employee.position}

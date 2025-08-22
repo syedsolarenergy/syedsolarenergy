@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from "react";
 import jsPDF from "jspdf";
 import QRCode from "qrcode";
+import { supabase } from '../supabaseClient';
 
 function Staff() {
   const [staffList, setStaffList] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterDepartment, setFilterDepartment] = useState("all");
   const [sortBy, setSortBy] = useState("name");
-  const [viewMode, setViewMode] = useState("grid"); // grid or table
+  const [viewMode, setViewMode] = useState("grid");
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState(null);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   // Form states
   const [formData, setFormData] = useState({
@@ -21,13 +23,13 @@ function Staff() {
     position: "",
     department: "",
     salary: "",
-    joinDate: "",
+    join_date: "",
     photo: "",
-    emergencyContact: "",
+    emergency_contact: "",
     skills: "",
     education: "",
     experience: "",
-    employeeId: "",
+    employee_id: "",
     status: "active"
   });
 
@@ -38,145 +40,197 @@ function Staff() {
     loadStaffData();
   }, []);
 
-  const loadStaffData = () => {
-    const saved = JSON.parse(localStorage.getItem("staffList")) || [];
-    // Add default employees if none exist
-    if (saved.length === 0) {
-      const defaultStaff = [
-        {
-          id: Date.now(),
-          name: "Engr. Zubair",
-          email: "zubair@syedsolar.com",
-          phone: "+92 300 1234567",
-          address: "Peshawar, KPK",
-          position: "Senior Technician",
-          department: "Technical",
-          salary: 35000,
-          joinDate: "2023-01-15",
-          photo: "",
-          emergencyContact: "+92 300 7654321",
-          skills: "Solar Installation, Electrical Work, Troubleshooting",
-          education: "Electrical Engineering",
-          experience: "3 years",
-          employeeId: "SE001",
-          status: "active",
-          salaryHistory: [
-            { date: "2023-01-15", amount: 30000, reason: "Initial Salary" },
-            { date: "2023-07-15", amount: 35000, reason: "Performance Raise" }
-          ],
-          performance: { rating: 4.5, projects: 25, attendance: 95 }
-        },
-        {
-          id: Date.now() + 1,
-          name: "Engr. Aqib",
-          email: "aqib@syedsolar.com", 
-          phone: "+92 301 2345678",
-          address: "Peshawar, KPK",
-          position: "Assistant",
-          department: "Technical",
-          salary: 25000,
-          joinDate: "2023-03-01",
-          photo: "",
-          emergencyContact: "+92 301 8765432",
-          skills: "Solar Maintenance, Customer Service",
-          education: "Electrical Diploma",
-          experience: "2 years",
-          employeeId: "SE002",
-          status: "active",
-          salaryHistory: [
-            { date: "2023-03-01", amount: 22000, reason: "Initial Salary" },
-            { date: "2023-09-01", amount: 25000, reason: "Experience Raise" }
-          ],
-          performance: { rating: 4.2, projects: 18, attendance: 92 }
+  const loadStaffData = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('staff')
+        .select('*')
+        .order('name');
+      
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        setStaffList(data);
+      } else {
+        // Add default employees if none exist
+        const defaultStaff = [
+          {
+            name: "Engr. Zubair",
+            email: "zubair@syedsolar.com",
+            phone: "+92 300 1234567",
+            address: "Peshawar, KPK",
+            position: "Senior Technician",
+            department: "Technical",
+            salary: 35000,
+            join_date: "2023-01-15",
+            photo: "",
+            emergency_contact: "+92 300 7654321",
+            skills: "Solar Installation, Electrical Work, Troubleshooting",
+            education: "Electrical Engineering",
+            experience: "3 years",
+            employee_id: "SE001",
+            status: "active",
+            salary_history: [
+              { date: "2023-01-15", amount: 30000, reason: "Initial Salary" },
+              { date: "2023-07-15", amount: 35000, reason: "Performance Raise" }
+            ],
+            performance: { rating: 4.5, projects: 25, attendance: 95 }
+          },
+          {
+            name: "Engr. Aqib",
+            email: "aqib@syedsolar.com", 
+            phone: "+92 301 2345678",
+            address: "Peshawar, KPK",
+            position: "Assistant",
+            department: "Technical",
+            salary: 25000,
+            join_date: "2023-03-01",
+            photo: "",
+            emergency_contact: "+92 301 8765432",
+            skills: "Solar Maintenance, Customer Service",
+            education: "Electrical Diploma",
+            experience: "2 years",
+            employee_id: "SE002",
+            status: "active",
+            salary_history: [
+              { date: "2023-03-01", amount: 22000, reason: "Initial Salary" },
+              { date: "2023-09-01", amount: 25000, reason: "Experience Raise" }
+            ],
+            performance: { rating: 4.2, projects: 18, attendance: 92 }
+          }
+        ];
+        
+        // Insert default staff
+        for (const employee of defaultStaff) {
+          const { error } = await supabase
+            .from('staff')
+            .insert([employee]);
+          
+          if (error) console.error("Error inserting default staff:", error);
         }
-      ];
-      setStaffList(defaultStaff);
-      localStorage.setItem("staffList", JSON.stringify(defaultStaff));
-    } else {
-      setStaffList(saved);
+        
+        setStaffList(defaultStaff);
+      }
+    } catch (error) {
+      console.error("Error loading staff data:", error);
+      alert("Failed to load staff data");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const saveStaffData = (newStaffList) => {
-    setStaffList(newStaffList);
-    localStorage.setItem("staffList", JSON.stringify(newStaffList));
-  };
-
-  const handleAddEmployee = () => {
+  const handleAddEmployee = async () => {
     if (!formData.name || !formData.position || !formData.salary) {
       alert("Please fill in all required fields (Name, Position, Salary)");
       return;
     }
 
-    const newEmployee = {
-      ...formData,
-      id: Date.now(),
-      salary: parseFloat(formData.salary),
-      joinDate: formData.joinDate || new Date().toISOString().split('T')[0],
-      employeeId: formData.employeeId || `SE${String(staffList.length + 1).padStart(3, '0')}`,
-      salaryHistory: [
-        { 
-          date: formData.joinDate || new Date().toISOString().split('T')[0], 
-          amount: parseFloat(formData.salary), 
-          reason: "Initial Salary" 
-        }
-      ],
-      performance: { rating: 0, projects: 0, attendance: 100 }
-    };
+    try {
+      const newEmployee = {
+        ...formData,
+        salary: parseFloat(formData.salary),
+        join_date: formData.join_date || new Date().toISOString().split('T')[0],
+        employee_id: formData.employee_id || `SE${String(staffList.length + 1).padStart(3, '0')}`,
+        salary_history: [
+          { 
+            date: formData.join_date || new Date().toISOString().split('T')[0], 
+            amount: parseFloat(formData.salary), 
+            reason: "Initial Salary" 
+          }
+        ],
+        performance: { rating: 0, projects: 0, attendance: 100 }
+      };
 
-    const updatedList = [...staffList, newEmployee];
-    saveStaffData(updatedList);
-    resetForm();
-    setShowAddForm(false);
-    alert("✅ Employee added successfully!");
+      const { data, error } = await supabase
+        .from('staff')
+        .insert([newEmployee])
+        .select();
+      
+      if (error) throw error;
+      
+      setStaffList([...staffList, data[0]]);
+      resetForm();
+      setShowAddForm(false);
+      alert("✅ Employee added successfully!");
+    } catch (error) {
+      console.error("Error adding employee:", error);
+      alert("Failed to add employee");
+    }
   };
 
-  const handleUpdateEmployee = () => {
+  const handleUpdateEmployee = async () => {
     if (!formData.name || !formData.position || !formData.salary) {
       alert("Please fill in all required fields");
       return;
     }
 
-    const updatedList = staffList.map(emp => {
-      if (emp.id === editingEmployee.id) {
-        const updatedEmployee = { ...emp, ...formData, salary: parseFloat(formData.salary) };
-        
-        // Add salary history if salary changed
-        if (emp.salary !== parseFloat(formData.salary)) {
-          updatedEmployee.salaryHistory = [
-            ...(emp.salaryHistory || []),
-            {
-              date: new Date().toISOString().split('T')[0],
-              amount: parseFloat(formData.salary),
-              reason: "Salary Update"
-            }
-          ];
-        }
-        
-        return updatedEmployee;
+    try {
+      const updatedEmployee = { 
+        ...formData, 
+        salary: parseFloat(formData.salary),
+        id: editingEmployee.id
+      };
+      
+      // Add salary history if salary changed
+      if (editingEmployee.salary !== parseFloat(formData.salary)) {
+        updatedEmployee.salary_history = [
+          ...(editingEmployee.salary_history || []),
+          {
+            date: new Date().toISOString().split('T')[0],
+            amount: parseFloat(formData.salary),
+            reason: "Salary Update"
+          }
+        ];
       }
-      return emp;
-    });
-
-    saveStaffData(updatedList);
-    resetForm();
-    setEditingEmployee(null);
-    alert("✅ Employee updated successfully!");
+      
+      const { error } = await supabase
+        .from('staff')
+        .update(updatedEmployee)
+        .eq('id', editingEmployee.id);
+      
+      if (error) throw error;
+      
+      // Update local state
+      const updatedList = staffList.map(emp => 
+        emp.id === editingEmployee.id ? {...emp, ...updatedEmployee} : emp
+      );
+      
+      setStaffList(updatedList);
+      resetForm();
+      setEditingEmployee(null);
+      alert("✅ Employee updated successfully!");
+    } catch (error) {
+      console.error("Error updating employee:", error);
+      alert("Failed to update employee");
+    }
   };
 
-  const handleDeleteEmployee = (employee) => {
+  const handleDeleteEmployee = async (employee) => {
     if (window.confirm(`Are you sure you want to remove ${employee.name} from the staff?`)) {
-      const updatedList = staffList.filter(emp => emp.id !== employee.id);
-      saveStaffData(updatedList);
-      alert(`✅ ${employee.name} has been removed from staff`);
+      try {
+        const { error } = await supabase
+          .from('staff')
+          .delete()
+          .eq('id', employee.id);
+        
+        if (error) throw error;
+        
+        const updatedList = staffList.filter(emp => emp.id !== employee.id);
+        setStaffList(updatedList);
+        alert(`✅ ${employee.name} has been removed from staff`);
+      } catch (error) {
+        console.error("Error deleting employee:", error);
+        alert("Failed to delete employee");
+      }
     }
   };
 
   const resetForm = () => {
     setFormData({
       name: "", email: "", phone: "", address: "", position: "", department: "",
-      salary: "", joinDate: "", photo: "", emergencyContact: "", skills: "",
-      education: "", experience: "", employeeId: "", status: "active"
+      salary: "", join_date: "", photo: "", emergency_contact: "", skills: "",
+      education: "", experience: "", employee_id: "", status: "active"
     });
   };
 
@@ -186,297 +240,157 @@ function Staff() {
     setShowAddForm(true);
   };
 
-const generateExperienceCertificate = async (employee) => {
-  try {
-    const pdf = new jsPDF('portrait', 'mm', 'a4');
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
-    
-    // Company colors
-    const primaryColor = [255, 107, 53]; // Orange
-    const secondaryColor = [40, 40, 40]; // Dark gray
-    const lightGray = [245, 245, 245];
-    
-    // Add elegant background
-    pdf.setFillColor(...lightGray);
-    pdf.rect(0, 0, pageWidth, pageHeight, 'F');
-    
-    // Main content area with white background
-    pdf.setFillColor(255, 255, 255);
-    pdf.roundedRect(10, 10, pageWidth - 20, pageHeight - 20, 3, 3, 'F');
-    
-    // Decorative header background
-    pdf.setFillColor(...primaryColor);
-    pdf.roundedRect(15, 15, pageWidth - 30, 25, 2, 2, 'F');
-    
-    // Company logo and header
-    let logoYPosition = 45;
+  const generateExperienceCertificate = async (employee) => {
     try {
-      const logoResponse = await fetch('/logo.png');
-      if (logoResponse.ok) {
-        const logoBlob = await logoResponse.blob();
-        const logoDataUrl = await new Promise(resolve => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result);
-          reader.readAsDataURL(logoBlob);
+      const pdf = new jsPDF();
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      
+      // Add background with company colors
+      pdf.setFillColor(255, 107, 53); // Orange
+      pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+      
+      // White content area
+      pdf.setFillColor(255, 255, 255);
+      pdf.rect(10, 10, pageWidth - 20, pageHeight - 20, 'F');
+      
+      // Add company logo
+      try {
+        const logoImg = new Image();
+        logoImg.src = '/logo.png';
+        
+        await new Promise((resolve) => {
+          logoImg.onload = resolve;
         });
         
-        // Add logo
-        pdf.addImage(logoDataUrl, 'PNG', pageWidth/2 - 15, 25, 30, 30);
-        logoYPosition = 65;
-      } else {
-        throw new Error('Logo not found');
+        pdf.addImage(logoImg, 'PNG', 20, 15, 40, 40);
+      } catch (error) {
+        console.log("Logo not found, using text fallback");
+        pdf.setFontSize(16);
+        pdf.setFont("helvetica", "bold");
+        pdf.setTextColor(255, 107, 53);
+        pdf.text("SYED SOLAR ENERGY", 20, 30);
       }
-    } catch (error) {
-      console.log("Logo not found, using company name");
-      pdf.setFontSize(16);
+      
+      // Certificate Title
+      pdf.setFontSize(24);
       pdf.setFont("helvetica", "bold");
-      pdf.setTextColor(255, 255, 255);
-      pdf.text("SYED SOLAR ENERGY", pageWidth / 2, 30, { align: "center" });
-      logoYPosition = 45;
-    }
-    
-    // Company name and details
-    pdf.setFontSize(22);
-    pdf.setFont("helvetica", "bold");
-    pdf.setTextColor(...primaryColor);
-    pdf.text("SYED SOLAR ENERGY PVT LTD", pageWidth / 2, logoYPosition, { align: "center" });
-    
-    pdf.setFontSize(10);
-    pdf.setFont("helvetica", "normal");
-    pdf.setTextColor(...secondaryColor);
-    pdf.text("Renewable Energy Solutions | Solar Installation & Maintenance", pageWidth / 2, logoYPosition + 6, { align: "center" });
-    pdf.text("Email: info@syedsolarenergy.com | Phone: +92-XXX-XXXXXXX", pageWidth / 2, logoYPosition + 11, { align: "center" });
-    pdf.text("Address: [Company Address], Pakistan", pageWidth / 2, logoYPosition + 16, { align: "center" });
-    
-    // Decorative line
-    pdf.setDrawColor(...primaryColor);
-    pdf.setLineWidth(0.5);
-    pdf.line(30, logoYPosition + 22, pageWidth - 30, logoYPosition + 22);
-    
-    // Certificate title with elegant styling
-    const titleY = logoYPosition + 35;
-    pdf.setFillColor(250, 250, 250);
-    pdf.roundedRect(25, titleY - 8, pageWidth - 50, 16, 2, 2, 'F');
-    
-    pdf.setFontSize(24);
-    pdf.setFont("times", "bold");
-    pdf.setTextColor(...primaryColor);
-    pdf.text("EXPERIENCE CERTIFICATE", pageWidth / 2, titleY, { align: "center" });
-    
-    // Certificate number and date (top right)
-    const certNumber = `SSE-EXP-${employee.employeeId}-${new Date().getFullYear()}`;
-    pdf.setFontSize(8);
-    pdf.setFont("helvetica", "normal");
-    pdf.setTextColor(100, 100, 100);
-    pdf.text(`Certificate No: ${certNumber}`, pageWidth - 20, 25, { align: "right" });
-    pdf.text(`Date: ${new Date().toLocaleDateString('en-GB')}`, pageWidth - 20, 30, { align: "right" });
-    
-    // Main content area
-    const contentStartY = titleY + 25;
-    pdf.setFontSize(12);
-    pdf.setFont("helvetica", "normal");
-    pdf.setTextColor(...secondaryColor);
-    
-    // Calculate dates and period
-    const joinDate = new Date(employee.joinDate);
-    const currentDate = new Date();
-    const workingPeriod = calculateWorkingPeriod(employee.joinDate);
-    
-    const joinDateStr = joinDate.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-    
-    const currentDateStr = currentDate.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-    
-    // Content with proper spacing
-    let yPos = contentStartY;
-    const lineHeight = 6;
-    const marginLeft = 25;
-    const marginRight = 25;
-    const contentWidth = pageWidth - marginLeft - marginRight;
-    
-    // TO WHOM IT MAY CONCERN
-    pdf.setFont("helvetica", "bold");
-    pdf.setTextColor(...primaryColor);
-    pdf.text("TO WHOM IT MAY CONCERN", pageWidth / 2, yPos, { align: "center" });
-    yPos += lineHeight * 2;
-    
-    // Main certificate text
-    pdf.setFont("helvetica", "normal");
-    pdf.setTextColor(...secondaryColor);
-    
-    const paragraphs = [
-      `This is to certify that Mr./Ms. ${employee.name} (Employee ID: ${employee.employeeId}) was employed with Syed Solar Energy Pvt Ltd as ${employee.position} in the ${employee.department} Department from ${joinDateStr} to ${currentDateStr}.`,
+      pdf.setTextColor(40, 40, 40);
+      pdf.text("CERTIFICATE OF EXPERIENCE", pageWidth / 2, 30, { align: "center" });
       
-      `During this employment period of ${workingPeriod}, ${employee.name.split(' ')[0]} has served the organization with utmost dedication, professionalism, and integrity. ${employee.gender === 'female' ? 'She' : 'He'} consistently demonstrated exceptional performance in ${employee.gender === 'female' ? 'her' : 'his'} assigned duties and responsibilities.`,
+      // Content
+      pdf.setFontSize(12);
+      pdf.setFont("helvetica", "normal");
       
-      `${employee.name.split(' ')[0]}'s primary responsibilities included:
-      • Planning, installation, and commissioning of solar PV systems
-      • Conducting site assessments and technical feasibility studies
-      • Maintenance and troubleshooting of solar energy installations
-      • Quality control and compliance with safety standards
-      • Customer relationship management and technical support
-      • Training and mentoring junior technical staff`,
-      
-      `Throughout ${employee.gender === 'female' ? 'her' : 'his'} tenure, ${employee.name.split(' ')[0]} consistently exhibited:
-      • Outstanding technical competency and problem-solving skills
-      • Strong leadership qualities and team collaboration
-      • Commitment to workplace safety and environmental standards
-      • Professional conduct and excellent communication abilities
-      • Innovation in sustainable energy solutions`,
-      
-      `${employee.name.split(' ')[0]}'s last drawn gross monthly salary was Rs. ${employee.salary.toLocaleString()}/- (Rupees ${numberToWords(employee.salary)} only).`,
-      
-      `We found ${employee.gender === 'female' ? 'her' : 'him'} to be honest, hardworking, and reliable during ${employee.gender === 'female' ? 'her' : 'his'} association with our organization. ${employee.gender === 'female' ? 'She' : 'He'} is leaving the organization on ${employee.gender === 'female' ? 'her' : 'his'} own accord for career advancement.`,
-      
-      `We wish ${employee.name.split(' ')[0]} all the best in ${employee.gender === 'female' ? 'her' : 'his'} future endeavors and strongly recommend ${employee.gender === 'female' ? 'her' : 'him'} for any suitable position in ${employee.gender === 'female' ? 'her' : 'his'} field of expertise.`,
-      
-      `This certificate is issued upon request and is valid for all official purposes without any alteration.`
-    ];
-    
-    paragraphs.forEach((paragraph, index) => {
-      const lines = pdf.splitTextToSize(paragraph, contentWidth);
-      lines.forEach(line => {
-        if (yPos > pageHeight - 80) { // Reserve space for footer elements
-          // Add new page if needed
-          pdf.addPage();
-          yPos = 30;
-        }
-        pdf.text(line, marginLeft, yPos);
-        yPos += lineHeight;
+      const joinDate = new Date(employee.join_date).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
       });
-      yPos += lineHeight * 0.5; // Extra space between paragraphs
-    });
-    
-    // Ensure we have space for signature and footer
-    if (yPos > pageHeight - 70) {
-      pdf.addPage();
-      yPos = 30;
-    }
-    
-    // Signature section
-    yPos = Math.max(yPos + 10, pageHeight - 60);
-    
-    // Digital stamp (left side)
-    const stampX = 40;
-    const stampY = yPos - 5;
-    pdf.setDrawColor(...primaryColor);
-    pdf.setFillColor(255, 248, 240);
-    pdf.circle(stampX, stampY, 18, 'FD');
-    
-    pdf.setFontSize(10);
-    pdf.setTextColor(...primaryColor);
-    pdf.setFont("helvetica", "bold");
-    pdf.text("DIGITALLY", stampX, stampY - 8, { align: "center" });
-    pdf.text("VERIFIED", stampX, stampY - 3, { align: "center" });
-    pdf.text("AUTHENTIC", stampX, stampY + 2, { align: "center" });
-    
-    const currentYear = new Date().getFullYear();
-    pdf.setFontSize(8);
-    pdf.text(currentYear.toString(), stampX, stampY + 8, { align: "center" });
-    
-    // Signature area (right side)
-    const signatureX = pageWidth - 60;
-    pdf.setDrawColor(150, 150, 150);
-    pdf.setLineWidth(0.5);
-    pdf.line(signatureX - 30, yPos + 5, signatureX + 10, yPos + 5);
-    
-    pdf.setFontSize(11);
-    pdf.setTextColor(...secondaryColor);
-    pdf.setFont("helvetica", "bold");
-    pdf.text("Authorized Signatory", signatureX - 10, yPos + 12, { align: "center" });
-    
-    pdf.setFont("helvetica", "normal");
-    pdf.setFontSize(10);
-    pdf.text("Human Resources Department", signatureX - 10, yPos + 17, { align: "center" });
-    pdf.text("Syed Solar Energy Pvt Ltd", signatureX - 10, yPos + 22, { align: "center" });
-    
-    // Generate verification QR code with proper error correction
-    const verificationData = {
-      certificateId: certNumber,
-      employeeId: employee.employeeId,
-      employeeName: employee.name,
-      issueDate: new Date().toISOString(),
-      department: employee.department,
-      position: employee.position,
-      companyName: "Syed Solar Energy Pvt Ltd"
-    };
-    
-    const verificationUrl = `${window.location.origin}/verify-certificate?data=${btoa(JSON.stringify(verificationData))}`;
-    
-    try {
+      
+      const currentDate = new Date().toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      
+      const workingPeriod = calculateWorkingPeriod(employee.join_date);
+      
+      const certificateText = [
+        "TO WHOM IT MAY CONCERN",
+        "",
+        `This is to certify that ${employee.name} (Employee ID: ${employee.employee_id}) has been employed with`,
+        "Syed Solar Energy Pvt Ltd from " + joinDate + " to " + currentDate + ".",
+        "",
+        `During this period, ${employee.name.split(' ')[0]} served as ${employee.position} in the ${employee.department} department`,
+        "and performed duties with dedication, professionalism, and integrity.",
+        "",
+        `${employee.name.split(' ')[0]}'s key responsibilities included:`,
+        "• Installation and maintenance of solar energy systems",
+        "• Technical troubleshooting and problem resolution",
+        "• Customer service and support",
+        "• Quality assurance and compliance with industry standards",
+        "",
+        `Throughout ${employee.name.split(' ')[0]}'s employment, he demonstrated:`,
+        "• Exceptional technical skills and knowledge",
+        "• Strong work ethic and reliability",
+        "• Excellent teamwork and communication abilities",
+        "• Commitment to company values and customer satisfaction",
+        "",
+        `${employee.name.split(' ')[0]}'s last drawn salary was Rs. ${employee.salary.toLocaleString()} per month.`,
+        "",
+        `We wish ${employee.name.split(' ')[0]} the very best in his future endeavors and`,
+        "have no doubt that he will be a valuable asset to any organization.",
+        "",
+        "This certificate is issued upon request and for official purposes.",
+      ];
+      
+      let yPosition = 60;
+      certificateText.forEach(line => {
+        if (line === "TO WHOM IT MAY CONCERN") {
+          pdf.setFont("helvetica", "bold");
+          pdf.setTextColor(255, 107, 53);
+          pdf.text(line, pageWidth / 2, yPosition, { align: "center" });
+          pdf.setFont("helvetica", "normal");
+          pdf.setTextColor(40, 40, 40);
+        } else {
+          pdf.text(line, 20, yPosition);
+        }
+        yPosition += 6;
+      });
+      
+      // Generate verification QR code
+      const verificationUrl = `${window.location.origin}/verify-certificate?id=${employee.employee_id}`;
       const qrCodeDataUrl = await QRCode.toDataURL(verificationUrl, {
-        width: 200,
-        margin: 2,
-        errorCorrectionLevel: 'M',
-        type: 'image/png',
-        quality: 1,
+        width: 80,
+        margin: 1,
         color: {
           dark: '#FF6B35',
           light: '#FFFFFF'
         }
       });
       
-      // Add QR code (bottom right corner with proper spacing)
-      const qrSize = 35;
-      const qrX = pageWidth - qrSize - 15;
-      const qrY = pageHeight - qrSize - 15;
-      
-      // QR code background
-      pdf.setFillColor(255, 255, 255);
-      pdf.roundedRect(qrX - 2, qrY - 2, qrSize + 4, qrSize + 4, 1, 1, 'F');
-      
-      pdf.addImage(qrCodeDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
-      
-      pdf.setFontSize(7);
+      // Add QR code to PDF
+      pdf.addImage(qrCodeDataUrl, 'PNG', pageWidth - 50, pageHeight - 60, 40, 40);
+      pdf.setFontSize(8);
       pdf.setTextColor(100, 100, 100);
-      pdf.text("Scan to verify", qrX + (qrSize/2), qrY + qrSize + 5, { align: "center" });
-      pdf.text("certificate authenticity", qrX + (qrSize/2), qrY + qrSize + 8, { align: "center" });
+      pdf.text("Scan to verify authenticity", pageWidth - 30, pageHeight - 65, { align: "center" });
+      
+      // Add digital stamp
+      pdf.setDrawColor(255, 107, 53);
+      pdf.setFillColor(255, 236, 179);
+      pdf.circle(50, pageHeight - 50, 20, 'FD');
+      
+      pdf.setFontSize(10);
+      pdf.setTextColor(255, 107, 53);
+      pdf.setFont("helvetica", "bold");
+      pdf.text("VERIFIED", 50, pageHeight - 52, { align: "center" });
+      pdf.text("DIGITAL", 50, pageHeight - 47, { align: "center" });
+      pdf.text("STAMP", 50, pageHeight - 42, { align: "center" });
+      
+      // Add signature area
+      pdf.setDrawColor(200, 200, 200);
+      pdf.line(pageWidth - 100, pageHeight - 80, pageWidth - 20, pageHeight - 80);
+      
+      pdf.setFontSize(10);
+      pdf.setTextColor(40, 40, 40);
+      pdf.text("Authorized Signatory", pageWidth - 60, pageHeight - 70, { align: "center" });
+      pdf.text("Syed Solar Energy Pvt Ltd", pageWidth - 60, pageHeight - 65, { align: "center" });
+      
+      // Certificate number and issue date
+      const certNumber = `SSE-${employee.employee_id}-${new Date().getFullYear()}`;
+      pdf.setFontSize(8);
+      pdf.setTextColor(100, 100, 100);
+      pdf.text(`Certificate ID: ${certNumber}`, 20, pageHeight - 20);
+      pdf.text(`Issue Date: ${new Date().toLocaleDateString()}`, 20, pageHeight - 15);
+      
+      // Save PDF
+      pdf.save(`Experience_Certificate_${employee.name.replace(/\s+/g, '_')}.pdf`);
     } catch (error) {
-      console.error("Error generating QR code:", error);
+      console.error("Error generating certificate:", error);
+      alert("Failed to generate certificate. Please try again.");
     }
-    
-    // Footer with certificate details
-    pdf.setFontSize(7);
-    pdf.setTextColor(120, 120, 120);
-    pdf.text(`Certificate ID: ${certNumber} | Generated on: ${new Date().toLocaleString()}`, 15, pageHeight - 8);
-    pdf.text("This is a computer generated certificate and does not require physical signature.", 15, pageHeight - 5);
-    
-    // Border
-    pdf.setDrawColor(...primaryColor);
-    pdf.setLineWidth(0.8);
-    pdf.roundedRect(12, 12, pageWidth - 24, pageHeight - 24, 2, 2);
-    
-    // Save PDF
-    const fileName = `Experience_Certificate_${employee.name.replace(/\s+/g, '_')}_${certNumber}.pdf`;
-    pdf.save(fileName);
-    
-    // Store certificate data for verification
-    const certificateRecord = {
-      ...verificationData,
-      fileName: fileName,
-      generatedAt: new Date().toISOString()
-    };
-    
-    // Save to localStorage for verification
-    const existingCertificates = JSON.parse(localStorage.getItem("issuedCertificates") || "[]");
-    existingCertificates.push(certificateRecord);
-    localStorage.setItem("issuedCertificates", JSON.stringify(existingCertificates));
-    
-    return certificateRecord;
-    
-  } catch (error) {
-    console.error("Error generating certificate:", error);
-    throw new Error("Failed to generate certificate. Please try again.");
-  }
-};
+  };
 
   const calculateWorkingPeriod = (joinDate) => {
     const join = new Date(joinDate);
@@ -497,7 +411,7 @@ const generateExperienceCertificate = async (employee) => {
     .filter(emp => {
       const matchesSearch = emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           emp.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          emp.employeeId.toLowerCase().includes(searchTerm.toLowerCase());
+                          emp.employee_id.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesDepartment = filterDepartment === "all" || emp.department === filterDepartment;
       return matchesSearch && matchesDepartment;
     })
@@ -505,7 +419,7 @@ const generateExperienceCertificate = async (employee) => {
       switch (sortBy) {
         case "name": return a.name.localeCompare(b.name);
         case "salary": return b.salary - a.salary;
-        case "joinDate": return new Date(b.joinDate) - new Date(a.joinDate);
+        case "joinDate": return new Date(b.join_date) - new Date(a.join_date);
         default: return 0;
       }
     });
