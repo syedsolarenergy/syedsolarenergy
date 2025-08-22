@@ -18,7 +18,7 @@ export default function Footer() {
         <div style={footerStyles.contactBlock}>
           <div style={footerStyles.contactRow}>
             <span style={footerStyles.icon}>📍</span>
-            <span>Office #23 Mustafa Plaza Ring Road, Near Imtiaz Mega Center, Peshawar</span>
+            <span>Jalil Market Umar Gull Chwock Bara Road near Bacha Khan International Airport, Peshawar</span>
           </div>
           <div style={footerStyles.contactRow}>
             <span style={footerStyles.icon}>📧</span>
