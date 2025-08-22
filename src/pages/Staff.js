@@ -7,6 +7,7 @@ import { supabase } from "../supabaseClient";
 // ✅ Import images from assets
 import logo from "../assets/logo.png";   // your company logo
 import stamp from "../assets/stamp.png"; // transparent digital stamp
+import background from "../assets/background.png";   // backgorund
 
 function Staff() {
   const [staffList, setStaffList] = useState([]);
@@ -242,11 +243,24 @@ function Staff() {
     setEditingEmployee(employee);
     setShowAddForm(true);
   };
+//===============================================================================================
+function generateSignatureCode(text) {
+  const data = text + "-" + new Date().toISOString();
+  let hash = 0;
+  for (let i = 0; i < data.length; i++) {
+    hash = (hash << 5) - hash + data.charCodeAt(i);
+    hash |= 0; // Convert to 32-bit int
+  }
+  return "ES-" + Math.abs(hash).toString(36).toUpperCase(); 
+}
 
+//====================================================================================================
   // ----------------------------
   // ✅ UPDATED: Professional PDF Generator with Stamp Background and QR Code
   // ----------------------------
-  const generateExperienceCertificate = async (employee) => {
+//------------------------------------------------------------------------------------------------------
+
+const generateExperienceCertificate = async (employee) => {
     try {
       // Helpers
       const loadImage = (src) =>
@@ -290,7 +304,7 @@ function Staff() {
 
       // ✅ ADD STAMP AS BACKGROUND WITH TRANSPARENCY
       try {
-        const stampImg = await loadImage(stamp);
+        const stampImg = await loadImage(background);
         
         // Create a temporary canvas to adjust opacity
         const canvas = document.createElement('canvas');
@@ -342,7 +356,7 @@ pdf.setFontSize(16);
 pdf.text(COMPANY.name, margin + 32, y + 6);
 
 pdf.setFont("helvetica", "normal");
-pdf.setTextColor(lightGrey);
+pdf.setTextColor(grey);
 pdf.setFontSize(10);
 pdf.text(COMPANY.address, margin + 32, y + 12 ); // Address on its own line
 pdf.text(COMPANY.phone, margin + 32, y + 18); // Phone on the next line
@@ -439,18 +453,56 @@ y += titleH;
 
       // Reserve space for footer elements
       if (y < pageHeight - 70) y = pageHeight - 70;
+//0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 
-      // Signature line
-      pdf.setDrawColor(200, 200, 200);
-      pdf.line(pageWidth - 95, y, pageWidth - 15, y);
-      pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(11);
-      pdf.setTextColor(grey);
-      pdf.text("Authorized Signatory", pageWidth - 55, y + 6, { align: "center" });
-      pdf.setFont("helvetica", "normal");
-      pdf.setFontSize(10);
-      pdf.setTextColor(lightGrey);
-      pdf.text(COMPANY.name, pageWidth - 55, y + 12, { align: "center" });
+
+// Generate electronic signature code
+const eSignature = generateSignatureCode(COMPANY.name);
+
+// --- Positioning variables ---
+// Use pageHeight to force bottom placement
+const sigX = pageWidth - 55;    // X-position (increase to move left, decrease to move right)
+const sigY = pageHeight - 40;   // Baseline for signature line (increase to move up, decrease to move down)
+
+// Signature line (under the signature code)
+pdf.setDrawColor(50, 50, 50); // Darker line color
+pdf.setLineWidth(0.6);
+pdf.line(sigX - 40, sigY, sigX + 40, sigY); 
+// Horizontal line at bottom-right (adjust X range to extend line width)
+
+// Print the e-signature code above the line (barcode style)
+pdf.setFont("courier", "bold"); // Monospace font for barcode look
+pdf.setFontSize(12);
+pdf.setTextColor(30);
+pdf.text(eSignature, sigX, sigY - 4, { align: "center" });
+
+// Add "Electronically signed" note just above code
+pdf.setFont("helvetica", "italic");
+pdf.setFontSize(8);
+pdf.setTextColor(100);
+pdf.text("Electronically signed", sigX, sigY - 12, { align: "center" });
+
+// Add "No physical signature required" just below line
+pdf.setFont("helvetica", "italic");
+pdf.setFontSize(8);
+pdf.setTextColor(150);
+pdf.text("No physical signature required", sigX, sigY + 18, { align: "center" });
+
+// Labels under the line (unchanged)
+pdf.setFont("helvetica", "bold");
+pdf.setFontSize(11);
+pdf.setTextColor(grey);
+pdf.text("Authorized Signatory", sigX, sigY + 6, { align: "center" });
+
+pdf.setFont("helvetica", "normal");
+pdf.setFontSize(10);
+pdf.setTextColor(lightGrey);
+pdf.text(COMPANY.name, sigX, sigY + 12, { align: "center" });
+
+
+
+
+//00000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 
       // ✅ IMPROVED QR CODE (verification)
       try {
@@ -465,27 +517,37 @@ y += titleH;
         });
         
 // Add border around QR code for better visibility
-pdf.setDrawColor(200, 200, 200);
-pdf.rect(pageWidth - 50, pageHeight - 50, 32, 32);
+pdf.setDrawColor(50, 50, 50);  // Darker border color
+pdf.setLineWidth(0.8);         // Thicker border line
+
+// Adjust position here: first value (X) moves left/right, second (Y) moves up/down
+pdf.rect(pageWidth - 42, 18, 24, 24); // Border around QR (move left by increasing first number, move down by increasing second number)
 
 // Add QR code to PDF, perfectly centered and fit
 pdf.addImage(
   qrCodeDataUrl,
   'PNG',
-  pageWidth - 49, // New X-position
-  pageHeight - 49, // New Y-position
-  30,
-  30
+  pageWidth - 40, // X-position of QR (increase to move left, decrease to move right)
+  20,             // Y-position of QR (increase to move down, decrease to move up)
+  20,             // Size of QR code (increase to make bigger)
+  20
 );
-        
-        // Add text below QR code
-        pdf.setFontSize(8);
-        pdf.setTextColor(grey);
-        pdf.text("Scan to verify", pageWidth - 34, pageHeight - 15, { align: "center" });
-      } catch (error) {
-        console.error("Error generating QR code:", error);
-        // Continue without QR code if there's an error
-      }
+
+// Add text below QR code
+pdf.setFontSize(7);                  // QR label font size
+pdf.setTextColor(80, 80, 80);        // Dark grey text
+pdf.text(
+  "Scan to verify", 
+  pageWidth - 30, 45,                // X adjusts left/right, Y adjusts up/down
+  { align: "center" }
+);
+
+} catch (error) {
+  console.error("Error generating QR code:", error);
+  // Continue without QR code if there's an error
+}
+
+
 
       // Digital Stamp (logo-based)
       try {
@@ -555,6 +617,10 @@ pdf.addImage(
     }
   };
 
+
+
+
+//------------------------------------------------------------------------------------------------------
   const calculateWorkingPeriod = (joinDate, leavingDate) => {
     const join = new Date(joinDate);
     const end = leavingDate ? new Date(leavingDate) : new Date();

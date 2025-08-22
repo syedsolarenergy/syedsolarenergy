@@ -275,7 +275,7 @@ const SpecialOfferPopup = () => {
     // 5-second delay before showing the popup
     const showTimer = setTimeout(() => {
       setIsVisible(true);
-    }, 5000);
+    }, 10000);
 
     // Auto-hide timer (15 seconds after showing)
     const autoHideTimer = setTimeout(() => {
