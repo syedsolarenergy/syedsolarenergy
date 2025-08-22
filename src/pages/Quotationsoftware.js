@@ -598,7 +598,7 @@ const QuotationSoftware = () => {
           </div>
           <div class="company-info">
             <h1>Syed Solar Energy Pvt Ltd</h1>
-            <p>Office #23, Mustafa Plaza, Ring Road Near Imtiaz Mega Center, Peshawar</p>
+            <p>Jalil Market Umar Gull Chwock Bara Road Near Bacha Khan International Airport, Peshawar</p>
             <p><strong>Phone:</strong> 0304-4678929 | <strong>Email:</strong> sales@syedsolarenergy.com</p>
             <p><strong>Website:</strong> www.syedsolarenergy.com</p>
           </div>
@@ -756,7 +756,7 @@ const QuotationSoftware = () => {
         <div class="footer">
           Thank you for choosing Syed Solar Energy<br/>
           📧 sales@syedsolarenergy.com | 📱 03044678929<br/>
-          📍 Office #23, Mustafa Plaza, Ring Road, Peshawar
+          📍 #23, Mustafa Plaza, Ring Road, Peshawar
         </div>
       </div>
     `;

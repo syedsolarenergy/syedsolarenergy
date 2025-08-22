@@ -46,7 +46,7 @@ const ProductsPage = () => {
   // Company Information
   const companyInfo = {
     name: "Syed Solar Energy Pvt Ltd.",
-    address: "Office #23 Mustafa Plaza Ring Road Peshawar",
+    address: "Jalil Market Umar Gull Chwock Bara Road Near Bacha Khan International Airport, Peshawar",
     phone: "03075596695",
     phone2: "03044678929",
     website: "www.syedsolarenergy.com",

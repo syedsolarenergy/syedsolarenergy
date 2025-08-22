@@ -357,7 +357,7 @@ function Reports() {
             <div style={styles.companyInfo}>
               <h2 style={styles.companyName}>Syed Solar Energy Pvt Ltd</h2>
               <p style={styles.companyAddress}>
-                Office #23 Mustafa Plaza Ring Road Near Imtiaz Mega Center, Peshawar
+                Jalil Market Umar Gull Chwock Bara Road Near Bacha Khan International Airport, Peshawar
               </p>
               <p style={styles.companyContact}>
                 📞 0304-4678929 | 📧 sales@syedsolarenergy.com

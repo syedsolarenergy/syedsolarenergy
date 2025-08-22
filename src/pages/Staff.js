@@ -196,7 +196,7 @@ function Staff() {
     
     pdf.setFontSize(12);
     pdf.setFont("helvetica", "normal");
-    pdf.text("Office #23 Mustafa Plaza Ring Road Near Imtiaz Mega Center, Peshawar", pageWidth / 2, 40, { align: "center" });
+    pdf.text("Jalil Market Umar Gull Chwock Bara Road Near Bacha Khan International Airport, Peshawar", pageWidth / 2, 40, { align: "center" });
     pdf.text("📞 0304-4678929 | 📧 sales@syedsolarenergy.com", pageWidth / 2, 50, { align: "center" });
     
     // Certificate Title

@@ -386,7 +386,7 @@ export default function Quotation() {
           </div>
           <div class="company-info">
             <h1>Syed Solar Energy Pvt Ltd</h1>
-            <p>Office #23, Mustafa Plaza, Ring Road Near Imtiaz Mega Center, Peshawar</p>
+            <p>Jalil Market Umar Gull Chwock Bara Road Near Bacha Khan International Airport, Peshawar</p>
             <p><strong>Phone:</strong> 0304-4678929 | <strong>Email:</strong> sales@syedsolarenergy.com</p>
             <p><strong>Website:</strong> www.syedsolarenergy.com</p>
           </div>
@@ -531,7 +531,7 @@ export default function Quotation() {
         <div class="footer">
           Thank you for choosing Syed Solar Energy<br/>
           📧 sales@syedsolarenergy.com | 📱 03044678929<br/>
-          📍 Office #23, Mustafa Plaza, Ring Road, Peshawar
+          📍 Jalil Market Umar Gull Chwock Bara Road Near Bacha Khan International Airport, Peshawar
         </div>
       </div>
     `;
@@ -1026,7 +1026,7 @@ JazakAllah! 🤝`
               fontSize: '13px',
               margin: '5px 0'
             }}>
-              Office #23, Mustafa Plaza, Ring Road Near Imtiaz Mega Center, Peshawar
+              Jalil Market Umar Gull Chwock Bara Road Near Bacha Khan International Airport, Peshawar
             </p>
             <p style={{
               color: '#666',
@@ -1559,7 +1559,7 @@ JazakAllah! 🤝`
         }}>
           Thank you for choosing Syed Solar Energy<br/>
           📧 sales@syedsolarenergy.com | 📱 03044678929<br/>
-          📍 Office #23, Mustafa Plaza, Ring Road, Peshawar
+          📍 Jalil Market Umar Gull Chwock Bara Road Near Bacha Khan International Airport, Peshawar
         </div>
       </div>
     );
