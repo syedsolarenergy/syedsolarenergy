@@ -756,7 +756,7 @@ const QuotationSoftware = () => {
         <div class="footer">
           Thank you for choosing Syed Solar Energy<br/>
           📧 sales@syedsolarenergy.com | 📱 03044678929<br/>
-          📍 #23, Mustafa Plaza, Ring Road, Peshawar
+          📍 Jalil Market Umar Gull Chwock Bara Road near Bacha Khan International Airport, Peshawar
         </div>
       </div>
     `;
