@@ -1,7 +1,12 @@
+// src/pages/Staff.jsx
 import React, { useState, useEffect } from "react";
 import jsPDF from "jspdf";
 import QRCode from "qrcode";
-import { supabase } from '../supabaseClient';
+import { supabase } from "../supabaseClient";
+
+// ✅ NEW: import images from assets (Vite/CRA friendly)
+import logo from "../assets/logo.png";   // your company logo
+import stamp from "../assets/stamp.png"; // transparent digital stamp
 
 function Staff() {
   const [staffList, setStaffList] = useState([]);
@@ -15,7 +20,20 @@ function Staff() {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Form states
+  // ✅ Company settings used on the certificate (edit once, used everywhere)
+  const COMPANY = {
+    name: "Syed Solar Energy Pvt Ltd",
+    email: "info@syedsolar.pk",
+    phone: "+92 300 0000000",
+    address: "Peshawar, KPK",
+    brand: {
+      primary: "#FF6B35",
+      primaryDark: "#E85F2F",
+      greyText: "#333333",
+      lightGrey: "#666666",
+    },
+  };
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -32,7 +50,7 @@ function Staff() {
     education: "",
     experience: "",
     employee_id: "",
-    status: "active"
+    status: "active",
   });
 
   const departments = ["Technical", "Sales", "Administration", "Management", "Support"];
@@ -46,17 +64,12 @@ function Staff() {
   const loadStaffData = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('staff')
-        .select('*')
-        .order('name');
-      
+      const { data, error } = await supabase.from("staff").select("*").order("name");
       if (error) throw error;
-      
+
       if (data && data.length > 0) {
         setStaffList(data);
       } else {
-        // Add default employees if none exist
         const defaultStaff = [
           {
             name: "Engr. Zubair",
@@ -77,13 +90,13 @@ function Staff() {
             status: "active",
             salary_history: [
               { date: "2023-01-15", amount: 30000, reason: "Initial Salary" },
-              { date: "2023-07-15", amount: 35000, reason: "Performance Raise" }
+              { date: "2023-07-15", amount: 35000, reason: "Performance Raise" },
             ],
-            performance: { rating: 4.5, projects: 25, attendance: 95 }
+            performance: { rating: 4.5, projects: 25, attendance: 95 },
           },
           {
             name: "Engr. Aqib",
-            email: "aqib@syedsolar.com", 
+            email: "aqib@syedsolar.com",
             phone: "+92 301 2345678",
             address: "Peshawar, KPK",
             position: "Assistant",
@@ -100,21 +113,16 @@ function Staff() {
             status: "active",
             salary_history: [
               { date: "2023-03-01", amount: 22000, reason: "Initial Salary" },
-              { date: "2023-09-01", amount: 25000, reason: "Experience Raise" }
+              { date: "2023-09-01", amount: 25000, reason: "Experience Raise" },
             ],
-            performance: { rating: 4.2, projects: 18, attendance: 92 }
-          }
+            performance: { rating: 4.2, projects: 18, attendance: 92 },
+          },
         ];
-        
-        // Insert default staff
+
         for (const employee of defaultStaff) {
-          const { error } = await supabase
-            .from('staff')
-            .insert([employee]);
-          
-          if (error) console.error("Error inserting default staff:", error);
+          const { error: insErr } = await supabase.from("staff").insert([employee]);
+          if (insErr) console.error("Error inserting default staff:", insErr);
         }
-        
         setStaffList(defaultStaff);
       }
     } catch (error) {
@@ -130,30 +138,25 @@ function Staff() {
       alert("Please fill in all required fields (Name, Position, Salary)");
       return;
     }
-
     try {
       const newEmployee = {
         ...formData,
         salary: parseFloat(formData.salary),
-        join_date: formData.join_date || new Date().toISOString().split('T')[0],
-        employee_id: formData.employee_id || `SE${String(staffList.length + 1).padStart(3, '0')}`,
+        join_date: formData.join_date || new Date().toISOString().split("T")[0],
+        employee_id: formData.employee_id || `SE${String(staffList.length + 1).padStart(3, "0")}`,
         salary_history: [
-          { 
-            date: formData.join_date || new Date().toISOString().split('T')[0], 
-            amount: parseFloat(formData.salary), 
-            reason: "Initial Salary" 
-          }
+          {
+            date: formData.join_date || new Date().toISOString().split("T")[0],
+            amount: parseFloat(formData.salary),
+            reason: "Initial Salary",
+          },
         ],
-        performance: { rating: 0, projects: 0, attendance: 100 }
+        performance: { rating: 0, projects: 0, attendance: 100 },
       };
 
-      const { data, error } = await supabase
-        .from('staff')
-        .insert([newEmployee])
-        .select();
-      
+      const { data, error } = await supabase.from("staff").insert([newEmployee]).select();
       if (error) throw error;
-      
+
       setStaffList([...staffList, data[0]]);
       resetForm();
       setShowAddForm(false);
@@ -169,38 +172,24 @@ function Staff() {
       alert("Please fill in all required fields");
       return;
     }
-
     try {
-      const updatedEmployee = { 
-        ...formData, 
-        salary: parseFloat(formData.salary),
-        id: editingEmployee.id
-      };
-      
-      // Add salary history if salary changed
+      const updatedEmployee = { ...formData, salary: parseFloat(formData.salary), id: editingEmployee.id };
+
       if (editingEmployee.salary !== parseFloat(formData.salary)) {
         updatedEmployee.salary_history = [
           ...(editingEmployee.salary_history || []),
           {
-            date: new Date().toISOString().split('T')[0],
+            date: new Date().toISOString().split("T")[0],
             amount: parseFloat(formData.salary),
-            reason: "Salary Update"
-          }
+            reason: "Salary Update",
+          },
         ];
       }
-      
-      const { error } = await supabase
-        .from('staff')
-        .update(updatedEmployee)
-        .eq('id', editingEmployee.id);
-      
+
+      const { error } = await supabase.from("staff").update(updatedEmployee).eq("id", editingEmployee.id);
       if (error) throw error;
-      
-      // Update local state
-      const updatedList = staffList.map(emp => 
-        emp.id === editingEmployee.id ? {...emp, ...updatedEmployee} : emp
-      );
-      
+
+      const updatedList = staffList.map((emp) => (emp.id === editingEmployee.id ? { ...emp, ...updatedEmployee } : emp));
       setStaffList(updatedList);
       resetForm();
       setEditingEmployee(null);
@@ -214,14 +203,10 @@ function Staff() {
   const handleDeleteEmployee = async (employee) => {
     if (window.confirm(`Are you sure you want to remove ${employee.name} from the staff?`)) {
       try {
-        const { error } = await supabase
-          .from('staff')
-          .delete()
-          .eq('id', employee.id);
-        
+        const { error } = await supabase.from("staff").delete().eq("id", employee.id);
         if (error) throw error;
-        
-        const updatedList = staffList.filter(emp => emp.id !== employee.id);
+
+        const updatedList = staffList.filter((emp) => emp.id !== employee.id);
         setStaffList(updatedList);
         alert(`✅ ${employee.name} has been removed from staff`);
       } catch (error) {
@@ -233,9 +218,22 @@ function Staff() {
 
   const resetForm = () => {
     setFormData({
-      name: "", email: "", phone: "", address: "", position: "", department: "",
-      salary: "", join_date: "", leaving_date: "", photo: "", emergency_contact: "", skills: "",
-      education: "", experience: "", employee_id: "", status: "active"
+      name: "",
+      email: "",
+      phone: "",
+      address: "",
+      position: "",
+      department: "",
+      salary: "",
+      join_date: "",
+      leaving_date: "",
+      photo: "",
+      emergency_contact: "",
+      skills: "",
+      education: "",
+      experience: "",
+      employee_id: "",
+      status: "active",
     });
   };
 
@@ -245,158 +243,239 @@ function Staff() {
     setShowAddForm(true);
   };
 
+  // ----------------------------
+  // ✅ Professional PDF Generator
+  // ----------------------------
   const generateExperienceCertificate = async (employee) => {
     try {
-      const pdf = new jsPDF();
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      
-      // Add background with company colors
-      pdf.setFillColor(255, 107, 53); // Orange
-      pdf.rect(0, 0, pageWidth, pageHeight, 'F');
-      
-      // White content area
-      pdf.setFillColor(255, 255, 255);
-      pdf.rect(10, 10, pageWidth - 20, pageHeight - 20, 'F');
-      
-      // Add company logo
-      try {
-        const logoImg = new Image();
-        logoImg.src = '/logo.png';
-        
-        await new Promise((resolve) => {
-          logoImg.onload = resolve;
+      // Helpers
+      const loadImage = (src) =>
+        new Promise((resolve, reject) => {
+          const img = new Image();
+          img.crossOrigin = "anonymous";
+          img.onload = () => resolve(img);
+          img.onerror = reject;
+          img.src = src;
         });
-        
-        pdf.addImage(logoImg, 'PNG', 20, 15, 40, 40);
-      } catch (error) {
-        console.log("Logo not found, using text fallback");
-        pdf.setFontSize(16);
+
+      const pdf = new jsPDF("p", "mm", "a4"); // A4 portrait
+      const pageWidth = pdf.internal.pageSize.getWidth(); // 210
+      const pageHeight = pdf.internal.pageSize.getHeight(); // 297
+
+      // Layout constants
+      const margin = 16;
+      const contentWidth = pageWidth - margin * 2;
+      const lineH = 6;
+      const titleH = 10;
+      const sectionGap = 4;
+      const primary = COMPANY.brand.primary;
+      const primaryDark = COMPANY.brand.primaryDark;
+      const grey = COMPANY.brand.greyText;
+      const lightGrey = COMPANY.brand.lightGrey;
+
+      // Background accents (VIP)
+      pdf.setFillColor(primary);
+      pdf.rect(0, 0, pageWidth, 8, "F"); // top ribbon
+      pdf.rect(0, pageHeight - 8, pageWidth, 8, "F"); // bottom ribbon
+      pdf.setDrawColor(primary);
+      pdf.setLineWidth(0.6);
+      pdf.rect(margin - 2, margin - 2, contentWidth + 4, pageHeight - (margin - 2) * 2); // elegant border
+
+      let y = margin;
+
+      // Header: logo + company block
+      try {
+        const logoImg = await loadImage(logo);
+        const logoW = 26;
+        const logoH = (logoImg.height / logoImg.width) * logoW;
+        pdf.addImage(logoImg, "PNG", margin, y, logoW, logoH);
+      } catch {
+        // text fallback
         pdf.setFont("helvetica", "bold");
-        pdf.setTextColor(255, 107, 53);
-        pdf.text("SYED SOLAR ENERGY", 20, 30);
+        pdf.setTextColor(primary);
+        pdf.setFontSize(14);
+        pdf.text("SYED SOLAR ENERGY", margin, y + 10);
       }
-      
-      // Certificate Title
-      pdf.setFontSize(24);
+
       pdf.setFont("helvetica", "bold");
-      pdf.setTextColor(40, 40, 40);
-      pdf.text("CERTIFICATE OF EXPERIENCE", pageWidth / 2, 30, { align: "center" });
-      
-      // Content
-      pdf.setFontSize(12);
+      pdf.setTextColor(grey);
+      pdf.setFontSize(16);
+      pdf.text(COMPANY.name, margin + 32, y + 6);
+
       pdf.setFont("helvetica", "normal");
-      
-      const joinDate = new Date(employee.join_date).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
-      
-      const endDate = employee.leaving_date 
-        ? new Date(employee.leaving_date).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-          })
-        : new Date().toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-          });
-      
+      pdf.setTextColor(lightGrey);
+      pdf.setFontSize(10);
+      pdf.text(`${COMPANY.address} • ${COMPANY.phone} • ${COMPANY.email}`, margin + 32, y + 12);
+
+      y += 24;
+
+      // Title
+      pdf.setFont("helvetica", "bold");
+      pdf.setTextColor(grey);
+      pdf.setFontSize(22);
+      pdf.text("CERTIFICATE OF EXPERIENCE", pageWidth / 2, y, { align: "center" });
+      y += titleH;
+
+      // Sub-title (To Whom It May Concern)
+      pdf.setFontSize(12);
+      pdf.setTextColor(primaryDark);
+      pdf.text("TO WHOM IT MAY CONCERN", pageWidth / 2, y, { align: "center" });
+      y += titleH;
+
+      // Content utilities (wrap + page-break)
+      const addWrapped = (text, x = margin, fontSize = 12, color = grey, weight = "normal") => {
+        pdf.setFont("helvetica", weight);
+        pdf.setFontSize(fontSize);
+        pdf.setTextColor(color);
+        const lines = pdf.splitTextToSize(text, contentWidth);
+        lines.forEach((ln) => {
+          if (y + lineH > pageHeight - margin - 40) {
+            // reserve bottom space for signature/stamp/qr
+            pdf.addPage();
+            // redraw top ribbon + border for new page
+            pdf.setFillColor(primary);
+            pdf.rect(0, 0, pageWidth, 8, "F");
+            pdf.setDrawColor(primary);
+            pdf.setLineWidth(0.6);
+            pdf.rect(margin - 2, margin - 2, contentWidth + 4, pageHeight - (margin - 2) * 2);
+            y = margin;
+          }
+          pdf.text(ln, x, y);
+          y += lineH;
+        });
+        y += sectionGap;
+      };
+
+      const addBullets = (items) => {
+        items.forEach((item) => {
+          addWrapped(`• ${item}`);
+        });
+      };
+
+      // Dates
+      const joinDate = new Date(employee.join_date);
+      const leaving = employee.leaving_date ? new Date(employee.leaving_date) : new Date();
+      const joinStr = joinDate.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+      const endStr = leaving.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+
       const workingPeriod = calculateWorkingPeriod(employee.join_date, employee.leaving_date);
-      
-      const certificateText = [
-        "TO WHOM IT MAY CONCERN",
-        "",
-        `This is to certify that ${employee.name} (Employee ID: ${employee.employee_id}) has been employed with`,
-        "Syed Solar Energy Pvt Ltd from " + joinDate + " to " + endDate + ".",
-        "",
-        `During this period, ${employee.name.split(' ')[0]} served as ${employee.position} in the ${employee.department} department`,
-        "and performed duties with dedication, professionalism, and integrity.",
-        "",
-        `${employee.name.split(' ')[0]}'s key responsibilities included:`,
-        "• Installation and maintenance of solar energy systems",
-        "• Technical troubleshooting and problem resolution",
-        "• Customer service and support",
-        "• Quality assurance and compliance with industry standards",
-        "",
-        `Throughout ${employee.name.split(' ')[0]}'s employment, he demonstrated:`,
-        "• Exceptional technical skills and knowledge",
-        "• Strong work ethic and reliability",
-        "• Excellent teamwork and communication abilities",
-        "• Commitment to company values and customer satisfaction",
-        "",
-        `${employee.name.split(' ')[0]}'s last drawn salary was Rs. ${employee.salary.toLocaleString()} per month.`,
-        "",
-        `We wish ${employee.name.split(' ')[0]} the very best in his future endeavors and`,
-        "have no doubt that he will be a valuable asset to any organization.",
-        "",
-        "This certificate is issued upon request and for official purposes.",
-      ];
-      
-      let yPosition = 60;
-      certificateText.forEach(line => {
-        if (line === "TO WHOM IT MAY CONCERN") {
-          pdf.setFont("helvetica", "bold");
-          pdf.setTextColor(255, 107, 53);
-          pdf.text(line, pageWidth / 2, yPosition, { align: "center" });
-          pdf.setFont("helvetica", "normal");
-          pdf.setTextColor(40, 40, 40);
-        } else {
-          pdf.text(line, 20, yPosition);
-        }
-        yPosition += 6;
-      });
-      
-      // Generate verification QR code
+
+      // Main paragraphs
+      addWrapped(
+        `This is to certify that ${employee.name} (Employee ID: ${employee.employee_id}) was employed with ${COMPANY.name} from ${joinStr} to ${endStr}.`
+      );
+      addWrapped(
+        `During this period, ${firstName(employee.name)} served as ${employee.position} in the ${employee.department} Department and performed duties with dedication, professionalism, and integrity.`
+      );
+
+      addWrapped(`${firstName(employee.name)}’s key responsibilities included:`, margin, 12, grey, "bold");
+      addBullets([
+        "Installation and maintenance of solar energy systems",
+        "Technical troubleshooting and problem resolution",
+        "Customer service and support",
+        "Quality assurance and compliance with industry standards",
+      ]);
+
+      addWrapped(`Throughout the employment, ${firstName(employee.name)} demonstrated:`, margin, 12, grey, "bold");
+      addBullets([
+        "Exceptional technical skills and knowledge",
+        "Strong work ethic and reliability",
+        "Excellent teamwork and communication abilities",
+        "Commitment to company values and customer satisfaction",
+      ]);
+
+      const salaryNumber = Number(employee.salary) || 0;
+      addWrapped(`${firstName(employee.name)}’s last drawn salary was Rs. ${salaryNumber.toLocaleString()} per month.`);
+
+      addWrapped(
+        `Total experience with ${COMPANY.name}: ${workingPeriod}. We wish ${firstName(
+          employee.name
+        )} the very best in future endeavors and have no doubt that they will be a valuable asset to any organization.`
+      );
+
+      addWrapped("This certificate is issued upon request and for official purposes.");
+
+      // Reserve space for footer elements
+      if (y < pageHeight - 70) y = pageHeight - 70;
+
+      // Signature line
+      pdf.setDrawColor(200, 200, 200);
+      pdf.line(pageWidth - 95, y, pageWidth - 15, y);
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(11);
+      pdf.setTextColor(grey);
+      pdf.text("Authorized Signatory", pageWidth - 55, y + 6, { align: "center" });
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(10);
+      pdf.setTextColor(lightGrey);
+      pdf.text(COMPANY.name, pageWidth - 55, y + 12, { align: "center" });
+
+      // QR Code (verification)
       const verificationUrl = `${window.location.origin}/verify-certificate?id=${employee.employee_id}`;
       const qrCodeDataUrl = await QRCode.toDataURL(verificationUrl, {
-        width: 80,
+        width: 100,
         margin: 1,
-        color: {
-          dark: '#FF6B35',
-          light: '#FFFFFF'
-        }
+        color: { dark: "#000000", light: "#FFFFFF" },
       });
-      
-      // Add QR code to PDF
-      pdf.addImage(qrCodeDataUrl, 'PNG', pageWidth - 50, pageHeight - 60, 40, 40);
+      pdf.addImage(qrCodeDataUrl, "PNG", pageWidth - 40, pageHeight - 45, 28, 28);
       pdf.setFontSize(8);
-      pdf.setTextColor(100, 100, 100);
-      pdf.text("Scan to verify authenticity", pageWidth - 30, pageHeight - 65, { align: "center" });
-      
-      // Add digital stamp
-      pdf.setDrawColor(255, 107, 53);
-      pdf.setFillColor(255, 236, 179);
-      pdf.circle(50, pageHeight - 50, 20, 'FD');
-      
-      pdf.setFontSize(10);
-      pdf.setTextColor(255, 107, 53);
-      pdf.setFont("helvetica", "bold");
-      pdf.text("VERIFIED", 50, pageHeight - 52, { align: "center" });
-      pdf.text("DIGITAL", 50, pageHeight - 47, { align: "center" });
-      pdf.text("STAMP", 50, pageHeight - 42, { align: "center" });
-      
-      // Add signature area
-      pdf.setDrawColor(200, 200, 200);
-      pdf.line(pageWidth - 100, pageHeight - 80, pageWidth - 20, pageHeight - 80);
-      
-      pdf.setFontSize(10);
-      pdf.setTextColor(40, 40, 40);
-      pdf.text("Authorized Signatory", pageWidth - 60, pageHeight - 70, { align: "center" });
-      pdf.text("Syed Solar Energy Pvt Ltd", pageWidth - 60, pageHeight - 65, { align: "center" });
-      
-      // Certificate number and issue date
+      pdf.setTextColor(lightGrey);
+      pdf.text("Scan to verify", pageWidth - 26, pageHeight - 48, { align: "center" });
+
+      // Digital Stamp (logo-based)
+      try {
+        const stampImg = await loadImage(stamp);
+        const stampSize = 42; // mm
+        const stampX = margin;
+        const stampY = pageHeight - stampSize - 16;
+        pdf.addImage(stampImg, "PNG", stampX, stampY, stampSize, stampSize);
+
+        // Text on stamp (centered)
+        const midX = stampX + stampSize / 2;
+        const textYStart = stampY + stampSize / 2 - 6;
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(10);
+        pdf.setTextColor(primaryDark);
+        pdf.text("VERIFIED", midX, textYStart, { align: "center" });
+
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(8);
+        pdf.setTextColor(grey);
+        pdf.text(COMPANY.name, midX, textYStart + 5, { align: "center" });
+        pdf.text(COMPANY.email, midX, textYStart + 9.5, { align: "center" });
+
+        const issueDateStr = new Date().toLocaleDateString();
+        pdf.text(`Issue: ${issueDateStr}`, midX, textYStart + 14, { align: "center" });
+      } catch {
+        // Simple circular fallback if image not found
+        const r = 20;
+        const cx = margin + r;
+        const cy = pageHeight - 16 - r;
+        pdf.setDrawColor(primary);
+        pdf.setFillColor(255, 247, 240);
+        pdf.circle(cx, cy, r, "FD");
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(10);
+        pdf.setTextColor(primaryDark);
+        pdf.text("VERIFIED", cx, cy - 3, { align: "center" });
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(8);
+        pdf.setTextColor(grey);
+        pdf.text(COMPANY.name, cx, cy + 2, { align: "center" });
+        pdf.text(COMPANY.email, cx, cy + 6.5, { align: "center" });
+        pdf.text(`Issue: ${new Date().toLocaleDateString()}`, cx, cy + 11, { align: "center" });
+      }
+
+      // Certificate ID + Issue date (footer-left under content)
       const certNumber = `SSE-${employee.employee_id}-${new Date().getFullYear()}`;
-      pdf.setFontSize(8);
-      pdf.setTextColor(100, 100, 100);
-      pdf.text(`Certificate ID: ${certNumber}`, 20, pageHeight - 20);
-      pdf.text(`Issue Date: ${new Date().toLocaleDateString()}`, 20, pageHeight - 15);
-      
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(9);
+      pdf.setTextColor(lightGrey);
+      pdf.text(`Certificate ID: ${certNumber}`, margin, pageHeight - 12);
+      pdf.text(`Issue Date: ${new Date().toLocaleDateString()}`, margin, pageHeight - 7);
+
       // Save PDF
-      pdf.save(`Experience_Certificate_${employee.name.replace(/\s+/g, '_')}.pdf`);
+      pdf.save(`Experience_Certificate_${employee.name.replace(/\s+/g, "_")}.pdf`);
     } catch (error) {
       console.error("Error generating certificate:", error);
       alert("Failed to generate certificate. Please try again.");
@@ -406,33 +485,35 @@ function Staff() {
   const calculateWorkingPeriod = (joinDate, leavingDate) => {
     const join = new Date(joinDate);
     const end = leavingDate ? new Date(leavingDate) : new Date();
-    const diffTime = Math.abs(end - join);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const diffTime = Math.max(0, end - join);
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
     const years = Math.floor(diffDays / 365);
     const months = Math.floor((diffDays % 365) / 30);
-    
-    if (years > 0) {
-      return `${years} year${years > 1 ? 's' : ''} and ${months} month${months > 1 ? 's' : ''}`;
-    } else {
-      return `${months} month${months > 1 ? 's' : ''}`;
-    }
+    const yPart = years > 0 ? `${years} year${years > 1 ? "s" : ""}` : "";
+    const mPart = months > 0 ? `${months} month${months > 1 ? "s" : ""}` : "";
+    return [yPart, mPart].filter(Boolean).join(" and ") || "Less than a month";
   };
 
   const filteredStaff = staffList
-    .filter(emp => {
-      const matchesSearch = emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          emp.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          emp.employee_id.toLowerCase().includes(searchTerm.toLowerCase());
+    .filter((emp) => {
+      const matchesSearch =
+        emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        emp.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        emp.employee_id.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesDepartment = filterDepartment === "all" || emp.department === filterDepartment;
       const matchesStatus = filterStatus === "all" || emp.status === filterStatus;
       return matchesSearch && matchesDepartment && matchesStatus;
     })
     .sort((a, b) => {
       switch (sortBy) {
-        case "name": return a.name.localeCompare(b.name);
-        case "salary": return b.salary - a.salary;
-        case "joinDate": return new Date(b.join_date) - new Date(a.join_date);
-        default: return 0;
+        case "name":
+          return a.name.localeCompare(b.name);
+        case "salary":
+          return (Number(b.salary) || 0) - (Number(a.salary) || 0);
+        case "joinDate":
+          return new Date(b.join_date) - new Date(a.join_date);
+        default:
+          return 0;
       }
     });
 
@@ -443,9 +524,7 @@ function Staff() {
         <div style={styles.headerContent}>
           <div>
             <h1 style={styles.title}>👷 Staff Management System</h1>
-            <p style={styles.subtitle}>
-              Complete HR solution for your solar energy team
-            </p>
+            <p style={styles.subtitle}>Complete HR solution for your solar energy team</p>
           </div>
           <div style={styles.statsCards}>
             <div style={styles.statCard}>
@@ -453,14 +532,12 @@ function Staff() {
               <div style={styles.statLabel}>Total Staff</div>
             </div>
             <div style={styles.statCard}>
-              <div style={styles.statNumber}>
-                {staffList.filter(emp => emp.status === "active").length}
-              </div>
+              <div style={styles.statNumber}>{staffList.filter((emp) => emp.status === "active").length}</div>
               <div style={styles.statLabel}>Active</div>
             </div>
             <div style={styles.statCard}>
               <div style={styles.statNumber}>
-                Rs {staffList.reduce((total, emp) => total + emp.salary, 0).toLocaleString()}
+                Rs {staffList.reduce((total, emp) => total + (Number(emp.salary) || 0), 0).toLocaleString()}
               </div>
               <div style={styles.statLabel}>Monthly Payroll</div>
             </div>
@@ -478,31 +555,23 @@ function Staff() {
             onChange={(e) => setSearchTerm(e.target.value)}
             style={styles.searchInput}
           />
-          <select
-            value={filterDepartment}
-            onChange={(e) => setFilterDepartment(e.target.value)}
-            style={styles.filterSelect}
-          >
+          <select value={filterDepartment} onChange={(e) => setFilterDepartment(e.target.value)} style={styles.filterSelect}>
             <option value="all">All Departments</option>
-            {departments.map(dept => (
-              <option key={dept} value={dept}>{dept}</option>
+            {departments.map((dept) => (
+              <option key={dept} value={dept}>
+                {dept}
+              </option>
             ))}
           </select>
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            style={styles.filterSelect}
-          >
+          <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} style={styles.filterSelect}>
             <option value="all">All Status</option>
-            {statusOptions.map(status => (
-              <option key={status} value={status}>{status.charAt(0).toUpperCase() + status.slice(1)}</option>
+            {statusOptions.map((status) => (
+              <option key={status} value={status}>
+                {status.charAt(0).toUpperCase() + status.slice(1)}
+              </option>
             ))}
           </select>
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            style={styles.filterSelect}
-          >
+          <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} style={styles.filterSelect}>
             <option value="name">Sort by Name</option>
             <option value="salary">Sort by Salary</option>
             <option value="joinDate">Sort by Join Date</option>
@@ -510,10 +579,7 @@ function Staff() {
         </div>
 
         <div style={styles.actionButtons}>
-          <button
-            onClick={() => setViewMode(viewMode === "grid" ? "table" : "grid")}
-            style={styles.viewToggle}
-          >
+          <button onClick={() => setViewMode(viewMode === "grid" ? "table" : "grid")} style={styles.viewToggle}>
             {viewMode === "grid" ? "📋" : "🎯"} {viewMode === "grid" ? "Table View" : "Grid View"}
           </button>
           <button
@@ -533,17 +599,15 @@ function Staff() {
       {showAddForm && (
         <div style={styles.modal}>
           <div style={styles.modalContent}>
-            <h3 style={styles.modalTitle}>
-              {editingEmployee ? "✏️ Edit Employee" : "➕ Add New Employee"}
-            </h3>
-            
+            <h3 style={styles.modalTitle}>{editingEmployee ? "✏️ Edit Employee" : "➕ Add New Employee"}</h3>
+
             <div style={styles.formGrid}>
               <div style={styles.inputGroup}>
                 <label style={styles.label}>👤 Full Name *</label>
                 <input
                   type="text"
                   value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   style={styles.input}
                   placeholder="Enter full name"
                 />
@@ -554,7 +618,7 @@ function Staff() {
                 <input
                   type="text"
                   value={formData.employee_id}
-                  onChange={(e) => setFormData({...formData, employee_id: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, employee_id: e.target.value })}
                   style={styles.input}
                   placeholder="Auto-generated if empty"
                 />
@@ -565,7 +629,7 @@ function Staff() {
                 <input
                   type="email"
                   value={formData.email}
-                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   style={styles.input}
                   placeholder="employee@syedsolar.com"
                 />
@@ -576,7 +640,7 @@ function Staff() {
                 <input
                   type="text"
                   value={formData.phone}
-                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   style={styles.input}
                   placeholder="+92 300 1234567"
                 />
@@ -587,7 +651,7 @@ function Staff() {
                 <input
                   type="text"
                   value={formData.address}
-                  onChange={(e) => setFormData({...formData, address: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                   style={styles.input}
                   placeholder="Complete address"
                 />
@@ -597,12 +661,14 @@ function Staff() {
                 <label style={styles.label}>💼 Position *</label>
                 <select
                   value={formData.position}
-                  onChange={(e) => setFormData({...formData, position: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, position: e.target.value })}
                   style={styles.input}
                 >
                   <option value="">Select Position</option>
-                  {positions.map(pos => (
-                    <option key={pos} value={pos}>{pos}</option>
+                  {positions.map((pos) => (
+                    <option key={pos} value={pos}>
+                      {pos}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -611,12 +677,14 @@ function Staff() {
                 <label style={styles.label}>🏢 Department</label>
                 <select
                   value={formData.department}
-                  onChange={(e) => setFormData({...formData, department: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, department: e.target.value })}
                   style={styles.input}
                 >
                   <option value="">Select Department</option>
-                  {departments.map(dept => (
-                    <option key={dept} value={dept}>{dept}</option>
+                  {departments.map((dept) => (
+                    <option key={dept} value={dept}>
+                      {dept}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -626,7 +694,7 @@ function Staff() {
                 <input
                   type="number"
                   value={formData.salary}
-                  onChange={(e) => setFormData({...formData, salary: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, salary: e.target.value })}
                   style={styles.input}
                   placeholder="25000"
                 />
@@ -637,7 +705,7 @@ function Staff() {
                 <input
                   type="date"
                   value={formData.join_date}
-                  onChange={(e) => setFormData({...formData, join_date: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, join_date: e.target.value })}
                   style={styles.input}
                 />
               </div>
@@ -647,7 +715,7 @@ function Staff() {
                 <input
                   type="date"
                   value={formData.leaving_date}
-                  onChange={(e) => setFormData({...formData, leaving_date: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, leaving_date: e.target.value })}
                   style={styles.input}
                 />
               </div>
@@ -656,11 +724,13 @@ function Staff() {
                 <label style={styles.label}>📊 Status</label>
                 <select
                   value={formData.status}
-                  onChange={(e) => setFormData({...formData, status: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                   style={styles.input}
                 >
-                  {statusOptions.map(status => (
-                    <option key={status} value={status}>{status.charAt(0).toUpperCase() + status.slice(1)}</option>
+                  {statusOptions.map((status) => (
+                    <option key={status} value={status}>
+                      {status.charAt(0).toUpperCase() + status.slice(1)}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -670,7 +740,7 @@ function Staff() {
                 <input
                   type="text"
                   value={formData.emergency_contact}
-                  onChange={(e) => setFormData({...formData, emergency_contact: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, emergency_contact: e.target.value })}
                   style={styles.input}
                   placeholder="+92 300 7654321"
                 />
@@ -681,7 +751,7 @@ function Staff() {
                 <input
                   type="text"
                   value={formData.education}
-                  onChange={(e) => setFormData({...formData, education: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, education: e.target.value })}
                   style={styles.input}
                   placeholder="Electrical Engineering"
                 />
@@ -692,18 +762,18 @@ function Staff() {
                 <input
                   type="text"
                   value={formData.experience}
-                  onChange={(e) => setFormData({...formData, experience: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, experience: e.target.value })}
                   style={styles.input}
                   placeholder="3 years"
                 />
               </div>
 
-              <div style={{...styles.inputGroup, gridColumn: "1 / -1"}}>
+              <div style={{ ...styles.inputGroup, gridColumn: "1 / -1" }}>
                 <label style={styles.label}>🛠️ Skills</label>
                 <textarea
                   value={formData.skills}
-                  onChange={(e) => setFormData({...formData, skills: e.target.value})}
-                  style={{...styles.input, height: "80px", resize: "vertical"}}
+                  onChange={(e) => setFormData({ ...formData, skills: e.target.value })}
+                  style={{ ...styles.input, height: "80px", resize: "vertical" }}
                   placeholder="Solar Installation, Electrical Work, Troubleshooting"
                 />
               </div>
@@ -720,10 +790,7 @@ function Staff() {
               >
                 ❌ Cancel
               </button>
-              <button
-                onClick={editingEmployee ? handleUpdateEmployee : handleAddEmployee}
-                style={styles.saveButton}
-              >
+              <button onClick={editingEmployee ? handleUpdateEmployee : handleAddEmployee} style={styles.saveButton}>
                 {editingEmployee ? "💾 Update Employee" : "➕ Add Employee"}
               </button>
             </div>
@@ -736,21 +803,28 @@ function Staff() {
         <div style={styles.modal}>
           <div style={styles.modalContent}>
             <h3 style={styles.modalTitle}>👤 Employee Details</h3>
-            
+
             <div style={styles.employeeDetails}>
               <div style={styles.employeeHeader}>
-                <div style={styles.employeeAvatar}>
-                  {selectedEmployee.name.charAt(0).toUpperCase()}
-                </div>
+                <div style={styles.employeeAvatar}>{selectedEmployee.name.charAt(0).toUpperCase()}</div>
                 <div style={styles.employeeInfo}>
                   <h2 style={styles.employeeName}>{selectedEmployee.name}</h2>
                   <p style={styles.employeeTitle}>{selectedEmployee.position}</p>
                   <p style={styles.employeeDept}>{selectedEmployee.department}</p>
                   <p style={styles.employeeStatus}>
-                    Status: <span style={{
-                      color: selectedEmployee.status === 'active' ? '#4caf50' : 
-                             selectedEmployee.status === 'inactive' ? '#f44336' : '#ff9800'
-                    }}>{selectedEmployee.status}</span>
+                    Status:{" "}
+                    <span
+                      style={{
+                        color:
+                          selectedEmployee.status === "active"
+                            ? "#4caf50"
+                            : selectedEmployee.status === "inactive"
+                            ? "#f44336"
+                            : "#ff9800",
+                      }}
+                    >
+                      {selectedEmployee.status}
+                    </span>
                   </p>
                 </div>
               </div>
@@ -774,10 +848,11 @@ function Staff() {
                   </div>
                 )}
                 <div style={styles.detailItem}>
-                  <strong>Current Salary:</strong> Rs {selectedEmployee.salary.toLocaleString()}
+                  <strong>Current Salary:</strong> Rs {(Number(selectedEmployee.salary) || 0).toLocaleString()}
                 </div>
                 <div style={styles.detailItem}>
-                  <strong>Experience:</strong> {calculateWorkingPeriod(selectedEmployee.join_date, selectedEmployee.leaving_date)}
+                  <strong>Experience:</strong>{" "}
+                  {calculateWorkingPeriod(selectedEmployee.join_date, selectedEmployee.leaving_date)}
                 </div>
               </div>
 
@@ -787,7 +862,7 @@ function Staff() {
                   {selectedEmployee.salary_history.map((history, index) => (
                     <div key={index} style={styles.historyItem}>
                       <span>{new Date(history.date).toLocaleDateString()}</span>
-                      <span>Rs {history.amount.toLocaleString()}</span>
+                      <span>Rs {Number(history.amount).toLocaleString()}</span>
                       <span>{history.reason}</span>
                     </div>
                   ))}
@@ -796,16 +871,10 @@ function Staff() {
             </div>
 
             <div style={styles.modalButtons}>
-              <button
-                onClick={() => setSelectedEmployee(null)}
-                style={styles.cancelButton}
-              >
+              <button onClick={() => setSelectedEmployee(null)} style={styles.cancelButton}>
                 ❌ Close
               </button>
-              <button
-                onClick={() => generateExperienceCertificate(selectedEmployee)}
-                style={styles.certificateButton}
-              >
+              <button onClick={() => generateExperienceCertificate(selectedEmployee)} style={styles.certificateButton}>
                 📜 Generate Certificate
               </button>
               <button
@@ -831,67 +900,55 @@ function Staff() {
           </div>
         ) : viewMode === "grid" ? (
           <div style={styles.staffGrid}>
-            {filteredStaff.map(employee => (
-              <div key={employee.id} style={{
-                ...styles.employeeCard,
-                borderLeft: `5px solid ${employee.status === 'active' ? '#4caf50' : 
-                             employee.status === 'inactive' ? '#f44336' : '#ff9800'}`
-              }}>
+            {filteredStaff.map((employee) => (
+              <div
+                key={employee.id}
+                style={{
+                  ...styles.employeeCard,
+                  borderLeft: `5px solid ${
+                    employee.status === "active" ? "#4caf50" : employee.status === "inactive" ? "#f44336" : "#ff9800"
+                  }`,
+                }}
+              >
                 <div style={styles.cardHeader}>
-                  <div style={styles.avatar}>
-                    {employee.name.charAt(0).toUpperCase()}
-                  </div>
+                  <div style={styles.avatar}>{employee.name.charAt(0).toUpperCase()}</div>
                   <div style={styles.cardActions}>
-                    <button
-                      onClick={() => setSelectedEmployee(employee)}
-                      style={styles.viewButton}
-                      title="View Details"
-                    >
+                    <button onClick={() => setSelectedEmployee(employee)} style={styles.viewButton} title="View Details">
                       👁️
                     </button>
-                    <button
-                      onClick={() => startEditing(employee)}
-                      style={styles.editButtonSmall}
-                      title="Edit Employee"
-                    >
+                    <button onClick={() => startEditing(employee)} style={styles.editButtonSmall} title="Edit Employee">
                       ✏️
                     </button>
-                    <button
-                      onClick={() => handleDeleteEmployee(employee)}
-                      style={styles.deleteButton}
-                      title="Remove Employee"
-                    >
+                    <button onClick={() => handleDeleteEmployee(employee)} style={styles.deleteButton} title="Remove Employee">
                       🗑️
                     </button>
                   </div>
                 </div>
-                
+
                 <div style={styles.cardContent}>
                   <h3 style={styles.cardName}>{employee.name}</h3>
                   <p style={styles.cardPosition}>{employee.position}</p>
                   <p style={styles.cardDepartment}>{employee.department}</p>
-                  <p style={styles.cardSalary}>Rs {employee.salary.toLocaleString()}/month</p>
-                  <p style={styles.cardJoinDate}>
-                    Joined: {new Date(employee.join_date).toLocaleDateString()}
-                  </p>
+                  <p style={styles.cardSalary}>Rs {(Number(employee.salary) || 0).toLocaleString()}/month</p>
+                  <p style={styles.cardJoinDate}>Joined: {new Date(employee.join_date).toLocaleDateString()}</p>
                   {employee.leaving_date && (
-                    <p style={styles.cardLeavingDate}>
-                      Left: {new Date(employee.leaving_date).toLocaleDateString()}
-                    </p>
+                    <p style={styles.cardLeavingDate}>Left: {new Date(employee.leaving_date).toLocaleDateString()}</p>
                   )}
                   <p style={styles.cardStatus}>
-                    Status: <span style={{
-                      color: employee.status === 'active' ? '#4caf50' : 
-                             employee.status === 'inactive' ? '#f44336' : '#ff9800'
-                    }}>{employee.status}</span>
+                    Status:{" "}
+                    <span
+                      style={{
+                        color:
+                          employee.status === "active" ? "#4caf50" : employee.status === "inactive" ? "#f44336" : "#ff9800",
+                      }}
+                    >
+                      {employee.status}
+                    </span>
                   </p>
                 </div>
 
                 <div style={styles.cardFooter}>
-                  <button
-                    onClick={() => generateExperienceCertificate(employee)}
-                    style={styles.certificateButtonSmall}
-                  >
+                  <button onClick={() => generateExperienceCertificate(employee)} style={styles.certificateButtonSmall}>
                     📜 Certificate
                   </button>
                 </div>
@@ -913,13 +970,11 @@ function Staff() {
                 </tr>
               </thead>
               <tbody>
-                {filteredStaff.map(employee => (
+                {filteredStaff.map((employee) => (
                   <tr key={employee.id} style={styles.tableRow}>
                     <td style={styles.td}>
                       <div style={styles.employeeTableCell}>
-                        <div style={styles.tableAvatar}>
-                          {employee.name.charAt(0).toUpperCase()}
-                        </div>
+                        <div style={styles.tableAvatar}>{employee.name.charAt(0).toUpperCase()}</div>
                         <div>
                           <div style={styles.tableName}>{employee.name}</div>
                           <div style={styles.tableId}>{employee.employee_id}</div>
@@ -928,49 +983,34 @@ function Staff() {
                     </td>
                     <td style={styles.td}>{employee.position}</td>
                     <td style={styles.td}>{employee.department}</td>
-                    <td style={styles.td}>Rs {employee.salary.toLocaleString()}</td>
+                    <td style={styles.td}>Rs {(Number(employee.salary) || 0).toLocaleString()}</td>
                     <td style={styles.td}>{new Date(employee.join_date).toLocaleDateString()}</td>
                     <td style={styles.td}>
-                      <span style={{
-                        padding: '4px 8px',
-                        borderRadius: '4px',
-                        fontSize: '0.85rem',
-                        backgroundColor: employee.status === 'active' ? '#e8f5e9' : 
-                                        employee.status === 'inactive' ? '#ffebee' : '#fff8e1',
-                        color: employee.status === 'active' ? '#4caf50' : 
-                               employee.status === 'inactive' ? '#f44336' : '#ff9800'
-                      }}>
+                      <span
+                        style={{
+                          padding: "4px 8px",
+                          borderRadius: "4px",
+                          fontSize: "0.85rem",
+                          backgroundColor:
+                            employee.status === "active" ? "#e8f5e9" : employee.status === "inactive" ? "#ffebee" : "#fff8e1",
+                          color: employee.status === "active" ? "#4caf50" : employee.status === "inactive" ? "#f44336" : "#ff9800",
+                        }}
+                      >
                         {employee.status}
                       </span>
                     </td>
                     <td style={styles.td}>
                       <div style={styles.tableActions}>
-                        <button
-                          onClick={() => setSelectedEmployee(employee)}
-                          style={styles.actionBtn}
-                          title="View"
-                        >
+                        <button onClick={() => setSelectedEmployee(employee)} style={styles.actionBtn} title="View">
                           👁️
                         </button>
-                        <button
-                          onClick={() => startEditing(employee)}
-                          style={styles.actionBtn}
-                          title="Edit"
-                        >
+                        <button onClick={() => startEditing(employee)} style={styles.actionBtn} title="Edit">
                           ✏️
                         </button>
-                        <button
-                          onClick={() => generateExperienceCertificate(employee)}
-                          style={styles.actionBtn}
-                          title="Certificate"
-                        >
+                        <button onClick={() => generateExperienceCertificate(employee)} style={styles.actionBtn} title="Certificate">
                           📜
                         </button>
-                        <button
-                          onClick={() => handleDeleteEmployee(employee)}
-                          style={styles.actionBtnDanger}
-                          title="Delete"
-                        >
+                        <button onClick={() => handleDeleteEmployee(employee)} style={styles.actionBtnDanger} title="Delete">
                           🗑️
                         </button>
                       </div>
@@ -986,12 +1026,7 @@ function Staff() {
           <div style={styles.emptyState}>
             <div style={styles.emptyIcon}>👥</div>
             <h3>No employees found</h3>
-            <p>
-              {searchTerm || filterDepartment !== "all" || filterStatus !== "all"
-                ? "Try adjusting your search or filters"
-                : "Add your first employee to get started"
-              }
-            </p>
+            <p>{searchTerm || filterDepartment !== "all" || filterStatus !== "all" ? "Try adjusting your search or filters" : "Add your first employee to get started"}</p>
             <button
               onClick={() => {
                 resetForm();
@@ -1008,596 +1043,237 @@ function Staff() {
   );
 }
 
-// Styles object
+// ------------ Utilities -------------
+const firstName = (full) => (full || "").trim().split(" ")[0] || "";
+
+// Styles
 const styles = {
   container: {
-    padding: '20px',
-    background: 'linear-gradient(135deg, #FFF8F0 0%, #FFEBDD 100%)',
-    minHeight: '100vh',
+    padding: "20px",
+    background: "linear-gradient(135deg, #FFF8F0 0%, #FFEBDD 100%)",
+    minHeight: "100vh",
     fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
   },
-
   header: {
-    background: 'linear-gradient(135deg, #FF6B35, #F7931E)',
-    borderRadius: '20px',
-    padding: '30px',
-    marginBottom: '30px',
-    color: 'white',
-    boxShadow: '0 10px 30px rgba(255, 107, 53, 0.3)',
+    background: "linear-gradient(135deg, #FF6B35, #F7931E)",
+    borderRadius: "20px",
+    padding: "30px",
+    marginBottom: "30px",
+    color: "white",
+    boxShadow: "0 10px 30px rgba(255, 107, 53, 0.3)",
   },
-
-  headerContent: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: '20px',
-  },
-
-  title: {
-    fontSize: '2.5rem',
-    fontWeight: '700',
-    margin: '0 0 10px 0',
-    textShadow: '0 2px 10px rgba(0,0,0,0.2)',
-  },
-
-  subtitle: {
-    fontSize: '1.1rem',
-    opacity: '0.9',
-    margin: 0,
-    fontWeight: '300',
-  },
-
-  statsCards: {
-    display: 'flex',
-    gap: '20px',
-    flexWrap: 'wrap',
-  },
-
+  headerContent: { display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "20px" },
+  title: { fontSize: "2.5rem", fontWeight: "700", margin: "0 0 10px 0", textShadow: "0 2px 10px rgba(0,0,0,0.2)" },
+  subtitle: { fontSize: "1.1rem", opacity: "0.9", margin: 0, fontWeight: "300" },
+  statsCards: { display: "flex", gap: "20px", flexWrap: "wrap" },
   statCard: {
-    background: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: '15px',
-    padding: '20px',
-    textAlign: 'center',
-    backdropFilter: 'blur(10px)',
-    minWidth: '120px',
+    background: "rgba(255, 255, 255, 0.2)",
+    borderRadius: "15px",
+    padding: "20px",
+    textAlign: "center",
+    backdropFilter: "blur(10px)",
+    minWidth: "120px",
   },
-
-  statNumber: {
-    fontSize: '2rem',
-    fontWeight: '700',
-    marginBottom: '5px',
-  },
-
-  statLabel: {
-    fontSize: '0.9rem',
-    opacity: '0.9',
-  },
-
+  statNumber: { fontSize: "2rem", fontWeight: "700", marginBottom: "5px" },
+  statLabel: { fontSize: "0.9rem", opacity: "0.9" },
   controls: {
-    background: 'white',
-    borderRadius: '15px',
-    padding: '25px',
-    marginBottom: '30px',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: '20px',
-    boxShadow: '0 5px 15px rgba(0,0,0,0.1)',
+    background: "white",
+    borderRadius: "15px",
+    padding: "25px",
+    marginBottom: "30px",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: "20px",
+    boxShadow: "0 5px 15px rgba(0,0,0,0.1)",
   },
-
-  searchSection: {
-    display: 'flex',
-    gap: '15px',
-    flexWrap: 'wrap',
-  },
-
-  searchInput: {
-    padding: '12px 16px',
-    border: '2px solid #e0e0e0',
-    borderRadius: '10px',
-    fontSize: '1rem',
-    minWidth: '250px',
-    transition: 'border-color 0.3s ease',
-  },
-
-  filterSelect: {
-    padding: '12px 16px',
-    border: '2px solid #e0e0e0',
-    borderRadius: '10px',
-    fontSize: '1rem',
-    background: 'white',
-    cursor: 'pointer',
-  },
-
-  actionButtons: {
-    display: 'flex',
-    gap: '15px',
-  },
-
+  searchSection: { display: "flex", gap: "15px", flexWrap: "wrap" },
+  searchInput: { padding: "12px 16px", border: "2px solid #e0e0e0", borderRadius: "10px", fontSize: "1rem", minWidth: "250px", transition: "border-color 0.3s ease" },
+  filterSelect: { padding: "12px 16px", border: "2px solid #e0e0e0", borderRadius: "10px", fontSize: "1rem", background: "white", cursor: "pointer" },
+  actionButtons: { display: "flex", gap: "15px" },
   viewToggle: {
-    background: 'linear-gradient(135deg, #9e9e9e, #757575)',
-    color: 'white',
-    border: 'none',
-    borderRadius: '10px',
-    padding: '12px 20px',
-    cursor: 'pointer',
-    fontSize: '0.9rem',
-    fontWeight: '600',
-    transition: 'all 0.3s ease',
+    background: "linear-gradient(135deg, #9e9e9e, #757575)",
+    color: "white",
+    border: "none",
+    borderRadius: "10px",
+    padding: "12px 20px",
+    cursor: "pointer",
+    fontSize: "0.9rem",
+    fontWeight: "600",
+    transition: "all 0.3s ease",
   },
-
   addButton: {
-    background: 'linear-gradient(135deg, #FF6B35, #F7931E)',
-    color: 'white',
-    border: 'none',
-    borderRadius: '10px',
-    padding: '12px 24px',
-    cursor: 'pointer',
-    fontSize: '1rem',
-    fontWeight: '600',
-    transition: 'all 0.3s ease',
-    boxShadow: '0 5px 15px rgba(255, 107, 53, 0.3)',
+    background: "linear-gradient(135deg, #FF6B35, #F7931E)",
+    color: "white",
+    border: "none",
+    borderRadius: "10px",
+    padding: "12px 24px",
+    cursor: "pointer",
+    fontSize: "1rem",
+    fontWeight: "600",
+    transition: "all 0.3s ease",
+    boxShadow: "0 5px 15px rgba(255, 107, 53, 0.3)",
   },
-
-  modal: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    background: 'rgba(0, 0, 0, 0.5)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1000,
-    padding: '20px',
-  },
-
+  modal: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0, 0, 0, 0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "20px" },
   modalContent: {
-    background: 'white',
-    borderRadius: '20px',
-    padding: '30px',
-    maxWidth: '800px',
-    width: '100%',
-    maxHeight: '90vh',
-    overflowY: 'auto',
-    boxShadow: '0 25px 50px rgba(0, 0, 0, 0.3)',
+    background: "white",
+    borderRadius: "20px",
+    padding: "30px",
+    maxWidth: "800px",
+    width: "100%",
+    maxHeight: "90vh",
+    overflowY: "auto",
+    boxShadow: "0 25px 50px rgba(0, 0, 0, 0.3)",
   },
-
   modalTitle: {
-    fontSize: '1.8rem',
-    fontWeight: '700',
-    marginBottom: '25px',
-    background: 'linear-gradient(135deg, #FF6B35, #F7931E)',
-    WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent',
-    backgroundClip: 'text',
+    fontSize: "1.8rem",
+    fontWeight: "700",
+    marginBottom: "25px",
+    background: "linear-gradient(135deg, #FF6B35, #F7931E)",
+    WebkitBackgroundClip: "text",
+    WebkitTextFillColor: "transparent",
+    backgroundClip: "text",
   },
-
-  formGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-    gap: '20px',
-    marginBottom: '30px',
-  },
-
-  inputGroup: {
-    display: 'flex',
-    flexDirection: 'column',
-  },
-
-  label: {
-    fontWeight: '600',
-    marginBottom: '8px',
-    color: '#333',
-  },
-
-  input: {
-    padding: '12px 16px',
-    border: '2px solid #e0e0e0',
-    borderRadius: '10px',
-    fontSize: '1rem',
-    transition: 'border-color 0.3s ease',
-  },
-
-  modalButtons: {
-    display: 'flex',
-    gap: '15px',
-    justifyContent: 'flex-end',
-    flexWrap: 'wrap',
-  },
-
-  cancelButton: {
-    background: 'linear-gradient(135deg, #9e9e9e, #757575)',
-    color: 'white',
-    border: 'none',
-    borderRadius: '10px',
-    padding: '12px 24px',
-    cursor: 'pointer',
-    fontSize: '1rem',
-    fontWeight: '600',
-  },
-
-  saveButton: {
-    background: 'linear-gradient(135deg, #4caf50, #45a049)',
-    color: 'white',
-    border: 'none',
-    borderRadius: '10px',
-    padding: '12px 24px',
-    cursor: 'pointer',
-    fontSize: '1rem',
-    fontWeight: '600',
-  },
-
-  editButton: {
-    background: 'linear-gradient(135deg, #2196f3, #1976d2)',
-    color: 'white',
-    border: 'none',
-    borderRadius: '10px',
-    padding: '12px 24px',
-    cursor: 'pointer',
-    fontSize: '1rem',
-    fontWeight: '600',
-  },
-
-  certificateButton: {
-    background: 'linear-gradient(135deg, #ff9800, #f57c00)',
-    color: 'white',
-    border: 'none',
-    borderRadius: '10px',
-    padding: '12px 24px',
-    cursor: 'pointer',
-    fontSize: '1rem',
-    fontWeight: '600',
-  },
-
-  employeeDetails: {
-    marginBottom: '30px',
-  },
-
+  formGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "20px", marginBottom: "30px" },
+  inputGroup: { display: "flex", flexDirection: "column" },
+  label: { fontWeight: "600", marginBottom: "8px", color: "#333" },
+  input: { padding: "12px 16px", border: "2px solid #e0e0e0", borderRadius: "10px", fontSize: "1rem", transition: "border-color 0.3s ease" },
+  modalButtons: { display: "flex", gap: "15px", justifyContent: "flex-end", flexWrap: "wrap" },
+  cancelButton: { background: "linear-gradient(135deg, #9e9e9e, #757575)", color: "white", border: "none", borderRadius: "10px", padding: "12px 24px", cursor: "pointer", fontSize: "1rem", fontWeight: "600" },
+  saveButton: { background: "linear-gradient(135deg, #4caf50, #45a049)", color: "white", border: "none", borderRadius: "10px", padding: "12px 24px", cursor: "pointer", fontSize: "1rem", fontWeight: "600" },
+  editButton: { background: "linear-gradient(135deg, #2196f3, #1976d2)", color: "white", border: "none", borderRadius: "10px", padding: "12px 24px", cursor: "pointer", fontSize: "1rem", fontWeight: "600" },
+  certificateButton: { background: "linear-gradient(135deg, #ff9800, #f57c00)", color: "white", border: "none", borderRadius: "10px", padding: "12px 24px", cursor: "pointer", fontSize: "1rem", fontWeight: "600" },
+  employeeDetails: { marginBottom: "30px" },
   employeeHeader: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '20px',
-    marginBottom: '30px',
-    padding: '20px',
-    background: 'linear-gradient(135deg, #FFF3E0, #FFE0B2)',
-    borderRadius: '15px',
+    display: "flex",
+    alignItems: "center",
+    gap: "20px",
+    marginBottom: "30px",
+    padding: "20px",
+    background: "linear-gradient(135deg, #FFF3E0, #FFE0B2)",
+    borderRadius: "15px",
   },
-
   employeeAvatar: {
-    width: '80px',
-    height: '80px',
-    borderRadius: '50%',
-    background: 'linear-gradient(135deg, #FF6B35, #F7931E)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: '2rem',
-    fontWeight: '700',
-    color: 'white',
+    width: "80px",
+    height: "80px",
+    borderRadius: "50%",
+    background: "linear-gradient(135deg, #FF6B35, #F7931E)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "2rem",
+    fontWeight: "700",
+    color: "white",
   },
-
-  employeeInfo: {
-    flex: 1,
-  },
-
-  employeeName: {
-    fontSize: '2rem',
-    fontWeight: '700',
-    margin: '0 0 5px 0',
-    color: '#333',
-  },
-
-  employeeTitle: {
-    fontSize: '1.2rem',
-    color: '#666',
-    margin: '0 0 5px 0',
-  },
-
-  employeeDept: {
-    fontSize: '1rem',
-    color: '#999',
-    margin: '0',
-  },
-
-  detailsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-    gap: '15px',
-    marginBottom: '30px',
-  },
-
-  detailItem: {
-    padding: '15px',
-    background: '#f9f9f9',
-    borderRadius: '10px',
-    border: '1px solid #e0e0e0',
-  },
-
-  salaryHistory: {
-    background: '#f5f5f5',
-    padding: '20px',
-    borderRadius: '15px',
-  },
-
-  historyItem: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    padding: '10px 0',
-    borderBottom: '1px solid #e0e0e0',
-  },
-
-  staffSection: {
-    background: 'white',
-    borderRadius: '20px',
-    padding: '30px',
-    boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
-  },
-
-  staffGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-    gap: '25px',
-  },
-
+  employeeInfo: { flex: 1 },
+  employeeName: { fontSize: "2rem", fontWeight: "700", margin: "0 0 5px 0", color: "#333" },
+  employeeTitle: { fontSize: "1.2rem", color: "#666", margin: "0 0 5px 0" },
+  employeeDept: { fontSize: "1rem", color: "#999", margin: "0" },
+  detailsGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "15px", marginBottom: "30px" },
+  detailItem: { padding: "15px", background: "#f9f9f9", borderRadius: "10px", border: "1px solid #e0e0e0" },
+  salaryHistory: { background: "#f5f5f5", padding: "20px", borderRadius: "15px" },
+  historyItem: { display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid #e0e0e0" },
+  staffSection: { background: "white", borderRadius: "20px", padding: "30px", boxShadow: "0 10px 30px rgba(0,0,0,0.1)" },
+  staffGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "25px" },
   employeeCard: {
-    background: 'linear-gradient(135deg, #ffffff, #f8f9fa)',
-    borderRadius: '20px',
-    padding: '25px',
-    border: '2px solid #FFE0CC',
-    transition: 'all 0.3s ease',
-    position: 'relative',
-    boxShadow: '0 8px 25px rgba(0,0,0,0.1)',
+    background: "linear-gradient(135deg, #ffffff, #f8f9fa)",
+    borderRadius: "20px",
+    padding: "25px",
+    border: "2px solid #FFE0CC",
+    transition: "all 0.3s ease",
+    position: "relative",
+    boxShadow: "0 8px 25px rgba(0,0,0,0.1)",
   },
-
-  cardHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '20px',
-  },
-
+  cardHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" },
   avatar: {
-    width: '60px',
-    height: '60px',
-    borderRadius: '50%',
-    background: 'linear-gradient(135deg, #FF6B35, #F7931E)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: '1.5rem',
-    fontWeight: '700',
-    color: 'white',
+    width: "60px",
+    height: "60px",
+    borderRadius: "50%",
+    background: "linear-gradient(135deg, #FF6B35, #F7931E)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "1.5rem",
+    fontWeight: "700",
+    color: "white",
   },
-
-  cardActions: {
-    display: 'flex',
-    gap: '8px',
-  },
-
-  viewButton: {
-    background: 'linear-gradient(135deg, #2196f3, #1976d2)',
-    color: 'white',
-    border: 'none',
-    borderRadius: '8px',
-    padding: '8px',
-    cursor: 'pointer',
-    fontSize: '0.9rem',
-  },
-
-  editButtonSmall: {
-    background: 'linear-gradient(135deg, #ff9800, #f57c00)',
-    color: 'white',
-    border: 'none',
-    borderRadius: '8px',
-    padding: '8px',
-    cursor: 'pointer',
-    fontSize: '0.9rem',
-  },
-
-  deleteButton: {
-    background: 'linear-gradient(135deg, #f44336, #d32f2f)',
-    color: 'white',
-    border: 'none',
-    borderRadius: '8px',
-    padding: '8px',
-    cursor: 'pointer',
-    fontSize: '0.9rem',
-  },
-
-  cardContent: {
-    marginBottom: '20px',
-  },
-
-  cardName: {
-    fontSize: '1.4rem',
-    fontWeight: '700',
-    margin: '0 0 8px 0',
-    color: '#333',
-  },
-
-  cardPosition: {
-    fontSize: '1.1rem',
-    color: '#666',
-    margin: '0 0 5px 0',
-    fontWeight: '600',
-  },
-
-  cardDepartment: {
-    fontSize: '0.9rem',
-    color: '#999',
-    margin: '0 0 10px 0',
-  },
-
-  cardSalary: {
-    fontSize: '1.2rem',
-    fontWeight: '700',
-    color: '#FF6B35',
-    margin: '0 0 8px 0',
-  },
-
-  cardJoinDate: {
-    fontSize: '0.85rem',
-    color: '#666',
-    margin: '0',
-  },
-
-  cardFooter: {
-    borderTop: '1px solid #e0e0e0',
-    paddingTop: '15px',
-  },
-
+  cardActions: { display: "flex", gap: "8px" },
+  viewButton: { background: "linear-gradient(135deg, #2196f3, #1976d2)", color: "white", border: "none", borderRadius: "8px", padding: "8px", cursor: "pointer", fontSize: "0.9rem" },
+  editButtonSmall: { background: "linear-gradient(135deg, #ff9800, #f57c00)", color: "white", border: "none", borderRadius: "8px", padding: "8px", cursor: "pointer", fontSize: "0.9rem" },
+  deleteButton: { background: "linear-gradient(135deg, #f44336, #d32f2f)", color: "white", border: "none", borderRadius: "8px", padding: "8px", cursor: "pointer", fontSize: "0.9rem" },
+  cardContent: { marginBottom: "20px" },
+  cardName: { fontSize: "1.4rem", fontWeight: "700", margin: "0 0 8px 0", color: "#333" },
+  cardPosition: { fontSize: "1.1rem", color: "#666", margin: "0 0 5px 0", fontWeight: "600" },
+  cardDepartment: { fontSize: "0.9rem", color: "#999", margin: "0 0 10px 0" },
+  cardSalary: { fontSize: "1.2rem", fontWeight: "700", color: "#FF6B35", margin: "0 0 8px 0" },
+  cardJoinDate: { fontSize: "0.85rem", color: "#666", margin: "0" },
+  cardFooter: { borderTop: "1px solid #e0e0e0", paddingTop: "15px" },
   certificateButtonSmall: {
-    background: 'linear-gradient(135deg, #9c27b0, #7b1fa2)',
-    color: 'white',
-    border: 'none',
-    borderRadius: '10px',
-    padding: '8px 16px',
-    cursor: 'pointer',
-    fontSize: '0.85rem',
-    fontWeight: '600',
-    width: '100%',
+    background: "linear-gradient(135deg, #9c27b0, #7b1fa2)",
+    color: "white",
+    border: "none",
+    borderRadius: "10px",
+    padding: "8px 16px",
+    cursor: "pointer",
+    fontSize: "0.85rem",
+    fontWeight: "600",
+    width: "100%",
   },
-
-  tableContainer: {
-    overflowX: 'auto',
-    borderRadius: '15px',
-    boxShadow: '0 5px 15px rgba(0,0,0,0.1)',
-  },
-
-  table: {
-    width: '100%',
-    borderCollapse: 'collapse',
-    background: 'white',
-  },
-
-  tableHeader: {
-    background: 'linear-gradient(135deg, #FF6B35, #F7931E)',
-  },
-
-  th: {
-    padding: '20px 15px',
-    textAlign: 'left',
-    color: 'white',
-    fontWeight: '600',
-    fontSize: '1rem',
-  },
-
-  tableRow: {
-    borderBottom: '1px solid #e0e0e0',
-    transition: 'background-color 0.3s ease',
-  },
-
-  td: {
-    padding: '15px',
-    verticalAlign: 'middle',
-  },
-
-  employeeTableCell: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '15px',
-  },
-
+  tableContainer: { overflowX: "auto", borderRadius: "15px", boxShadow: "0 5px 15px rgba(0,0,0,0.1)" },
+  table: { width: "100%", borderCollapse: "collapse", background: "white" },
+  tableHeader: { background: "linear-gradient(135deg, #FF6B35, #F7931E)" },
+  th: { padding: "20px 15px", textAlign: "left", color: "white", fontWeight: "600", fontSize: "1rem" },
+  tableRow: { borderBottom: "1px solid #e0e0e0", transition: "background-color 0.3s ease" },
+  td: { padding: "15px", verticalAlign: "middle" },
+  employeeTableCell: { display: "flex", alignItems: "center", gap: "15px" },
   tableAvatar: {
-    width: '45px',
-    height: '45px',
-    borderRadius: '50%',
-    background: 'linear-gradient(135deg, #FF6B35, #F7931E)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: '1.2rem',
-    fontWeight: '700',
-    color: 'white',
+    width: "45px",
+    height: "45px",
+    borderRadius: "50%",
+    background: "linear-gradient(135deg, #FF6B35, #F7931E)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "1.2rem",
+    fontWeight: "700",
+    color: "white",
   },
-
-  tableName: {
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: '3px',
-  },
-
-  tableId: {
-    fontSize: '0.85rem',
-    color: '#666',
-  },
-
-  tableActions: {
-    display: 'flex',
-    gap: '8px',
-  },
-
-  actionBtn: {
-    background: 'linear-gradient(135deg, #2196f3, #1976d2)',
-    color: 'white',
-    border: 'none',
-    borderRadius: '6px',
-    padding: '6px 8px',
-    cursor: 'pointer',
-    fontSize: '0.8rem',
-  },
-
-  actionBtnDanger: {
-    background: 'linear-gradient(135deg, #f44336, #d32f2f)',
-    color: 'white',
-    border: 'none',
-    borderRadius: '6px',
-    padding: '6px 8px',
-    cursor: 'pointer',
-    fontSize: '0.8rem',
-  },
-
-  emptyState: {
-    textAlign: 'center',
-    padding: '60px 20px',
-    color: '#666',
-  },
-
-  emptyIcon: {
-    fontSize: '4rem',
-    marginBottom: '20px',
-  },
-  loadingState: {
-    textAlign: 'center',
-    padding: '40px',
-  },
+  tableName: { fontWeight: "600", color: "#333", marginBottom: "3px" },
+  tableId: { fontSize: "0.85rem", color: "#666" },
+  tableActions: { display: "flex", gap: "8px" },
+  actionBtn: { background: "linear-gradient(135deg, #2196f3, #1976d2)", color: "white", border: "none", borderRadius: "6px", padding: "6px 8px", cursor: "pointer", fontSize: "0.8rem" },
+  actionBtnDanger: { background: "linear-gradient(135deg, #f44336, #d32f2f)", color: "white", border: "none", borderRadius: "6px", padding: "6px 8px", cursor: "pointer", fontSize: "0.8rem" },
+  emptyState: { textAlign: "center", padding: "60px 20px", color: "#666" },
+  emptyIcon: { fontSize: "4rem", marginBottom: "20px" },
+  loadingState: { textAlign: "center", padding: "40px" },
   loadingSpinner: {
-    border: '4px solid #f3f3f3',
-    borderTop: '4px solid #FF6B35',
-    borderRadius: '50%',
-    width: '40px',
-    height: '40px',
-    animation: 'spin 1s linear infinite',
-    margin: '0 auto 20px',
+    border: "4px solid #f3f3f3",
+    borderTop: "4px solid #FF6B35",
+    borderRadius: "50%",
+    width: "40px",
+    height: "40px",
+    animation: "spin 1s linear infinite",
+    margin: "0 auto 20px",
   },
-  cardLeavingDate: {
-    fontSize: '0.85rem',
-    color: '#f44336',
-    margin: '5px 0',
-  },
-  cardStatus: {
-    fontSize: '0.85rem',
-    color: '#666',
-    margin: '5px 0',
-  },
-  employeeStatus: {
-    fontSize: '0.9rem',
-    color: '#666',
-    margin: '5px 0',
-  },
+  cardLeavingDate: { fontSize: "0.85rem", color: "#f44336", margin: "5px 0" },
+  cardStatus: { fontSize: "0.85rem", color: "#666", margin: "5px 0" },
+  employeeStatus: { fontSize: "0.9rem", color: "#666", margin: "5px 0" },
 };
-// Add CSS animation for loading spinner
-const styleSheet = document.styleSheets[0];
-styleSheet.insertRule(`
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-`, styleSheet.cssRules.length);
 
+// Safe insert of spinner keyframes
+if (typeof document !== "undefined" && document.styleSheets && document.styleSheets.length) {
+  try {
+    const styleSheet = document.styleSheets[0];
+    styleSheet.insertRule(
+      `
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }`,
+      styleSheet.cssRules.length
+    );
+  } catch {}
+}
 
 export default Staff;
