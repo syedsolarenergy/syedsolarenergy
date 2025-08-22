@@ -54,7 +54,7 @@ function Staff() {
   });
 
   const departments = ["Technical", "Sales", "Administration", "Management", "Support"];
-  const positions = ["Technician", "Senior Technician", "Sales Manager", "Admin", "CEO", "Assistant"];
+  const positions = [ "Technical Support Engineer", "SITE Supervisor", "Trainee Engineer", "Technician", "Senior Technician", "Sales Manager", "Admin", "CEO", "Assistant"];
   const statusOptions = ["active", "inactive", "on_leave", "Left"];
 
   useEffect(() => {
