@@ -83,6 +83,15 @@ export default function Footer() {
           <a href="https://www.tiktok.com/@syed_solar_energy" target="_blank" rel="noopener noreferrer" style={footerStyles.socialLink}>
             <img src="https://cdn-icons-png.flaticon.com/512/3046/3046120.png" alt="TikTok" style={footerStyles.socialIcon} />
           </a>
+                    {/* New FAQ Link */}
+          <a href="/faq" target="_blank" rel="noopener noreferrer" style={footerStyles.socialLink}>
+            <img src="https://cdn-icons-png.flaticon.com/512/709/709496.png" alt="FAQ" style={footerStyles.socialIcon} />
+          </a>
+
+          {/* New Blog Link */}
+          <a href="/blog" target="_blank" rel="noopener noreferrer" style={footerStyles.socialLink}>
+            <img src="https://cdn-icons-png.flaticon.com/512/1828/1828884.png" alt="Blog" style={footerStyles.socialIcon} />
+          </a>
         </div>
 
         {/* Google Review */}

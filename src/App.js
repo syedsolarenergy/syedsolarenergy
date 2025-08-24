@@ -15,6 +15,11 @@ import LoadCalculator from "./pages/LoadCalculator";
 import Quotation from "./pages/Quotation";
 import Careers from "./pages/Careers";
 import Contact from "./pages/Contact";
+//new pages
+import FAQ from "./pages/FAQ";
+import BlogList from "./pages/BlogList";
+import BlogPost from "./pages/BlogPost";
+
 
 // Enhanced Auth Pages (with Supabase integration)
 import Login from "./pages/Login";
@@ -97,6 +102,11 @@ function AppContent() {
           <Route path="/quotation" element={<Quotation />} />
           <Route path="/careers" element={<Careers />} />
           <Route path="/contact" element={<Contact />} />
+          //new routes
+          <Route path="/faqs" element={<FAQ />} />
+          <Route path="/blog" element={<BlogList />} />
+          <Route path="/blog/:slug" element={<BlogPost />} />
+
 
           {/* Legacy Admin Panel (keeping for backward compatibility) */}
           <Route path="/adminpanel" element={<AdminPanel />} />
