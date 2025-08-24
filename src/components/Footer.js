@@ -1,5 +1,9 @@
 import React from "react";
 import logo from "../assets/logo.png";
+import FAQ from '../pages/FAQ';
+import { Link } from 'react-router-dom';
+
+
 
 export default function Footer() {
   return (
@@ -84,9 +88,10 @@ export default function Footer() {
             <img src="https://cdn-icons-png.flaticon.com/512/3046/3046120.png" alt="TikTok" style={footerStyles.socialIcon} />
           </a>
                     {/* New FAQ Link */}
-          <a href="/faq" target="_blank" rel="noopener noreferrer" style={footerStyles.socialLink}>
-            <img src="https://cdn-icons-png.flaticon.com/512/709/709496.png" alt="FAQ" style={footerStyles.socialIcon} />
-          </a>
+         <Link to="/faq" style={footerStyles.socialLink}>
+  <img src="https://cdn-icons-png.flaticon.com/512/709/709496.png" alt="FAQ" style={footerStyles.socialIcon} />
+</Link>
+
 
           {/* New Blog Link */}
           <a href="/blog" target="_blank" rel="noopener noreferrer" style={footerStyles.socialLink}>

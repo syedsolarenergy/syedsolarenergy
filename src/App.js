@@ -16,7 +16,7 @@ import Quotation from "./pages/Quotation";
 import Careers from "./pages/Careers";
 import Contact from "./pages/Contact";
 //new pages
-import FAQ from "./pages/FAQ";
+import FAQ from './pages/FAQ'; // 
 import BlogList from "./pages/BlogList";
 import BlogPost from "./pages/BlogPost";
 
@@ -103,7 +103,7 @@ function AppContent() {
           <Route path="/careers" element={<Careers />} />
           <Route path="/contact" element={<Contact />} />
           //new routes
-          <Route path="/faqs" element={<FAQ />} />
+          <Route path="/faq" element={<FAQ />} />
           <Route path="/blog" element={<BlogList />} />
           <Route path="/blog/:slug" element={<BlogPost />} />
 
