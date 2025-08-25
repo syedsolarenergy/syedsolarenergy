@@ -144,6 +144,8 @@ function Staff() {
         ...formData,
         salary: parseFloat(formData.salary),
         join_date: formData.join_date || new Date().toISOString().split("T")[0],
+        // Ensure leaving_date is null if empty
+        leaving_date: formData.leaving_date || null,
         employee_id: formData.employee_id || `SE${String(staffList.length + 1).padStart(3, "0")}`,
         salary_history: [
           {
@@ -168,13 +170,19 @@ function Staff() {
     }
   };
 
-  const handleUpdateEmployee = async () => {
+const handleUpdateEmployee = async () => {
     if (!formData.name || !formData.position || !formData.salary) {
       alert("Please fill in all required fields");
       return;
     }
     try {
-      const updatedEmployee = { ...formData, salary: parseFloat(formData.salary), id: editingEmployee.id };
+      const updatedEmployee = { 
+        ...formData, 
+        salary: parseFloat(formData.salary), 
+        id: editingEmployee.id,
+        // Ensure leaving_date is null if empty
+        leaving_date: formData.leaving_date || null
+      };
 
       if (editingEmployee.salary !== parseFloat(formData.salary)) {
         updatedEmployee.salary_history = [
