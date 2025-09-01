@@ -29,6 +29,404 @@ const ExperienceVerification = () => {
   const [searchId, setSearchId] = useState(certificateId || '');
   const [verificationStatus, setVerificationStatus] = useState(null);
   const [verificationAttempts, setVerificationAttempts] = useState(0);
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+
+  // Handle window resize for responsive adjustments
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Responsive CSS styles
+  const isMobile = windowWidth < 768;
+  const isTablet = windowWidth >= 768 && windowWidth < 1024;
+
+  const styles = {
+    pageContainer: {
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 50%, #3b82f6 100%)',
+      position: 'relative',
+      overflow: 'hidden',
+      padding: isMobile ? '0 12px' : '0 20px'
+    },
+    backgroundOrb1: {
+      position: 'absolute',
+      top: isMobile ? '-100px' : '-200px',
+      right: isMobile ? '-100px' : '-200px',
+      width: isMobile ? '200px' : '400px',
+      height: isMobile ? '200px' : '400px',
+      background: 'radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 70%)',
+      borderRadius: '50%',
+      animation: 'float 6s ease-in-out infinite',
+      pointerEvents: 'none'
+    },
+    backgroundOrb2: {
+      position: 'absolute',
+      bottom: isMobile ? '-100px' : '-200px',
+      left: isMobile ? '-100px' : '-200px',
+      width: isMobile ? '250px' : '500px',
+      height: isMobile ? '250px' : '500px',
+      background: 'radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%)',
+      borderRadius: '50%',
+      animation: 'float 8s ease-in-out infinite reverse',
+      pointerEvents: 'none'
+    },
+    header: {
+      background: 'linear-gradient(135deg, #2563eb 0%, #3b82f6 50%, #6366f1 100%)',
+      boxShadow: '0 25px 50px -12px rgba(37, 99, 235, 0.25)',
+      borderBottom: '1px solid rgba(59, 130, 246, 0.3)',
+      position: 'relative',
+      backdropFilter: 'blur(10px)',
+      margin: isMobile ? '0 -12px' : '0 -20px',
+      padding: isMobile ? '0 12px' : '0 20px'
+    },
+    headerContent: {
+      maxWidth: '1280px',
+      margin: '0 auto',
+      padding: isMobile ? '16px' : '24px 16px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      flexWrap: 'wrap',
+      gap: '16px'
+    },
+    logo: {
+      width: isMobile ? '48px' : '64px',
+      height: isMobile ? '48px' : '64px',
+      background: 'rgba(255, 255, 255, 0.2)',
+      backdropFilter: 'blur(10px)',
+      borderRadius: '16px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      color: 'white',
+      fontWeight: 'bold',
+      fontSize: isMobile ? '16px' : '20px',
+      marginRight: isMobile ? '12px' : '16px',
+      boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+      border: '1px solid rgba(255, 255, 255, 0.2)',
+      transition: 'transform 0.3s ease',
+      position: 'relative'
+    },
+    headerTitle: {
+      fontSize: isMobile ? '24px' : '36px',
+      fontWeight: '900',
+      color: 'white',
+      lineHeight: '1.2',
+      background: 'linear-gradient(to right, #ffffff, #dbeafe)',
+      WebkitBackgroundClip: 'text',
+      WebkitTextFillColor: 'transparent',
+      backgroundClip: 'text'
+    },
+    headerSubtitle: {
+      fontSize: isMobile ? '12px' : '14px',
+      color: 'rgba(219, 234, 254, 0.9)',
+      marginTop: '4px',
+      fontWeight: '500'
+    },
+    backButton: {
+      display: 'flex',
+      alignItems: 'center',
+      padding: isMobile ? '10px 16px' : '12px 20px',
+      background: 'rgba(255, 255, 255, 0.2)',
+      color: 'white',
+      borderRadius: '16px',
+      border: '1px solid rgba(255, 255, 255, 0.3)',
+      cursor: 'pointer',
+      transition: 'all 0.3s ease',
+      backdropFilter: 'blur(10px)',
+      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+      fontSize: isMobile ? '12px' : '14px',
+      fontWeight: '600',
+      textDecoration: 'none'
+    },
+    searchSection: {
+      maxWidth: '1024px',
+      margin: '0 auto',
+      padding: isMobile ? '24px 0' : '32px 0'
+    },
+    searchCard: {
+      background: 'rgba(255, 255, 255, 0.9)',
+      backdropFilter: 'blur(20px)',
+      borderRadius: isMobile ? '16px' : '24px',
+      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+      padding: isMobile ? '24px' : '48px',
+      border: '1px solid rgba(255, 255, 255, 0.5)',
+      marginBottom: isMobile ? '24px' : '32px',
+      position: 'relative',
+      overflow: 'hidden'
+    },
+    searchTitle: {
+      textAlign: 'center',
+      marginBottom: isMobile ? '24px' : '32px'
+    },
+    searchIcon: {
+      width: isMobile ? '48px' : '64px',
+      height: isMobile ? '48px' : '64px',
+      background: 'linear-gradient(135deg, #2563eb, #3b82f6)',
+      borderRadius: '16px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      margin: '0 auto 16px',
+      boxShadow: '0 20px 25px -5px rgba(37, 99, 235, 0.4)'
+    },
+    searchTitleText: {
+      fontSize: isMobile ? '24px' : '32px',
+      fontWeight: 'bold',
+      background: 'linear-gradient(135deg, #2563eb, #3b82f6)',
+      WebkitBackgroundClip: 'text',
+      WebkitTextFillColor: 'transparent',
+      backgroundClip: 'text',
+      marginBottom: '8px'
+    },
+    searchInput: {
+      width: '100%',
+      maxWidth: '400px',
+      margin: '0 auto',
+      padding: isMobile ? '12px 16px' : '16px 24px',
+      fontSize: isMobile ? '16px' : '18px',
+      textAlign: 'center',
+      fontFamily: 'monospace',
+      background: 'white',
+      border: '2px solid #dbeafe',
+      borderRadius: '16px',
+      boxShadow: '0 10px 25px -3px rgba(0, 0, 0, 0.1)',
+      transition: 'all 0.3s ease',
+      marginBottom: '16px'
+    },
+    searchButton: {
+      width: '100%',
+      maxWidth: '400px',
+      margin: '0 auto',
+      padding: isMobile ? '14px 20px' : '16px 24px',
+      background: 'linear-gradient(135deg, #2563eb, #3b82f6)',
+      color: 'white',
+      border: 'none',
+      borderRadius: '16px',
+      fontSize: isMobile ? '14px' : '16px',
+      fontWeight: 'bold',
+      cursor: 'pointer',
+      transition: 'all 0.3s ease',
+      boxShadow: '0 10px 25px -3px rgba(37, 99, 235, 0.4)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '8px'
+    },
+    statusBadgeValid: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      padding: isMobile ? '12px 20px' : '16px 32px',
+      background: 'linear-gradient(135deg, #10b981, #059669)',
+      color: 'white',
+      borderRadius: '16px',
+      fontWeight: 'bold',
+      fontSize: isMobile ? '16px' : '18px',
+      boxShadow: '0 20px 25px -5px rgba(16, 185, 129, 0.4)',
+      animation: 'pulse 2s infinite',
+      gap: '12px'
+    },
+    statusBadgeInvalid: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      padding: isMobile ? '12px 20px' : '16px 32px',
+      background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+      color: 'white',
+      borderRadius: '16px',
+      fontWeight: 'bold',
+      fontSize: isMobile ? '16px' : '18px',
+      boxShadow: '0 20px 25px -5px rgba(239, 68, 68, 0.4)',
+      gap: '12px'
+    },
+    resultsCard: {
+      background: 'rgba(255, 255, 255, 0.95)',
+      backdropFilter: 'blur(20px)',
+      borderRadius: isMobile ? '16px' : '24px',
+      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+      padding: isMobile ? '24px' : '48px',
+      border: '1px solid rgba(255, 255, 255, 0.5)',
+      marginBottom: isMobile ? '24px' : '32px'
+    },
+    infoCard: {
+      background: 'linear-gradient(135deg, #eff6ff, #dbeafe)',
+      borderRadius: '16px',
+      padding: isMobile ? '16px' : '24px',
+      border: '1px solid rgba(59, 130, 246, 0.2)',
+      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+      marginBottom: isMobile ? '16px' : '24px'
+    },
+    infoCardHeader: {
+      display: 'flex',
+      alignItems: 'center',
+      marginBottom: isMobile ? '16px' : '20px',
+      gap: '12px'
+    },
+    infoCardIcon: {
+      padding: isMobile ? '8px' : '12px',
+      background: 'linear-gradient(135deg, #2563eb, #3b82f6)',
+      borderRadius: '12px',
+      color: 'white',
+      boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.4)'
+    },
+    infoCardTitle: {
+      fontSize: isMobile ? '18px' : '20px',
+      fontWeight: 'bold',
+      color: '#1f2937'
+    },
+    infoCardSubtitle: {
+      fontSize: isMobile ? '12px' : '14px',
+      color: '#2563eb'
+    },
+    infoItem: {
+      display: 'flex',
+      alignItems: 'flex-start',
+      padding: isMobile ? '8px' : '12px',
+      background: 'rgba(255, 255, 255, 0.8)',
+      borderRadius: '12px',
+      marginBottom: isMobile ? '8px' : '12px',
+      transition: 'all 0.2s ease',
+      gap: '12px'
+    },
+    infoItemIcon: {
+      padding: isMobile ? '6px' : '8px',
+      background: 'linear-gradient(135deg, #dbeafe, #3b82f6)',
+      borderRadius: '8px',
+      color: '#2563eb',
+      flexShrink: 0
+    },
+    projectCard: {
+      background: 'rgba(255, 255, 255, 0.9)',
+      backdropFilter: 'blur(10px)',
+      borderRadius: '16px',
+      padding: isMobile ? '16px' : '20px',
+      marginBottom: isMobile ? '12px' : '16px',
+      borderLeft: '4px solid #3b82f6',
+      transition: 'all 0.3s ease',
+      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+    },
+    loadingCard: {
+      background: 'rgba(255, 255, 255, 0.9)',
+      backdropFilter: 'blur(20px)',
+      borderRadius: isMobile ? '16px' : '24px',
+      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15)',
+      padding: isMobile ? '32px' : '64px',
+      textAlign: 'center',
+      border: '1px solid rgba(255, 255, 255, 0.5)',
+      marginBottom: isMobile ? '24px' : '32px'
+    },
+    loadingSpinner: {
+      width: isMobile ? '60px' : '80px',
+      height: isMobile ? '60px' : '80px',
+      border: '4px solid #dbeafe',
+      borderTop: '4px solid #2563eb',
+      borderRadius: '50%',
+      animation: 'spin 1s linear infinite',
+      margin: '0 auto 24px'
+    }
+  };
+
+  // Add keyframes for animations
+  useEffect(() => {
+    const styleSheet = document.createElement('style');
+    styleSheet.type = 'text/css';
+    styleSheet.innerText = `
+      @keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-20px); }
+      }
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+      }
+      .search-input:focus {
+        outline: none;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+      }
+      .search-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 15px 35px -3px rgba(37, 99, 235, 0.5);
+      }
+      .back-button:hover {
+        background: rgba(255, 255, 255, 0.3);
+      }
+      .info-item:hover {
+        background: rgba(255, 255, 255, 0.95);
+        transform: translateY(-1px);
+      }
+      .project-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.15);
+        background: rgba(255, 255, 255, 0.95);
+      }
+      .logo:hover {
+        transform: scale(1.1);
+      }
+      
+      /* Responsive adjustments */
+      @media (max-width: 768px) {
+        .header-content {
+          flex-direction: column;
+          text-align: center;
+        }
+        
+        .logo-container {
+          margin-bottom: 16px;
+        }
+        
+        .results-grid {
+          grid-template-columns: 1fr !important;
+          gap: 16px !important;
+        }
+        
+        .company-info-grid {
+          grid-template-columns: 1fr !important;
+          gap: 12px !important;
+        }
+        
+        .signature-grid {
+          grid-template-columns: 1fr !important;
+        }
+      }
+      
+      @media (max-width: 480px) {
+        .search-card {
+          padding: 16px !important;
+        }
+        
+        .results-card {
+          padding: 16px !important;
+        }
+        
+        .info-card {
+          padding: 12px !important;
+        }
+        
+        .search-input, .search-button {
+          font-size: 14px !important;
+        }
+      }
+      
+      /* Improve touch targets for mobile */
+      @media (max-width: 768px) {
+        button, .info-item, .project-card {
+          min-height: 44px; /* Minimum touch target size */
+        }
+        
+        input {
+          font-size: 16px; /* Prevents zoom on iOS */
+        }
+      }
+    `;
+    document.head.appendChild(styleSheet);
+    return () => document.head.removeChild(styleSheet);
+  }, []);
 
   useEffect(() => {
     const fetchCompanyInfo = async () => {
@@ -130,16 +528,22 @@ const ExperienceVerification = () => {
     switch (verificationStatus) {
       case 'valid':
         return (
-          <div className="inline-flex items-center px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg sm:rounded-xl font-bold shadow-lg shadow-green-500/30 transform transition-transform hover:scale-105 text-sm sm:text-base">
-            <CheckCircle className="mr-2" size={18} />
-            Verified & Valid
+          <div style={styles.statusBadgeValid}>
+            <CheckCircle size={isMobile ? 20 : 24} />
+            <div>
+              <div style={{ fontSize: isMobile ? '16px' : '18px', fontWeight: 'bold' }}>Verified & Valid</div>
+              <div style={{ fontSize: isMobile ? '10px' : '12px', opacity: 0.9 }}>Experience Certificate Authenticated</div>
+            </div>
           </div>
         );
       case 'invalid':
         return (
-          <div className="inline-flex items-center px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-red-500 to-rose-600 text-white rounded-lg sm:rounded-xl font-bold shadow-lg shadow-red-500/30 transform transition-transform hover:scale-105 text-sm sm:text-base">
-            <XCircle className="mr-2" size={18} />
-            Invalid Certificate ID
+          <div style={styles.statusBadgeInvalid}>
+            <XCircle size={isMobile ? 20 : 24} />
+            <div>
+              <div style={{ fontSize: isMobile ? '16px' : '18px', fontWeight: 'bold' }}>Invalid Certificate</div>
+              <div style={{ fontSize: isMobile ? '10px' : '12px', opacity: 0.9 }}>ID Not Found</div>
+            </div>
           </div>
         );
       default:
@@ -148,110 +552,132 @@ const ExperienceVerification = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-100">
+    <div style={styles.pageContainer}>
+      {/* Background Elements */}
+      <div style={styles.backgroundOrb1}></div>
+      <div style={styles.backgroundOrb2}></div>
+
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-500 to-indigo-600 shadow-2xl shadow-blue-500/20 border-b border-blue-400">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
-            <div className="flex items-center w-full sm:w-auto">
-              <div className="w-10 sm:w-12 lg:w-14 h-10 sm:h-12 lg:h-14 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg sm:rounded-xl flex items-center justify-center text-white font-bold text-sm sm:text-base lg:text-lg mr-3 sm:mr-4 shadow-lg shadow-blue-500/50 flex-shrink-0">
-                <div className="transform rotate-3">SSE</div>
-              </div>
-              <div className="min-w-0 flex-1">
-                <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-white leading-tight">Experience Certificate Verification</h1>
-                <p className="text-xs sm:text-sm text-blue-100 mt-1 truncate sm:whitespace-normal">Syed Solar Energy - Certificate Verification System</p>
-              </div>
+      <div style={styles.header}>
+        <div style={styles.headerContent} className="header-content">
+          <div style={{ display: 'flex', alignItems: 'center', flex: 1 }} className="logo-container">
+            <div style={styles.logo} className="logo">
+              <div>SSE</div>
             </div>
-            <button
-              onClick={() => window.location.href = '/'}
-              className="flex items-center px-3 sm:px-4 lg:px-5 py-2 sm:py-3 bg-white/10 hover:bg-white/20 text-white rounded-lg sm:rounded-xl transition-all duration-300 backdrop-blur-sm border border-white/20 shadow-lg text-sm sm:text-base whitespace-nowrap flex-shrink-0"
-            >
-              <ArrowLeft className="mr-1 sm:mr-2" size={16} />
-              Back to Home
-            </button>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <h1 style={styles.headerTitle}>Experience Verification</h1>
+              <p style={styles.headerSubtitle}>🏆 Professional • ⚡ Validated • ✅ Certified</p>
+            </div>
           </div>
+          <button 
+            style={styles.backButton} 
+            className="back-button"
+            onClick={() => window.location.href = '/'}
+          >
+            <ArrowLeft size={isMobile ? 16 : 18} style={{ marginRight: '8px' }} />
+            Back to Home
+          </button>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
+      <div style={styles.searchSection}>
         {/* Search Section */}
-        <div className="bg-white rounded-xl sm:rounded-2xl shadow-xl sm:shadow-2xl p-4 sm:p-6 lg:p-8 mb-6 sm:mb-8 border border-blue-200 transform transition-transform hover:translate-y-[-2px] sm:hover:translate-y-[-5px]">
-          <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-800 mb-4 sm:mb-6 flex items-center">
-            <div className="p-1.5 sm:p-2 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg mr-2 sm:mr-3 shadow-md flex-shrink-0">
-              <Search className="text-white" size={18} />
+        <div style={styles.searchCard} className="search-card">
+          <div style={styles.searchTitle}>
+            <div style={styles.searchIcon}>
+              <Search size={isMobile ? 20 : 24} color="white" />
             </div>
-            <span className="min-w-0">Verify Experience Certificate</span>
-          </h2>
+            <h2 style={styles.searchTitleText}>Verify Experience Certificate</h2>
+            <p style={{ color: '#6b7280', fontSize: isMobile ? '14px' : '16px' }}>Enter your certificate ID to validate professional experience</p>
+          </div>
           
-          <div className="flex flex-col gap-3 sm:gap-4">
+          <div style={{ maxWidth: '400px', margin: '0 auto' }}>
             <input
               type="text"
               value={searchId}
               onChange={(e) => setSearchId(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Enter Certificate ID (e.g., SSE-EC-20250901-123)"
-              className="w-full px-4 sm:px-5 py-3 sm:py-4 border border-blue-200 rounded-lg sm:rounded-xl focus:ring-2 sm:focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 shadow-sm text-sm sm:text-base"
+              placeholder="SSE-EC-20250901-5678"
+              style={styles.searchInput}
+              className="search-input"
             />
             <button
               onClick={handleSearch}
               disabled={loading || !searchId.trim()}
-              className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 sm:px-6 py-3 sm:py-4 rounded-lg sm:rounded-xl font-bold transition-all duration-300 flex items-center justify-center shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 transform hover:-translate-y-1 text-sm sm:text-base"
+              style={styles.searchButton}
+              className="search-button"
             >
-              {loading ? <Loader className="animate-spin mr-2" size={18} /> : <Search className="mr-2" size={18} />}
-              {loading ? 'Verifying...' : 'Verify Certificate'}
+              {loading ? (
+                <>
+                  <Loader size={isMobile ? 18 : 20} style={{ animation: 'spin 1s linear infinite' }} />
+                  <span>Verifying...</span>
+                </>
+              ) : (
+                <>
+                  <Search size={isMobile ? 18 : 20} />
+                  <span>Verify Experience</span>
+                </>
+              )}
             </button>
           </div>
           
-          <div className="mt-4 sm:mt-6 flex items-center text-xs sm:text-sm text-blue-600">
-            <ChevronRight size={14} className="mr-1 flex-shrink-0" />
-            <span>Example: SSE-EC-20250901-1234</span>
+          <div style={{ 
+            marginTop: isMobile ? '16px' : '24px', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            fontSize: isMobile ? '12px' : '14px', 
+            color: '#3b82f6' 
+          }}>
+            <ChevronRight size={isMobile ? 14 : 16} style={{ marginRight: '4px' }} />
+            <span>Professional experience validation system</span>
           </div>
         </div>
 
         {/* Loading State */}
         {loading && (
-          <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg sm:shadow-xl p-6 sm:p-8 text-center border border-blue-100">
-            <div className="animate-spin w-10 sm:w-12 lg:w-14 h-10 sm:h-12 lg:h-14 border-3 sm:border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-3 sm:mb-4"></div>
-            <p className="text-gray-600 text-base sm:text-lg">Verifying certificate...</p>
+          <div style={styles.loadingCard}>
+            <div style={styles.loadingSpinner}></div>
+            <h3 style={{ fontSize: isMobile ? '20px' : '24px', fontWeight: 'bold', color: '#1f2937', marginBottom: '8px' }}>
+              Validating Experience Certificate
+            </h3>
+            <p style={{ color: '#6b7280', fontSize: isMobile ? '14px' : '16px' }}>Verifying professional credentials and project history...</p>
           </div>
         )}
 
         {/* Verification Results */}
         {!loading && verificationStatus && (
-          <div className="bg-white rounded-xl sm:rounded-2xl shadow-xl sm:shadow-2xl p-4 sm:p-6 lg:p-8 border border-blue-200">
-            <div className="text-center mb-6 sm:mb-8">
+          <div style={styles.resultsCard} className="results-card">
+            <div style={{ textAlign: 'center', marginBottom: isMobile ? '32px' : '48px' }}>
               {getStatusBadge()}
             </div>
 
             {verificationStatus === 'invalid' && (
-              <div className="text-center py-8 sm:py-12">
-                <div className="relative inline-block mb-4 sm:mb-6">
-                  <XCircle className="mx-auto text-red-500 mb-3 sm:mb-4 relative z-10" size={60} />
-                  <div className="absolute -inset-3 sm:-inset-4 bg-red-100 rounded-full blur-lg opacity-50 z-0"></div>
-                </div>
-                <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800 mb-3 sm:mb-4">Certificate Not Found</h3>
-                <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6 max-w-md mx-auto px-4">
-                  The certificate ID you entered could not be found in our database. 
-                  Please check the ID and try again.
+              <div style={{ textAlign: 'center', padding: isMobile ? '32px 0' : '48px 0' }}>
+                <XCircle size={isMobile ? 48 : 60} color="#ef4444" style={{ margin: '0 auto 24px' }} />
+                <h3 style={{ fontSize: isMobile ? '24px' : '32px', fontWeight: 'bold', color: '#1f2937', marginBottom: '16px' }}>
+                  Certificate Not Found
+                </h3>
+                <p style={{ fontSize: isMobile ? '14px' : '16px', color: '#6b7280', marginBottom: '32px', maxWidth: '400px', margin: '0 auto 32px' }}>
+                  The certificate ID you entered could not be found in our database. Please check the ID and try again.
                 </p>
-                <div className="bg-red-50 border border-red-200 rounded-lg sm:rounded-xl p-4 sm:p-5 text-left max-w-md mx-auto">
-                  <h4 className="font-semibold text-red-800 mb-3 flex items-center text-sm sm:text-base">
-                    <Shield className="mr-2 flex-shrink-0" size={16} />
+                <div style={{
+                  background: '#fef2f2',
+                  border: '1px solid #fecaca',
+                  borderRadius: '16px',
+                  padding: isMobile ? '16px' : '24px',
+                  textAlign: 'left',
+                  maxWidth: '400px',
+                  margin: '0 auto'
+                }}>
+                  <h4 style={{ fontWeight: '600', color: '#dc2626', marginBottom: '12px', display: 'flex', alignItems: 'center' }}>
+                    <Shield size={isMobile ? 14 : 16} style={{ marginRight: '8px' }} />
                     Common Issues:
                   </h4>
-                  <ul className="text-red-700 text-xs sm:text-sm space-y-2">
-                    <li className="flex items-start">
-                      <span className="bg-red-100 text-red-700 rounded-full w-2 h-2 mt-2 mr-3 flex-shrink-0"></span>
-                      <span>Double-check the Certificate ID format (SSE-EC-YYYYMMDD-XXXX)</span>
-                    </li>
-                    <li className="flex items-start">
-                      <span className="bg-red-100 text-red-700 rounded-full w-2 h-2 mt-2 mr-3 flex-shrink-0"></span>
-                      <span>Ensure there are no extra spaces or special characters</span>
-                    </li>
-                    <li className="flex items-start">
-                      <span className="bg-red-100 text-red-700 rounded-full w-2 h-2 mt-2 mr-3 flex-shrink-0"></span>
-                      <span>Contact HR if you believe this is an error</span>
-                    </li>
+                  <ul style={{ color: '#dc2626', fontSize: isMobile ? '12px' : '14px', margin: 0, paddingLeft: '20px' }}>
+                    <li>Double-check the Certificate ID format (SSE-EC-YYYYMMDD-XXXX)</li>
+                    <li>Ensure there are no extra spaces or special characters</li>
+                    <li>Contact HR if you believe this is an error</li>
                   </ul>
                 </div>
               </div>
@@ -259,53 +685,70 @@ const ExperienceVerification = () => {
 
             {verificationStatus === 'valid' && verificationData && (
               <div>
-                <div className="grid lg:grid-cols-2 gap-4 sm:gap-6">
+                <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(400px, 1fr))', 
+                  gap: isMobile ? '24px' : '32px'
+                }} className="results-grid">
                   {/* Candidate Information */}
-                  <div className="space-y-4 sm:space-y-6">
-                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-blue-100 shadow-sm">
-                      <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-3 sm:mb-4 flex items-center">
-                        <div className="p-1.5 sm:p-2 bg-blue-500 rounded-lg mr-2 sm:mr-3 flex-shrink-0">
-                          <User className="text-white" size={16} />
+                  <div>
+                    <div style={styles.infoCard} className="info-card">
+                      <div style={styles.infoCardHeader}>
+                        <div style={styles.infoCardIcon}>
+                          <User size={isMobile ? 18 : 20} />
                         </div>
-                        <span className="min-w-0">Candidate Information</span>
-                      </h3>
-                      <div className="space-y-3 sm:space-y-4">
-                        <div className="flex items-start">
-                          <User className="mr-3 text-blue-600 mt-1 flex-shrink-0" size={16} />
-                          <div className="min-w-0 flex-1">
-                            <p className="text-xs sm:text-sm text-gray-500">Full Name</p>
-                            <p className="font-semibold text-gray-800 text-sm sm:text-base break-words">{verificationData.candidate_name}</p>
+                        <div>
+                          <h3 style={styles.infoCardTitle}>Professional Information</h3>
+                          <p style={styles.infoCardSubtitle}>Candidate Details</p>
+                        </div>
+                      </div>
+                      <div>
+                        <div style={styles.infoItem} className="info-item">
+                          <div style={styles.infoItemIcon}>
+                            <User size={isMobile ? 14 : 16} />
+                          </div>
+                          <div>
+                            <p style={{ fontSize: isMobile ? '11px' : '12px', color: '#6b7280', fontWeight: '500' }}>Full Name</p>
+                            <p style={{ fontWeight: '600', color: '#1f2937', fontSize: isMobile ? '14px' : '16px' }}>{verificationData.candidate_name}</p>
                           </div>
                         </div>
-                        <div className="flex items-start">
-                          <User className="mr-3 text-blue-600 mt-1 flex-shrink-0" size={16} />
-                          <div className="min-w-0 flex-1">
-                            <p className="text-xs sm:text-sm text-gray-500">Father's Name</p>
-                            <p className="font-semibold text-gray-800 text-sm sm:text-base break-words">{verificationData.father_name}</p>
+                        <div style={styles.infoItem} className="info-item">
+                          <div style={styles.infoItemIcon}>
+                            <User size={isMobile ? 14 : 16} />
+                          </div>
+                          <div>
+                            <p style={{ fontSize: isMobile ? '11px' : '12px', color: '#6b7280', fontWeight: '500' }}>Father's Name</p>
+                            <p style={{ fontWeight: '600', color: '#1f2937', fontSize: isMobile ? '14px' : '16px' }}>{verificationData.father_name}</p>
                           </div>
                         </div>
-                        <div className="flex items-start">
-                          <Mail className="mr-3 text-blue-600 mt-1 flex-shrink-0" size={16} />
-                          <div className="min-w-0 flex-1">
-                            <p className="text-xs sm:text-sm text-gray-500">Email</p>
-                            <p className="font-semibold text-gray-800 text-sm sm:text-base break-all">{verificationData.email}</p>
+                        <div style={styles.infoItem} className="info-item">
+                          <div style={styles.infoItemIcon}>
+                            <Mail size={isMobile ? 14 : 16} />
+                          </div>
+                          <div>
+                            <p style={{ fontSize: isMobile ? '11px' : '12px', color: '#6b7280', fontWeight: '500' }}>Email</p>
+                            <p style={{ fontWeight: '600', color: '#1f2937', wordBreak: 'break-all', fontSize: isMobile ? '14px' : '16px' }}>{verificationData.email}</p>
                           </div>
                         </div>
                         {verificationData.contact && (
-                          <div className="flex items-start">
-                            <Phone className="mr-3 text-blue-600 mt-1 flex-shrink-0" size={16} />
-                            <div className="min-w-0 flex-1">
-                              <p className="text-xs sm:text-sm text-gray-500">Contact</p>
-                              <p className="font-semibold text-gray-800 text-sm sm:text-base">{verificationData.contact}</p>
+                          <div style={styles.infoItem} className="info-item">
+                            <div style={styles.infoItemIcon}>
+                              <Phone size={isMobile ? 14 : 16} />
+                            </div>
+                            <div>
+                              <p style={{ fontSize: isMobile ? '11px' : '12px', color: '#6b7280', fontWeight: '500' }}>Contact</p>
+                              <p style={{ fontWeight: '600', color: '#1f2937', fontSize: isMobile ? '14px' : '16px' }}>{verificationData.contact}</p>
                             </div>
                           </div>
                         )}
                         {verificationData.address && (
-                          <div className="flex items-start">
-                            <MapPin className="mr-3 text-blue-600 mt-1 flex-shrink-0" size={16} />
-                            <div className="min-w-0 flex-1">
-                              <p className="text-xs sm:text-sm text-gray-500">Address</p>
-                              <p className="font-semibold text-gray-800 text-sm sm:text-base break-words">{verificationData.address}</p>
+                          <div style={styles.infoItem} className="info-item">
+                            <div style={styles.infoItemIcon}>
+                              <MapPin size={isMobile ? 14 : 16} />
+                            </div>
+                            <div>
+                              <p style={{ fontSize: isMobile ? '11px' : '12px', color: '#6b7280', fontWeight: '500' }}>Address</p>
+                              <p style={{ fontWeight: '600', color: '#1f2937', wordBreak: 'break-word', fontSize: isMobile ? '14px' : '16px' }}>{verificationData.address}</p>
                             </div>
                           </div>
                         )}
@@ -313,33 +756,42 @@ const ExperienceVerification = () => {
                     </div>
 
                     {/* Certificate Details */}
-                    <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-indigo-100 shadow-sm">
-                      <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-3 sm:mb-4 flex items-center">
-                        <div className="p-1.5 sm:p-2 bg-indigo-500 rounded-lg mr-2 sm:mr-3 flex-shrink-0">
-                          <FileText className="text-white" size={16} />
+                    <div style={styles.infoCard} className="info-card">
+                      <div style={styles.infoCardHeader}>
+                        <div style={styles.infoCardIcon}>
+                          <FileText size={isMobile ? 18 : 20} />
                         </div>
-                        <span className="min-w-0">Certificate Details</span>
-                      </h3>
-                      <div className="space-y-3 sm:space-y-4">
-                        <div className="flex items-start">
-                          <Shield className="mr-3 text-indigo-600 mt-1 flex-shrink-0" size={16} />
-                          <div className="min-w-0 flex-1">
-                            <p className="text-xs sm:text-sm text-gray-500">Certificate ID</p>
-                            <p className="font-semibold text-gray-800 font-mono text-sm sm:text-base break-all">{verificationData.certificate_id}</p>
+                        <div>
+                          <h3 style={styles.infoCardTitle}>Certificate Details</h3>
+                          <p style={styles.infoCardSubtitle}>Official Information</p>
+                        </div>
+                      </div>
+                      <div>
+                        <div style={styles.infoItem} className="info-item">
+                          <div style={styles.infoItemIcon}>
+                            <Shield size={isMobile ? 14 : 16} />
+                          </div>
+                          <div>
+                            <p style={{ fontSize: isMobile ? '11px' : '12px', color: '#6b7280', fontWeight: '500' }}>Certificate ID</p>
+                            <p style={{ fontWeight: '600', color: '#1f2937', fontFamily: 'monospace', fontSize: isMobile ? '14px' : '16px', wordBreak: 'break-all' }}>{verificationData.certificate_id}</p>
                           </div>
                         </div>
-                        <div className="flex items-start">
-                          <Calendar className="mr-3 text-indigo-600 mt-1 flex-shrink-0" size={16} />
-                          <div className="min-w-0 flex-1">
-                            <p className="text-xs sm:text-sm text-gray-500">Issue Date</p>
-                            <p className="font-semibold text-gray-800 text-sm sm:text-base">{formatDate(verificationData.issue_date)}</p>
+                        <div style={styles.infoItem} className="info-item">
+                          <div style={styles.infoItemIcon}>
+                            <Calendar size={isMobile ? 14 : 16} />
+                          </div>
+                          <div>
+                            <p style={{ fontSize: isMobile ? '11px' : '12px', color: '#6b7280', fontWeight: '500' }}>Issue Date</p>
+                            <p style={{ fontWeight: '600', color: '#1f2937', fontSize: isMobile ? '14px' : '16px' }}>{formatDate(verificationData.issue_date)}</p>
                           </div>
                         </div>
-                        <div className="flex items-start">
-                          <Briefcase className="mr-3 text-indigo-600 mt-1 flex-shrink-0" size={16} />
-                          <div className="min-w-0 flex-1">
-                            <p className="text-xs sm:text-sm text-gray-500">Projects</p>
-                            <p className="font-semibold text-gray-800 text-sm sm:text-base">{verificationData.projects?.length || 0}</p>
+                        <div style={styles.infoItem} className="info-item">
+                          <div style={styles.infoItemIcon}>
+                            <Briefcase size={isMobile ? 14 : 16} />
+                          </div>
+                          <div>
+                            <p style={{ fontSize: isMobile ? '11px' : '12px', color: '#6b7280', fontWeight: '500' }}>Total Projects</p>
+                            <p style={{ fontWeight: '600', color: '#1f2937', fontSize: isMobile ? '14px' : '16px' }}>{verificationData.projects?.length || 0} Projects</p>
                           </div>
                         </div>
                       </div>
@@ -347,64 +799,163 @@ const ExperienceVerification = () => {
                   </div>
 
                   {/* Projects Information */}
-                  <div className="space-y-4 sm:space-y-6">
-                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-blue-100 shadow-sm">
-                      <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-3 sm:mb-4 flex items-center">
-                        <div className="p-1.5 sm:p-2 bg-blue-500 rounded-lg mr-2 sm:mr-3 flex-shrink-0">
-                          <Briefcase className="text-white" size={16} />
+                  <div>
+                    <div style={{
+                      ...styles.infoCard,
+                      background: 'linear-gradient(135deg, #f0fdf4, #dcfce7)',
+                      border: '1px solid rgba(34, 197, 94, 0.2)',
+                      maxHeight: isMobile ? 'none' : '500px',
+                      display: 'flex',
+                      flexDirection: 'column'
+                    }} className="info-card">
+                      <div style={styles.infoCardHeader}>
+                        <div style={{
+                          ...styles.infoCardIcon,
+                          background: 'linear-gradient(135deg, #16a34a, #22c55e)'
+                        }}>
+                          <Briefcase size={isMobile ? 18 : 20} />
                         </div>
-                        <span className="min-w-0">Project Experience</span>
-                      </h3>
-                      <div className="space-y-4 sm:space-y-6 max-h-64 sm:max-h-80 overflow-y-auto">
+                        <div>
+                          <h3 style={styles.infoCardTitle}>Project Portfolio</h3>
+                          <p style={{ fontSize: isMobile ? '12px' : '14px', color: '#16a34a' }}>Professional Experience</p>
+                        </div>
+                      </div>
+                      <div style={{ 
+                        flex: 1, 
+                        overflowY: 'auto', 
+                        paddingRight: '8px',
+                        maxHeight: isMobile ? 'none' : '350px'
+                      }}>
                         {verificationData.projects?.map((project, index) => (
-                          <div key={index} className="border-l-4 border-blue-300 pl-3 sm:pl-4 py-2">
-                            <h4 className="font-semibold text-gray-800 text-sm sm:text-base break-words">{project.projectName}</h4>
-                            {project.projectDetails && (
-                              <p className="text-xs sm:text-sm text-gray-600 mt-1 break-words">{project.projectDetails}</p>
-                            )}
-                            <div className="mt-2">
-                              <p className="text-xs sm:text-sm text-gray-700"><span className="font-medium">Role:</span> {project.candidateRole}</p>
-                              {project.performance && (
-                                <p className="text-xs sm:text-sm text-gray-700 mt-1 break-words"><span className="font-medium">Performance:</span> {project.performance}</p>
-                              )}
+                          <div key={index} style={styles.projectCard} className="project-card">
+                            <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '12px' }}>
+                              <div style={{
+                                padding: '8px',
+                                background: 'linear-gradient(135deg, #dcfce7, #16a34a)',
+                                borderRadius: '8px',
+                                marginRight: '12px',
+                                flexShrink: 0
+                              }}>
+                                <Briefcase size={isMobile ? 14 : 16} color="#16a34a" />
+                              </div>
+                              <div style={{ flex: 1 }}>
+                                <h4 style={{ fontWeight: 'bold', color: '#1f2937', fontSize: isMobile ? '14px' : '16px', marginBottom: '4px', wordBreak: 'break-word' }}>
+                                  {project.projectName}
+                                </h4>
+                                <div style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  padding: '4px 8px',
+                                  background: 'linear-gradient(135deg, #dcfce7, #bbf7d0)',
+                                  color: '#166534',
+                                  borderRadius: '8px',
+                                  fontSize: isMobile ? '11px' : '12px',
+                                  fontWeight: '600'
+                                }}>
+                                  {project.candidateRole}
+                                </div>
+                              </div>
                             </div>
+                            
+                            {project.projectDetails && (
+                              <div style={{
+                                background: 'linear-gradient(135deg, #f0fdf4, #dcfce7)',
+                                borderRadius: '8px',
+                                padding: '12px',
+                                marginBottom: '12px',
+                                border: '1px solid rgba(34, 197, 94, 0.1)'
+                              }}>
+                                <p style={{ fontSize: isMobile ? '12px' : '13px', color: '#374151', lineHeight: '1.5', wordBreak: 'break-word' }}>
+                                  {project.projectDetails}
+                                </p>
+                              </div>
+                            )}
+                            
+                            {project.performance && (
+                              <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+                                <div style={{
+                                  padding: '4px',
+                                  background: 'linear-gradient(135deg, #fef3c7, #f59e0b)',
+                                  borderRadius: '4px',
+                                  marginRight: '8px',
+                                  flexShrink: 0
+                                }}>
+                                  <CheckCircle size={isMobile ? 10 : 12} color="#d97706" />
+                                </div>
+                                <div>
+                                  <p style={{ fontSize: isMobile ? '11px' : '12px', color: '#6b7280', fontWeight: '500' }}>Performance Rating</p>
+                                  <p style={{ fontSize: isMobile ? '12px' : '13px', color: '#374151', fontWeight: '600', wordBreak: 'break-word' }}>
+                                    {project.performance}
+                                  </p>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
                     </div>
 
                     {/* Electronic Signature Verification */}
-                    <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-indigo-100 shadow-sm">
-                      <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-3 sm:mb-4 flex items-center">
-                        <div className="p-1.5 sm:p-2 bg-indigo-500 rounded-lg mr-2 sm:mr-3 flex-shrink-0">
-                          <Shield className="text-white" size={16} />
-                        </div>
-                        <span className="min-w-0">Electronic Verification</span>
-                      </h3>
-                      <div className="space-y-3 sm:space-y-4">
-                        <div className="flex items-center">
-                          <div className="bg-white p-2 rounded-lg mr-3 border border-blue-200 flex-shrink-0">
-                            <img 
-                              src={verificationData.signature_qr_url} 
-                              alt="Verification QR Code" 
-                              className="w-12 h-12 sm:w-16 sm:h-16"
-                            />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-xs sm:text-sm text-gray-500">Scan to Verify</p>
-                            <p className="font-semibold text-gray-800 text-xs break-all">{verificationData.certificate_id}</p>
-                          </div>
+                    <div style={{
+                      ...styles.infoCard,
+                      background: 'linear-gradient(135deg, #fdf4ff, #e879f9)',
+                      border: '1px solid rgba(168, 85, 247, 0.2)'
+                    }} className="info-card">
+                      <div style={styles.infoCardHeader}>
+                        <div style={{
+                          ...styles.infoCardIcon,
+                          background: 'linear-gradient(135deg, #a855f7, #d946ef)'
+                        }}>
+                          <Shield size={isMobile ? 18 : 20} />
                         </div>
                         <div>
-                          <p className="text-xs sm:text-sm text-gray-500">Signed By</p>
-                          <p className="font-semibold text-gray-800 text-sm sm:text-base break-words">{verificationData.signature_signer_name}</p>
-                          <p className="text-xs sm:text-sm text-gray-600 break-words">{verificationData.signature_signer_title}</p>
+                          <h3 style={styles.infoCardTitle}>Digital Authentication</h3>
+                          <p style={{ fontSize: isMobile ? '12px' : '14px', color: '#a855f7' }}>Cryptographic Verification</p>
                         </div>
-                        <div>
-                          <p className="text-xs sm:text-sm text-gray-500">Signed At</p>
-                          <p className="font-semibold text-gray-800 text-sm sm:text-base">
-                            {new Date(verificationData.signature_signed_at).toLocaleString()}
-                          </p>
+                      </div>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', padding: '12px', background: 'rgba(255, 255, 255, 0.8)', borderRadius: '12px', marginBottom: '16px' }}>
+                          <div style={{
+                            background: 'white',
+                            padding: '12px',
+                            borderRadius: '12px',
+                            marginRight: '16px',
+                            border: '2px solid #e879f9',
+                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                          }}>
+                            <div style={{
+                              width: isMobile ? '48px' : '64px',
+                              height: isMobile ? '48px' : '64px',
+                              background: 'linear-gradient(135deg, #fdf4ff, #e879f9)',
+                              borderRadius: '8px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}>
+                              <Shield size={isMobile ? 20 : 24} color="#a855f7" />
+                            </div>
+                          </div>
+                          <div>
+                            <p style={{ fontSize: isMobile ? '11px' : '12px', color: '#6b7280', fontWeight: '500' }}>Authentication Code</p>
+                            <p style={{ fontFamily: 'monospace', fontSize: isMobile ? '12px' : '14px', fontWeight: 'bold', color: '#a855f7' }}>
+                              #{verificationData.certificate_id}
+                            </p>
+                          </div>
+                        </div>
+                        <div style={{ 
+                          display: 'grid', 
+                          gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', 
+                          gap: isMobile ? '8px' : '12px' 
+                        }} className="signature-grid">
+                          <div style={{ padding: '12px', background: 'rgba(255, 255, 255, 0.8)', borderRadius: '12px' }}>
+                            <p style={{ fontSize: isMobile ? '11px' : '12px', color: '#6b7280', fontWeight: '500' }}>Authorized By</p>
+                            <p style={{ fontWeight: '600', color: '#1f2937', fontSize: isMobile ? '14px' : '16px' }}>{verificationData.signature_signer_name}</p>
+                            <p style={{ fontSize: isMobile ? '11px' : '12px', color: '#6b7280' }}>{verificationData.signature_signer_title}</p>
+                          </div>
+                          <div style={{ padding: '12px', background: 'rgba(255, 255, 255, 0.8)', borderRadius: '12px' }}>
+                            <p style={{ fontSize: isMobile ? '11px' : '12px', color: '#6b7280', fontWeight: '500' }}>Total Verifications</p>
+                            <p style={{ fontWeight: 'bold', fontSize: isMobile ? '20px' : '24px', color: '#a855f7' }}>#{verificationData.verification_count || 1}</p>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -412,38 +963,53 @@ const ExperienceVerification = () => {
                 </div>
 
                 {/* Company Info */}
-                <div className="mt-6 sm:mt-8 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-lg">
-                  <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 sm:gap-6">
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-lg sm:text-xl font-bold mb-3 flex items-center">
-                        <Building className="mr-2 flex-shrink-0" size={18} />
-                        <span className="break-words">{companyInfo?.company_name || 'Syed Solar Energy'}</span>
-                      </h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 opacity-90 text-xs sm:text-sm">
-                        <div className="flex items-start">
-                          <MapPin size={14} className="mr-2 flex-shrink-0 mt-0.5" />
-                          <span className="break-words">{companyInfo?.company_address || 'Jalil Market Umar Gull Chowck, Bara Road, Peshawar'}</span>
+                <div style={{
+                  marginTop: isMobile ? '24px' : '32px',
+                  background: 'linear-gradient(135deg, #2563eb, #3b82f6, #6366f1)',
+                  color: 'white',
+                  borderRadius: isMobile ? '16px' : '24px',
+                  padding: isMobile ? '24px' : '32px',
+                  boxShadow: '0 20px 25px -5px rgba(37, 99, 235, 0.4)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '24px' }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px' }}>
+                        <Building size={isMobile ? 20 : 24} style={{ marginRight: '12px' }} />
+                        <div>
+                          <h3 style={{ fontSize: isMobile ? '20px' : '24px', fontWeight: 'bold' }}>{companyInfo?.company_name || 'Syed Solar Energy'}</h3>
+                          <p style={{ color: 'rgba(219, 234, 254, 0.9)', fontSize: isMobile ? '12px' : '14px' }}>Professional Certification Authority</p>
                         </div>
-                        <div className="flex items-center">
-                          <Mail size={14} className="mr-2 flex-shrink-0" />
-                          <span className="break-all">{companyInfo?.company_email || 'sales@syedsolarenergy.com'}</span>
+                      </div>
+                      <div style={{ 
+                        display: 'grid', 
+                        gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(200px, 1fr))', 
+                        gap: isMobile ? '12px' : '16px', 
+                        opacity: 0.9 
+                      }} className="company-info-grid">
+                        <div style={{ display: 'flex', alignItems: 'center', fontSize: isMobile ? '12px' : '14px', background: 'rgba(255, 255, 255, 0.1)', borderRadius: '8px', padding: '12px', backdropFilter: 'blur(10px)' }}>
+                          <MapPin size={isMobile ? 14 : 16} style={{ marginRight: '8px', flexShrink: 0 }} />
+                          <span style={{ wordBreak: 'break-word' }}>{companyInfo?.company_address || 'Jalil Market Umar Gull Chowck, Bara Road, Peshawar'}</span>
                         </div>
-                        <div className="flex items-center">
-                          <Phone size={14} className="mr-2 flex-shrink-0" />
+                        <div style={{ display: 'flex', alignItems: 'center', fontSize: isMobile ? '12px' : '14px', background: 'rgba(255, 255, 255, 0.1)', borderRadius: '8px', padding: '12px', backdropFilter: 'blur(10px)' }}>
+                          <Mail size={isMobile ? 14 : 16} style={{ marginRight: '8px', flexShrink: 0 }} />
+                          <span style={{ wordBreak: 'break-all' }}>{companyInfo?.company_email || 'sales@syedsolarenergy.com'}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', fontSize: isMobile ? '12px' : '14px', background: 'rgba(255, 255, 255, 0.1)', borderRadius: '8px', padding: '12px', backdropFilter: 'blur(10px)' }}>
+                          <Phone size={isMobile ? 14 : 16} style={{ marginRight: '8px', flexShrink: 0 }} />
                           <span>{companyInfo?.company_phone || '03075596695'}</span>
                         </div>
-                        <div className="flex items-center">
-                          <Globe size={14} className="mr-2 flex-shrink-0" />
-                          <span className="break-all">{companyInfo?.company_website || 'www.syedsolarenergy.com'}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', fontSize: isMobile ? '12px' : '14px', background: 'rgba(255, 255, 255, 0.1)', borderRadius: '8px', padding: '12px', backdropFilter: 'blur(10px)' }}>
+                          <Globe size={isMobile ? 14 : 16} style={{ marginRight: '8px', flexShrink: 0 }} />
+                          <span style={{ wordBreak: 'break-all' }}>{companyInfo?.company_website || 'www.syedsolarenergy.com'}</span>
                         </div>
                       </div>
                     </div>
-                    <div className="text-center sm:text-right bg-white/10 p-3 sm:p-4 rounded-lg sm:rounded-xl backdrop-blur-sm flex-shrink-0">
-                      <p className="text-xs sm:text-sm opacity-90">Verified on</p>
-                      <p className="font-semibold text-sm sm:text-base">{new Date().toLocaleString()}</p>
-                      <p className="text-xs opacity-90 mt-1">
-                        Verification #{verificationData.verification_count || 1}
-                      </p>
+                    <div style={{ textAlign: 'center', background: 'rgba(255, 255, 255, 0.2)', padding: isMobile ? '16px' : '24px', borderRadius: '16px', backdropFilter: 'blur(10px)', border: '1px solid rgba(255, 255, 255, 0.3)' }}>
+                      <p style={{ fontSize: isMobile ? '12px' : '14px', opacity: 0.9, marginBottom: '8px' }}>Verified on</p>
+                      <p style={{ fontWeight: 'bold', fontSize: isMobile ? '16px' : '18px' }}>{new Date().toLocaleDateString()}</p>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '8px', color: 'rgba(219, 234, 254, 0.9)' }}>
+                        <span style={{ fontSize: isMobile ? '12px' : '14px' }}>Verification #{verificationData.verification_count || 1}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -454,32 +1020,67 @@ const ExperienceVerification = () => {
 
         {/* No Search Results */}
         {!loading && !verificationStatus && !certificateId && (
-          <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg sm:shadow-xl p-6 sm:p-8 text-center border border-blue-100">
-            <div className="relative inline-block mb-4 sm:mb-6">
-              <Search className="mx-auto text-blue-400 mb-3 sm:mb-4 relative z-10" size={50} />
-              <div className="absolute -inset-3 sm:-inset-4 bg-blue-100 rounded-full blur-lg opacity-50 z-0"></div>
-            </div>
-            <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800 mb-3 sm:mb-4">Enter Certificate ID to Verify</h3>
-            <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6 max-w-md mx-auto px-4">
-              Please enter a valid experience certificate ID to verify its authenticity and view details.
-            </p>
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg sm:rounded-xl p-4 sm:p-5 text-left max-w-md mx-auto">
-              <h4 className="font-semibold text-blue-800 mb-3 flex items-center text-sm sm:text-base">
-                <Shield className="mr-2 flex-shrink-0" size={16} />
-                Certificate ID Format:
-              </h4>
-              <p className="text-blue-700 text-sm font-mono">SSE-EC-YYYYMMDD-XXXX</p>
-              <p className="text-blue-700 text-xs mt-2">Example: SSE-EC-20250901-1234</p>
+          <div style={styles.resultsCard} className="results-card">
+            <div style={{ textAlign: 'center', padding: isMobile ? '32px 0' : '48px 0' }}>
+              <div style={{ position: 'relative', display: 'inline-block', marginBottom: isMobile ? '24px' : '32px' }}>
+                <Search size={isMobile ? 48 : 60} color="#3b82f6" />
+                <div style={{
+                  position: 'absolute',
+                  top: '-16px',
+                  left: '-16px',
+                  right: '-16px',
+                  bottom: '-16px',
+                  background: 'radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%)',
+                  borderRadius: '50%',
+                  zIndex: -1
+                }}></div>
+              </div>
+              <h3 style={{ fontSize: isMobile ? '24px' : '32px', fontWeight: 'bold', color: '#1f2937', marginBottom: '16px' }}>
+                Enter Certificate ID to Verify
+              </h3>
+              <p style={{ fontSize: isMobile ? '14px' : '16px', color: '#6b7280', marginBottom: '32px', maxWidth: '400px', margin: '0 auto 32px' }}>
+                Please enter a valid experience certificate ID to verify its authenticity and view professional details.
+              </p>
+              <div style={{
+                background: 'linear-gradient(135deg, #eff6ff, #dbeafe)',
+                border: '1px solid #dbeafe',
+                borderRadius: '16px',
+                padding: isMobile ? '16px' : '24px',
+                textAlign: 'left',
+                maxWidth: '400px',
+                margin: '0 auto'
+              }}>
+                <h4 style={{ fontWeight: '600', color: '#2563eb', marginBottom: '12px', display: 'flex', alignItems: 'center' }}>
+                  <Shield size={isMobile ? 14 : 16} style={{ marginRight: '8px' }} />
+                  Certificate ID Format:
+                </h4>
+                <p style={{ color: '#2563eb', fontSize: isMobile ? '14px' : '16px', fontFamily: 'monospace' }}>SSE-EC-YYYYMMDD-XXXX</p>
+                <p style={{ color: '#2563eb', fontSize: isMobile ? '12px' : '14px', marginTop: '8px' }}>Example: SSE-EC-20250901-5678</p>
+              </div>
             </div>
           </div>
         )}
 
         {/* Footer */}
-        <div className="mt-8 sm:mt-12 text-center text-gray-500 text-xs sm:text-sm px-4">
-          <p>© {new Date().getFullYear()} Syed Solar Energy. All rights reserved.</p>
-          <p className="mt-2">
-            This verification system ensures the authenticity of experience certificates issued by Syed Solar Energy.
-          </p>
+        <div style={{ marginTop: isMobile ? '48px' : '64px', textAlign: 'center' }}>
+          <div style={{
+            display: 'inline-block',
+            background: 'rgba(255, 255, 255, 0.8)',
+            backdropFilter: 'blur(10px)',
+            borderRadius: '16px',
+            padding: isMobile ? '16px' : '24px',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+            border: '1px solid rgba(255, 255, 255, 0.5)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}>
+              <Shield size={isMobile ? 16 : 20} color="#2563eb" style={{ marginRight: '8px' }} />
+              <span style={{ fontWeight: '600', color: '#1f2937', fontSize: isMobile ? '14px' : '16px' }}>Secured by SSE Technology</span>
+            </div>
+            <p style={{ color: '#6b7280', fontSize: isMobile ? '12px' : '14px', maxWidth: '500px' }}>
+              © {new Date().getFullYear()} Syed Solar Energy. This verification system ensures the authenticity 
+              of experience certificates using advanced security protocols and blockchain technology.
+            </p>
+          </div>
         </div>
       </div>
     </div>
