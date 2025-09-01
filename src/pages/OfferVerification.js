@@ -19,7 +19,8 @@ import {
   Eye,
   Loader,
   Building,
-  Globe
+  Globe,
+  ChevronRight
 } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 
@@ -158,22 +159,22 @@ const OfferVerification = () => {
     switch (verificationStatus) {
       case 'valid':
         return (
-          <div className="inline-flex items-center px-4 py-2 bg-green-100 text-green-800 rounded-full font-semibold">
-            <CheckCircle className="mr-2" size={20} />
+          <div className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-bold shadow-lg shadow-green-500/30 transform transition-transform hover:scale-105">
+            <CheckCircle className="mr-2" size={22} />
             Verified & Valid
           </div>
         );
       case 'expired':
         return (
-          <div className="inline-flex items-center px-4 py-2 bg-yellow-100 text-yellow-800 rounded-full font-semibold">
-            <Clock className="mr-2" size={20} />
+          <div className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-xl font-bold shadow-lg shadow-amber-500/30 transform transition-transform hover:scale-105">
+            <Clock className="mr-2" size={22} />
             Expired
           </div>
         );
       case 'invalid':
         return (
-          <div className="inline-flex items-center px-4 py-2 bg-red-100 text-red-800 rounded-full font-semibold">
-            <XCircle className="mr-2" size={20} />
+          <div className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-red-500 to-rose-600 text-white rounded-xl font-bold shadow-lg shadow-red-500/30 transform transition-transform hover:scale-105">
+            <XCircle className="mr-2" size={22} />
             Invalid Offer ID
           </div>
         );
@@ -183,25 +184,25 @@ const OfferVerification = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100">
       {/* Header */}
-      <div className="bg-white shadow-lg border-b">
+      <div className="bg-gradient-to-r from-orange-500 to-amber-600 shadow-2xl shadow-orange-500/20 border-b border-orange-400">
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-lg mr-4">
-                SSE
+              <div className="w-14 h-14 bg-gradient-to-br from-orange-600 to-amber-600 rounded-xl flex items-center justify-center text-white font-bold text-lg mr-4 shadow-lg shadow-orange-500/50">
+                <div className="transform rotate-3">SSE</div>
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-800">Offer Letter Verification</h1>
-                <p className="text-gray-600">Syed Solar Energy - Employment Verification System</p>
+                <h1 className="text-2xl md:text-3xl font-bold text-white">Offer Letter Verification</h1>
+                <p className="text-amber-100">Syed Solar Energy - Employment Verification System</p>
               </div>
             </div>
             <button
               onClick={() => window.location.href = '/'}
-              className="flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors duration-200"
+              className="flex items-center px-5 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-all duration-300 backdrop-blur-sm border border-white/20 shadow-lg"
             >
-              <ArrowLeft className="mr-2" size={16} />
+              <ArrowLeft className="mr-2" size={18} />
               Back to Home
             </button>
           </div>
@@ -210,9 +211,11 @@ const OfferVerification = () => {
 
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Search Section */}
-        <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8 mb-8">
-          <h2 className="text-xl md:text-2xl font-semibold text-gray-800 mb-6 flex items-center">
-            <Search className="mr-3 text-blue-600" />
+        <div className="bg-white rounded-2xl shadow-2xl p-6 md:p-8 mb-8 border border-orange-200 transform transition-transform hover:translate-y-[-5px]">
+          <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-6 flex items-center">
+            <div className="p-2 bg-gradient-to-r from-orange-500 to-amber-500 rounded-lg mr-3 shadow-md">
+              <Search className="text-white" size={24} />
+            </div>
             Verify Offer Letter
           </h2>
           
@@ -223,48 +226,68 @@ const OfferVerification = () => {
               onChange={(e) => setSearchId(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="Enter Offer ID (e.g., SSE-OL-20250901-123)"
-              className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+              className="flex-1 px-5 py-4 border border-orange-200 rounded-xl focus:ring-4 focus:ring-orange-500/20 focus:border-orange-500 transition-all duration-300 shadow-sm"
             />
             <button
               onClick={handleSearch}
               disabled={loading || !searchId.trim()}
-              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center"
+              className="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-4 rounded-xl font-bold transition-all duration-300 flex items-center justify-center shadow-lg shadow-orange-500/30 hover:shadow-orange-500/50 transform hover:-translate-y-1"
             >
-              {loading ? <Loader className="animate-spin mr-2" size={20} /> : <Search className="mr-2" size={20} />}
-              {loading ? 'Verifying...' : 'Verify'}
+              {loading ? <Loader className="animate-spin mr-2" size={22} /> : <Search className="mr-2" size={22} />}
+              {loading ? 'Verifying...' : 'Verify Offer'}
             </button>
+          </div>
+          
+          <div className="mt-6 flex items-center text-sm text-amber-600">
+            <ChevronRight size={16} className="mr-1" />
+            <span>Example: SSE-OL-20250901-1234</span>
           </div>
         </div>
 
         {/* Loading State */}
         {loading && (
-          <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
-            <div className="animate-spin w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+          <div className="bg-white rounded-2xl shadow-xl p-8 text-center border border-orange-100">
+            <div className="animate-spin w-14 h-14 border-4 border-orange-500 border-t-transparent rounded-full mx-auto mb-4"></div>
             <p className="text-gray-600 text-lg">Verifying offer letter...</p>
           </div>
         )}
 
         {/* Verification Results */}
         {!loading && verificationStatus && (
-          <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 md:p-8 border border-orange-200">
             <div className="text-center mb-8">
               {getStatusBadge()}
             </div>
 
             {verificationStatus === 'invalid' && (
               <div className="text-center py-12">
-                <XCircle className="mx-auto text-red-500 mb-4" size={64} />
-                <h3 className="text-2xl font-bold text-gray-800 mb-4">Offer Letter Not Found</h3>
-                <p className="text-gray-600 mb-6">
+                <div className="relative inline-block mb-6">
+                  <XCircle className="mx-auto text-red-500 mb-4 relative z-10" size={80} />
+                  <div className="absolute -inset-4 bg-red-100 rounded-full blur-lg opacity-50 z-0"></div>
+                </div>
+                <h3 className="text-2xl md:text-3xl font-bold text-gray-800 mb-4">Offer Letter Not Found</h3>
+                <p className="text-gray-600 mb-6 max-w-md mx-auto">
                   The offer ID you entered could not be found in our database. 
                   Please check the ID and try again.
                 </p>
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-left max-w-md mx-auto">
-                  <h4 className="font-semibold text-red-800 mb-2">Common Issues:</h4>
-                  <ul className="text-red-700 text-sm space-y-1">
-                    <li>• Double-check the Offer ID format (SSE-OL-YYYYMMDD-XXXX)</li>
-                    <li>• Ensure there are no extra spaces or special characters</li>
-                    <li>• Contact HR if you believe this is an error</li>
+                <div className="bg-red-50 border border-red-200 rounded-xl p-5 text-left max-w-md mx-auto">
+                  <h4 className="font-semibold text-red-800 mb-3 flex items-center">
+                    <Shield className="mr-2" size={18} />
+                    Common Issues:
+                  </h4>
+                  <ul className="text-red-700 text-sm space-y-2">
+                    <li className="flex items-start">
+                      <span className="bg-red-100 text-red-700 rounded-full p-1 mr-2">•</span>
+                      <span>Double-check the Offer ID format (SSE-OL-YYYYMMDD-XXXX)</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="bg-red-100 text-red-700 rounded-full p-1 mr-2">•</span>
+                      <span>Ensure there are no extra spaces or special characters</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="bg-red-100 text-red-700 rounded-full p-1 mr-2">•</span>
+                      <span>Contact HR if you believe this is an error</span>
+                    </li>
                   </ul>
                 </div>
               </div>
@@ -272,74 +295,78 @@ const OfferVerification = () => {
 
             {(verificationStatus === 'valid' || verificationStatus === 'expired') && verificationData && (
               <div>
-                <div className="grid md:grid-cols-2 gap-8">
+                <div className="grid md:grid-cols-2 gap-6">
                   {/* Employee Information */}
                   <div className="space-y-6">
-                    <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6">
+                    <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl p-6 border border-orange-100 shadow-sm">
                       <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
-                        <User className="mr-2 text-blue-600" />
+                        <div className="p-2 bg-orange-500 rounded-lg mr-3">
+                          <User className="text-white" size={20} />
+                        </div>
                         Employee Information
                       </h3>
-                      <div className="space-y-3">
+                      <div className="space-y-4">
                         <div className="flex items-center">
-                          <User className="mr-3 text-gray-500" size={16} />
+                          <User className="mr-3 text-amber-600" size={18} />
                           <div>
                             <p className="text-sm text-gray-500">Full Name</p>
-                            <p className="font-semibold">{verificationData.employee_name}</p>
+                            <p className="font-semibold text-gray-800">{verificationData.employee_name}</p>
                           </div>
                         </div>
                         <div className="flex items-center">
-                          <Mail className="mr-3 text-gray-500" size={16} />
+                          <Mail className="mr-3 text-amber-600" size={18} />
                           <div>
                             <p className="text-sm text-gray-500">Email</p>
-                            <p className="font-semibold">{verificationData.employee_email}</p>
+                            <p className="font-semibold text-gray-800">{verificationData.employee_email}</p>
                           </div>
                         </div>
                         {verificationData.employee_phone && (
                           <div className="flex items-center">
-                            <Phone className="mr-3 text-gray-500" size={16} />
+                            <Phone className="mr-3 text-amber-600" size={18} />
                             <div>
                               <p className="text-sm text-gray-500">Phone</p>
-                              <p className="font-semibold">{verificationData.employee_phone}</p>
+                              <p className="font-semibold text-gray-800">{verificationData.employee_phone}</p>
                             </div>
                           </div>
                         )}
                         {verificationData.employee_address && (
                           <div className="flex items-start">
-                            <MapPin className="mr-3 text-gray-500 mt-1" size={16} />
+                            <MapPin className="mr-3 text-amber-600 mt-1" size={18} />
                             <div>
                               <p className="text-sm text-gray-500">Address</p>
-                              <p className="font-semibold">{verificationData.employee_address}</p>
+                              <p className="font-semibold text-gray-800">{verificationData.employee_address}</p>
                             </div>
                           </div>
                         )}
                       </div>
                     </div>
 
-                    <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-6">
+                    <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-6 border border-amber-100 shadow-sm">
                       <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
-                        <Briefcase className="mr-2 text-green-600" />
+                        <div className="p-2 bg-amber-500 rounded-lg mr-3">
+                          <Briefcase className="text-white" size={20} />
+                        </div>
                         Position Details
                       </h3>
-                      <div className="space-y-3">
+                      <div className="space-y-4">
                         <div className="flex items-center">
-                          <Briefcase className="mr-3 text-gray-500" size={16} />
+                          <Briefcase className="mr-3 text-amber-600" size={18} />
                           <div>
                             <p className="text-sm text-gray-500">Position</p>
-                            <p className="font-semibold">{verificationData.position}</p>
+                            <p className="font-semibold text-gray-800">{verificationData.position}</p>
                           </div>
                         </div>
                         {verificationData.department && (
                           <div className="flex items-center">
-                            <FileText className="mr-3 text-gray-500" size={16} />
+                            <FileText className="mr-3 text-amber-600" size={18} />
                             <div>
                               <p className="text-sm text-gray-500">Department</p>
-                              <p className="font-semibold">{verificationData.department}</p>
+                              <p className="font-semibold text-gray-800">{verificationData.department}</p>
                             </div>
                           </div>
                         )}
                         <div className="flex items-center">
-                          <DollarSign className="mr-3 text-gray-500" size={16} />
+                          <DollarSign className="mr-3 text-amber-600" size={18} />
                           <div>
                             <p className="text-sm text-gray-500">Monthly Salary</p>
                             <p className="font-semibold text-green-600 text-lg">
@@ -349,10 +376,10 @@ const OfferVerification = () => {
                         </div>
                         {verificationData.reporting_manager && (
                           <div className="flex items-center">
-                            <User className="mr-3 text-gray-500" size={16} />
+                            <User className="mr-3 text-amber-600" size={18} />
                             <div>
                               <p className="text-sm text-gray-500">Reporting Manager</p>
-                              <p className="font-semibold">{verificationData.reporting_manager}</p>
+                              <p className="font-semibold text-gray-800">{verificationData.reporting_manager}</p>
                             </div>
                           </div>
                         )}
@@ -362,46 +389,48 @@ const OfferVerification = () => {
 
                   {/* Offer Details */}
                   <div className="space-y-6">
-                    <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-6">
+                    <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl p-6 border border-orange-100 shadow-sm">
                       <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
-                        <FileText className="mr-2 text-purple-600" />
+                        <div className="p-2 bg-orange-500 rounded-lg mr-3">
+                          <FileText className="text-white" size={20} />
+                        </div>
                         Offer Details
                       </h3>
-                      <div className="space-y-3">
+                      <div className="space-y-4">
                         <div className="flex items-center">
-                          <Shield className="mr-3 text-gray-500" size={16} />
+                          <Shield className="mr-3 text-amber-600" size={18} />
                           <div>
                             <p className="text-sm text-gray-500">Offer ID</p>
-                            <p className="font-semibold font-mono">{verificationData.offer_id}</p>
+                            <p className="font-semibold text-gray-800 font-mono">{verificationData.offer_id}</p>
                           </div>
                         </div>
                         <div className="flex items-center">
-                          <Calendar className="mr-3 text-gray-500" size={16} />
+                          <Calendar className="mr-3 text-amber-600" size={18} />
                           <div>
                             <p className="text-sm text-gray-500">Issue Date</p>
-                            <p className="font-semibold">{formatDate(verificationData.issue_date)}</p>
+                            <p className="font-semibold text-gray-800">{formatDate(verificationData.issue_date)}</p>
                           </div>
                         </div>
                         <div className="flex items-center">
-                          <Calendar className="mr-3 text-gray-500" size={16} />
+                          <Calendar className="mr-3 text-amber-600" size={18} />
                           <div>
                             <p className="text-sm text-gray-500">Start Date</p>
-                            <p className="font-semibold">{formatDate(verificationData.start_date)}</p>
+                            <p className="font-semibold text-gray-800">{formatDate(verificationData.start_date)}</p>
                           </div>
                         </div>
                         <div className="flex items-center">
-                          <Clock className="mr-3 text-gray-500" size={16} />
+                          <Clock className="mr-3 text-amber-600" size={18} />
                           <div>
                             <p className="text-sm text-gray-500">Probation Period</p>
-                            <p className="font-semibold">{verificationData.probation_period}</p>
+                            <p className="font-semibold text-gray-800">{verificationData.probation_period}</p>
                           </div>
                         </div>
                         {verificationData.working_hours && (
                           <div className="flex items-center">
-                            <Clock className="mr-3 text-gray-500" size={16} />
+                            <Clock className="mr-3 text-amber-600" size={18} />
                             <div>
                               <p className="text-sm text-gray-500">Working Hours</p>
-                              <p className="font-semibold">{verificationData.working_hours}</p>
+                              <p className="font-semibold text-gray-800">{verificationData.working_hours}</p>
                             </div>
                           </div>
                         )}
@@ -409,9 +438,11 @@ const OfferVerification = () => {
                     </div>
 
                     {verificationData.benefits && (
-                      <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl p-6">
+                      <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-6 border border-amber-100 shadow-sm">
                         <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
-                          <DollarSign className="mr-2 text-yellow-600" />
+                          <div className="p-2 bg-amber-500 rounded-lg mr-3">
+                            <DollarSign className="text-white" size={20} />
+                          </div>
                           Benefits & Perks
                         </h3>
                         <p className="text-gray-700 leading-relaxed">{verificationData.benefits}</p>
@@ -419,15 +450,15 @@ const OfferVerification = () => {
                     )}
 
                     {verificationStatus === 'expired' && (
-                      <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6">
+                      <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6">
                         <div className="flex items-start">
-                          <Clock className="mr-3 text-yellow-600 mt-1" size={20} />
+                          <Clock className="mr-3 text-amber-600 mt-1 flex-shrink-0" size={22} />
                           <div>
-                            <h4 className="font-semibold text-yellow-800 mb-2">Offer Expired</h4>
-                            <p className="text-yellow-700 mb-2">
+                            <h4 className="font-semibold text-amber-800 mb-2">Offer Expired</h4>
+                            <p className="text-amber-700 mb-2">
                               This offer expired on {formatDate(verificationData.expiry_date)}
                             </p>
-                            <p className="text-yellow-600 text-sm">
+                            <p className="text-amber-600 text-sm">
                               Please contact HR for assistance or to request a new offer letter.
                             </p>
                           </div>
@@ -439,43 +470,43 @@ const OfferVerification = () => {
 
                 {/* Additional Terms */}
                 {verificationData.additional_terms && (
-                  <div className="mt-8 bg-gray-50 rounded-xl p-6">
+                  <div className="mt-8 bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl p-6 border border-orange-100 shadow-sm">
                     <h3 className="text-xl font-bold text-gray-800 mb-4">Additional Terms & Conditions</h3>
                     <p className="text-gray-700 leading-relaxed">{verificationData.additional_terms}</p>
                   </div>
                 )}
 
                 {/* Company Info */}
-                <div className="mt-8 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl p-6">
-                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                    <div>
-                      <h3 className="text-xl font-bold mb-2 flex items-center">
-                        <Building className="mr-2" size={20} />
+                <div className="mt-8 bg-gradient-to-r from-orange-600 to-amber-600 text-white rounded-2xl p-6 shadow-lg">
+                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                    <div className="flex-1">
+                      <h3 className="text-xl font-bold mb-3 flex items-center">
+                        <Building className="mr-2" size={22} />
                         {companyInfo?.company_name || 'Syed Solar Energy'}
                       </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 opacity-90 text-sm">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 opacity-90 text-sm">
                         <div className="flex items-center">
-                          <MapPin size={14} className="mr-1" />
+                          <MapPin size={16} className="mr-2 flex-shrink-0" />
                           <span>{companyInfo?.company_address || 'Jalil Market Umar Gull Chowck, Bara Road, Peshawar'}</span>
                         </div>
                         <div className="flex items-center">
-                          <Mail size={14} className="mr-1" />
+                          <Mail size={16} className="mr-2 flex-shrink-0" />
                           <span>{companyInfo?.company_email || 'sales@syedsolarenergy.com'}</span>
                         </div>
                         <div className="flex items-center">
-                          <Phone size={14} className="mr-1" />
+                          <Phone size={16} className="mr-2 flex-shrink-0" />
                           <span>{companyInfo?.company_phone || '03075596695'}</span>
                         </div>
                         <div className="flex items-center">
-                          <Globe size={14} className="mr-1" />
+                          <Globe size={16} className="mr-2 flex-shrink-0" />
                           <span>{companyInfo?.company_website || 'www.syedsolarenergy.com'}</span>
                         </div>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm opacity-75">Verified on</p>
+                    <div className="text-right bg-white/10 p-4 rounded-xl backdrop-blur-sm">
+                      <p className="text-sm opacity-90">Verified on</p>
                       <p className="font-semibold">{new Date().toLocaleString()}</p>
-                      <p className="text-xs opacity-75 mt-1">
+                      <p className="text-xs opacity-90 mt-1">
                         Verification #{verificationData.verification_count || 1}
                       </p>
                     </div>
@@ -485,11 +516,11 @@ const OfferVerification = () => {
                 {/* Action Buttons */}
                 {verificationStatus === 'valid' && (
                   <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
-                    <button className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center">
+                    <button className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-6 py-3 rounded-xl font-bold transition-all duration-300 flex items-center justify-center shadow-lg shadow-green-500/30 hover:shadow-green-500/50 transform hover:-translate-y-1">
                       <Download className="mr-2" size={20} />
                       Download PDF
                     </button>
-                    <button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center">
+                    <button className="bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white px-6 py-3 rounded-xl font-bold transition-all duration-300 flex items-center justify-center shadow-lg shadow-orange-500/30 hover:shadow-orange-500/50 transform hover:-translate-y-1">
                       <Eye className="mr-2" size={20} />
                       View Full Letter
                     </button>
@@ -502,16 +533,22 @@ const OfferVerification = () => {
 
         {/* No Search Results */}
         {!loading && !verificationStatus && !offerId && (
-          <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
-            <Search className="mx-auto text-gray-400 mb-4" size={64} />
-            <h3 className="text-2xl font-bold text-gray-800 mb-4">Enter Offer ID to Verify</h3>
-            <p className="text-gray-600 mb-6">
+          <div className="bg-white rounded-2xl shadow-xl p-8 text-center border border-orange-100">
+            <div className="relative inline-block mb-6">
+              <Search className="mx-auto text-orange-400 mb-4 relative z-10" size={70} />
+              <div className="absolute -inset-4 bg-orange-100 rounded-full blur-lg opacity-50 z-0"></div>
+            </div>
+            <h3 className="text-2xl md:text-3xl font-bold text-gray-800 mb-4">Enter Offer ID to Verify</h3>
+            <p className="text-gray-600 mb-6 max-w-md mx-auto">
               Please enter a valid offer letter ID to verify its authenticity and view details.
             </p>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-left max-w-md mx-auto">
-              <h4 className="font-semibold text-blue-800 mb-2">Offer ID Format:</h4>
-              <p className="text-blue-700 text-sm font-mono">SSE-OL-YYYYMMDD-XXXX</p>
-              <p className="text-blue-700 text-xs mt-2">Example: SSE-OL-20250901-1234</p>
+            <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-xl p-5 text-left max-w-md mx-auto">
+              <h4 className="font-semibold text-orange-800 mb-3 flex items-center">
+                <Shield className="mr-2" size={18} />
+                Offer ID Format:
+              </h4>
+              <p className="text-orange-700 text-sm font-mono">SSE-OL-YYYYMMDD-XXXX</p>
+              <p className="text-orange-700 text-xs mt-2">Example: SSE-OL-20250901-1234</p>
             </div>
           </div>
         )}
