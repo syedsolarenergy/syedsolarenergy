@@ -179,7 +179,7 @@ const Internship = () => {
         leaving_date: formData.leavingDate,
         candidate_name: formData.candidateName,
         father_name: formData.fatherName,
-        dob: formData.dob,
+        dob: formData.dob || null,
         email: formData.email,
         contact: formData.contact || null,
         address: formData.address || null,
