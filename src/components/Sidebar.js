@@ -8,6 +8,7 @@ import {
 } from "react-icons/md";
 import { FaTools, FaFileInvoice, FaUserCircle, FaCrown } from "react-icons/fa";
 import { TbReportMoney } from "react-icons/tb";
+import { Workflow } from "lucide-react";
 
 // Compact sidebar links
 const sidebarLinks = [
@@ -76,6 +77,12 @@ const sidebarLinks = [
   to: "/offer-generator",       // ✅ Correct route
   label: "Offer Letter", 
   icon: <MdReceipt size={18} />,
+  permission: { category: "hr", key: "view" }
+},
+ {
+  to: "/Internship",       // ✅ Correct route
+  label: "Internship", 
+  icon: <Workflow size={18} />,
   permission: { category: "hr", key: "view" }
 }
 ];
