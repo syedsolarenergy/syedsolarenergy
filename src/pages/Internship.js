@@ -632,6 +632,10 @@ body {
             </div>
           </div>
         </div>
+              <div class="footer">
+        This certificate was issued electronically and is verifiable through the QR code or at ${companyInfo?.company_website || 'www.syedsolarenergy.com'}.
+      </div>
+
       </div>
     </body>
     </html>
@@ -749,7 +753,7 @@ body {
       <div className="grid md:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Date of Birth *
+            Date of Birth 
           </label>
           <input
             type="date"
@@ -757,7 +761,7 @@ body {
             value={formData.dob}
             onChange={handleInputChange}
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-            required
+            
           />
         </div>
         <div>
@@ -822,7 +826,7 @@ body {
       <div className="grid md:grid-cols-3 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Issue Date
+            Issue Date *
           </label>
           <input
             type="date"
