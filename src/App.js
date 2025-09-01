@@ -19,7 +19,7 @@ import Contact from "./pages/Contact";
 import FAQ from './pages/FAQ'; // 
 import BlogList from "./pages/BlogList";
 import BlogPost from "./pages/BlogPost";
-
+import OfferVerification from "./pages/OfferVerification";
 
 // Enhanced Auth Pages (with Supabase integration)
 import Login from "./pages/Login";
@@ -35,6 +35,7 @@ import ProductsPage from "./pages/ProductsPage";
 import FollowUps from "./pages/FollowUps";
 import Staff from "./pages/Staff";
 import Quotationsoftware from "./pages/Quotationsoftware";
+import OfferLetter from "./pages/OfferLetter";
 
 // Enhanced Admin & Security Pages (with Supabase integration)
 import Admin from "./pages/Admin";
@@ -69,7 +70,8 @@ function AppContent() {
     "/staff", 
     "/quotationsoftware", 
     "/change-password",
-    "/changepassword"
+    "/changepassword",
+    "/offer-generator"
   ];
   
   // Hide navbar on auth pages OR when logged in and on software pages
@@ -106,7 +108,8 @@ function AppContent() {
           <Route path="/faq" element={<FAQ />} />
           <Route path="/blog" element={<BlogList />} />
           <Route path="/blog/:slug" element={<BlogPost />} />
-
+          <Route path="/verify-offer" element={<OfferVerification />} />
+          <Route path="/verify-offer/:offerId" element={<OfferVerification />} />
 
           {/* Legacy Admin Panel (keeping for backward compatibility) */}
           <Route path="/adminpanel" element={<AdminPanel />} />
@@ -129,6 +132,7 @@ function AppContent() {
           <Route path="/followups" element={<PrivateRoute><FollowUps /></PrivateRoute>} />
           <Route path="/staff" element={<PrivateRoute><Staff /></PrivateRoute>} />
           <Route path="/quotationsoftware" element={<PrivateRoute><Quotationsoftware /></PrivateRoute>} />
+          <Route path="/offer-generator" element={<PrivateRoute><OfferLetter /></PrivateRoute>} />
 
           {/* Enhanced Admin & Security Pages with Supabase Integration */}
           <Route path="/admin" element={<PrivateRoute><Admin /></PrivateRoute>} />

@@ -71,7 +71,13 @@ const sidebarLinks = [
     label: "Quotations",
     icon: <FaFileInvoice size={16} />,
     permission: { category: "quotations", key: "view" }
-  }
+  },
+  {
+  to: "/offer-generator",       // ✅ Correct route
+  label: "Offer Letter", 
+  icon: <MdReceipt size={18} />,
+  permission: { category: "hr", key: "view" }
+}
 ];
 
 // Helper to get current user from localStorage
@@ -96,6 +102,7 @@ function getCurrentUser() {
         followups: { view: true },
         staff: { view: true },
         quotations: { view: true },
+        hr: { view: true },
         profile: { view: true, edit: true }
       }
     };
@@ -136,6 +143,7 @@ export default function Sidebar() {
       followups: { view: true },
       staff: { view: true },
       quotations: { view: true },
+      hr: { view: true },
       profile: { view: true, edit: true }
     }
   };
