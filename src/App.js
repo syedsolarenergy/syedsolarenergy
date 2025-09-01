@@ -115,7 +115,7 @@ function AppContent() {
           <Route path="/verify-offer" element={<OfferVerification />} />
           <Route path="/verify-offer/:offerId" element={<OfferVerification />} />
           <Route path="/InternshipVerification" element={<InternshipVerification />} />
-          <Route path="/InternshipVerification/:InternshipId" element={<InternshipVerification />} />
+          <Route path="/verify-internship/:certificateId" element={<InternshipVerification />} />
 
           {/* Legacy Admin Panel (keeping for backward compatibility) */}
           <Route path="/adminpanel" element={<AdminPanel />} />
