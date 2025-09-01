@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { 
   CheckCircle, 
   XCircle, 
@@ -16,59 +17,425 @@ import {
   Loader,
   Building,
   Globe,
-  ChevronRight,
-  Star,
-  Award,
-  Sparkles
+  ChevronRight
 } from 'lucide-react';
+import { supabase } from '../supabaseClient';
 
 const InternshipVerification = () => {
-  // Mock params since we don't have react-router in this environment
-  const certificateId = 'SSE-IC-20250901-1234';
-  
+  const { certificateId } = useParams();
   const [verificationData, setVerificationData] = useState(null);
-  const [companyInfo, setCompanyInfo] = useState({
-    company_name: 'Syed Solar Energy',
-    company_address: 'Jalil Market Umar Gull Chowck, Bara Road, Peshawar',
-    company_email: 'sales@syedsolarenergy.com',
-    company_phone: '03075596695',
-    company_website: 'www.syedsolarenergy.com'
-  });
-  const [loading, setLoading] = useState(false);
+  const [companyInfo, setCompanyInfo] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [searchId, setSearchId] = useState(certificateId || '');
-  const [verificationStatus, setVerificationStatus] = useState('valid');
-  const [verificationAttempts, setVerificationAttempts] = useState(1);
-  
-  // Mock data for demonstration
-  const mockVerificationData = {
-    certificate_id: 'SSE-IC-20250901-1234',
-    candidate_name: 'Zain ul Abideen',
-    father_name: 'Zaki ud Din',
-    dob: '2001-01-01',
-    email: 'zain1522004@gmail.com',
-    contact: '03137630214',
-    address: '123 Main Street, Peshawar',
-    university_name: 'Sarhad University of Science and IT Peshawar',
-    issue_date: '2025-10-31',
-    joining_date: '2025-08-01',
-    leaving_date: '2025-10-30',
-    signature_qr_url: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==',
-    signature_signer_name: 'HR Manager',
-    signature_signer_title: 'Human Resources',
-    signature_signed_at: '2025-10-31T10:00:00Z',
-    verification_count: 5,
-    verified_at: new Date().toISOString()
+  const [verificationStatus, setVerificationStatus] = useState(null);
+  const [verificationAttempts, setVerificationAttempts] = useState(0);
+
+  // Enhanced CSS styles
+  const styles = {
+    pageContainer: {
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #fff7ed 0%, #fed7aa 50%, #fb923c 100%)',
+      position: 'relative',
+      overflow: 'hidden'
+    },
+    backgroundOrb1: {
+      position: 'absolute',
+      top: '-200px',
+      right: '-200px',
+      width: '400px',
+      height: '400px',
+      background: 'radial-gradient(circle, rgba(251, 146, 60, 0.15) 0%, transparent 70%)',
+      borderRadius: '50%',
+      animation: 'float 6s ease-in-out infinite',
+      pointerEvents: 'none'
+    },
+    backgroundOrb2: {
+      position: 'absolute',
+      bottom: '-200px',
+      left: '-200px',
+      width: '500px',
+      height: '500px',
+      background: 'radial-gradient(circle, rgba(245, 101, 101, 0.15) 0%, transparent 70%)',
+      borderRadius: '50%',
+      animation: 'float 8s ease-in-out infinite reverse',
+      pointerEvents: 'none'
+    },
+    header: {
+      background: 'linear-gradient(135deg, #ea580c 0%, #f97316 50%, #fb923c 100%)',
+      boxShadow: '0 25px 50px -12px rgba(234, 88, 12, 0.25)',
+      borderBottom: '1px solid rgba(251, 146, 60, 0.3)',
+      position: 'relative',
+      backdropFilter: 'blur(10px)'
+    },
+    headerContent: {
+      maxWidth: '1280px',
+      margin: '0 auto',
+      padding: '24px 16px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      flexWrap: 'wrap',
+      gap: '16px'
+    },
+    logo: {
+      width: '64px',
+      height: '64px',
+      background: 'rgba(255, 255, 255, 0.2)',
+      backdropFilter: 'blur(10px)',
+      borderRadius: '16px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      color: 'white',
+      fontWeight: 'bold',
+      fontSize: '20px',
+      marginRight: '16px',
+      boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+      border: '1px solid rgba(255, 255, 255, 0.2)',
+      transition: 'transform 0.3s ease',
+      position: 'relative'
+    },
+    logoText: {
+      transform: 'rotate(3deg)',
+      position: 'relative',
+      zIndex: 10
+    },
+    headerTitle: {
+      fontSize: '36px',
+      fontWeight: '900',
+      color: 'white',
+      lineHeight: '1.2',
+      background: 'linear-gradient(to right, #ffffff, #fed7aa)',
+      WebkitBackgroundClip: 'text',
+      WebkitTextFillColor: 'transparent',
+      backgroundClip: 'text'
+    },
+    headerSubtitle: {
+      fontSize: '14px',
+      color: 'rgba(254, 215, 170, 0.9)',
+      marginTop: '4px',
+      fontWeight: '500'
+    },
+    backButton: {
+      display: 'flex',
+      alignItems: 'center',
+      padding: '12px 20px',
+      background: 'rgba(255, 255, 255, 0.2)',
+      color: 'white',
+      borderRadius: '16px',
+      border: '1px solid rgba(255, 255, 255, 0.3)',
+      cursor: 'pointer',
+      transition: 'all 0.3s ease',
+      backdropFilter: 'blur(10px)',
+      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+      fontSize: '14px',
+      fontWeight: '600',
+      textDecoration: 'none'
+    },
+    searchSection: {
+      maxWidth: '1024px',
+      margin: '0 auto',
+      padding: '32px 16px',
+      position: 'relative'
+    },
+    searchCard: {
+      background: 'rgba(255, 255, 255, 0.9)',
+      backdropFilter: 'blur(20px)',
+      borderRadius: '24px',
+      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+      padding: '48px',
+      border: '1px solid rgba(255, 255, 255, 0.5)',
+      marginBottom: '32px',
+      position: 'relative',
+      overflow: 'hidden'
+    },
+    searchTitle: {
+      textAlign: 'center',
+      marginBottom: '32px'
+    },
+    searchIcon: {
+      width: '64px',
+      height: '64px',
+      background: 'linear-gradient(135deg, #ea580c, #f97316)',
+      borderRadius: '16px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      margin: '0 auto 16px',
+      boxShadow: '0 20px 25px -5px rgba(234, 88, 12, 0.4)'
+    },
+    searchTitleText: {
+      fontSize: '32px',
+      fontWeight: 'bold',
+      background: 'linear-gradient(135deg, #ea580c, #f97316)',
+      WebkitBackgroundClip: 'text',
+      WebkitTextFillColor: 'transparent',
+      backgroundClip: 'text',
+      marginBottom: '8px'
+    },
+    searchInput: {
+      width: '100%',
+      maxWidth: '400px',
+      margin: '0 auto',
+      padding: '16px 24px',
+      fontSize: '18px',
+      textAlign: 'center',
+      fontFamily: 'monospace',
+      background: 'white',
+      border: '2px solid #fed7aa',
+      borderRadius: '16px',
+      boxShadow: '0 10px 25px -3px rgba(0, 0, 0, 0.1)',
+      transition: 'all 0.3s ease',
+      marginBottom: '16px'
+    },
+    searchButton: {
+      width: '100%',
+      maxWidth: '400px',
+      margin: '0 auto',
+      padding: '16px 24px',
+      background: 'linear-gradient(135deg, #ea580c, #f97316)',
+      color: 'white',
+      border: 'none',
+      borderRadius: '16px',
+      fontSize: '16px',
+      fontWeight: 'bold',
+      cursor: 'pointer',
+      transition: 'all 0.3s ease',
+      boxShadow: '0 10px 25px -3px rgba(234, 88, 12, 0.4)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '8px'
+    },
+    statusBadgeValid: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      padding: '16px 32px',
+      background: 'linear-gradient(135deg, #10b981, #059669)',
+      color: 'white',
+      borderRadius: '16px',
+      fontWeight: 'bold',
+      fontSize: '18px',
+      boxShadow: '0 20px 25px -5px rgba(16, 185, 129, 0.4)',
+      animation: 'pulse 2s infinite',
+      gap: '12px'
+    },
+    statusBadgeInvalid: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      padding: '16px 32px',
+      background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+      color: 'white',
+      borderRadius: '16px',
+      fontWeight: 'bold',
+      fontSize: '18px',
+      boxShadow: '0 20px 25px -5px rgba(239, 68, 68, 0.4)',
+      gap: '12px'
+    },
+    resultsCard: {
+      background: 'rgba(255, 255, 255, 0.95)',
+      backdropFilter: 'blur(20px)',
+      borderRadius: '24px',
+      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+      padding: '48px',
+      border: '1px solid rgba(255, 255, 255, 0.5)',
+      marginBottom: '32px'
+    },
+    infoCard: {
+      background: 'linear-gradient(135deg, #fff7ed, #fed7aa)',
+      borderRadius: '16px',
+      padding: '24px',
+      border: '1px solid rgba(251, 146, 60, 0.2)',
+      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+      marginBottom: '24px'
+    },
+    infoCardHeader: {
+      display: 'flex',
+      alignItems: 'center',
+      marginBottom: '20px',
+      gap: '12px'
+    },
+    infoCardIcon: {
+      padding: '12px',
+      background: 'linear-gradient(135deg, #ea580c, #f97316)',
+      borderRadius: '12px',
+      color: 'white',
+      boxShadow: '0 4px 6px -1px rgba(234, 88, 12, 0.4)'
+    },
+    infoCardTitle: {
+      fontSize: '20px',
+      fontWeight: 'bold',
+      color: '#1f2937'
+    },
+    infoCardSubtitle: {
+      fontSize: '14px',
+      color: '#ea580c'
+    },
+    infoItem: {
+      display: 'flex',
+      alignItems: 'flex-start',
+      padding: '12px',
+      background: 'rgba(255, 255, 255, 0.8)',
+      borderRadius: '12px',
+      marginBottom: '12px',
+      transition: 'all 0.2s ease',
+      gap: '12px'
+    },
+    infoItemIcon: {
+      padding: '8px',
+      background: 'linear-gradient(135deg, #fed7aa, #fb923c)',
+      borderRadius: '8px',
+      color: '#ea580c',
+      flexShrink: 0
+    },
+    loadingCard: {
+      background: 'rgba(255, 255, 255, 0.9)',
+      backdropFilter: 'blur(20px)',
+      borderRadius: '24px',
+      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15)',
+      padding: '64px',
+      textAlign: 'center',
+      border: '1px solid rgba(255, 255, 255, 0.5)',
+      marginBottom: '32px'
+    },
+    loadingSpinner: {
+      width: '80px',
+      height: '80px',
+      border: '4px solid #fed7aa',
+      borderTop: '4px solid #ea580c',
+      borderRadius: '50%',
+      animation: 'spin 1s linear infinite',
+      margin: '0 auto 24px'
+    }
+  };
+
+  // Add keyframes for animations
+  useEffect(() => {
+    const styleSheet = document.createElement('style');
+    styleSheet.type = 'text/css';
+    styleSheet.innerText = `
+      @keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-20px); }
+      }
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+      }
+      .search-input:focus {
+        outline: none;
+        border-color: #ea580c;
+        box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.1);
+      }
+      .search-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 15px 35px -3px rgba(234, 88, 12, 0.5);
+      }
+      .back-button:hover {
+        background: rgba(255, 255, 255, 0.3);
+      }
+      .info-item:hover {
+        background: rgba(255, 255, 255, 0.95);
+        transform: translateY(-1px);
+      }
+      .logo:hover {
+        transform: scale(1.1);
+      }
+    `;
+    document.head.appendChild(styleSheet);
+    return () => document.head.removeChild(styleSheet);
+  }, []);
+
+  useEffect(() => {
+    const fetchCompanyInfo = async () => {
+      const { data, error } = await supabase
+        .from('company_settings')
+        .select('*')
+        .single();
+      
+      if (!error && data) {
+        setCompanyInfo(data);
+      }
+    };
+    
+    fetchCompanyInfo();
+  }, []);
+
+  const verifyCertificate = async (id) => {
+    setLoading(true);
+    setVerificationStatus(null);
+    
+    try {
+      const { data: certificateData, error: certificateError } = await supabase
+        .from('internship_certificates')
+        .select('*')
+        .eq('certificate_id', id)
+        .single();
+      
+      if (certificateError || !certificateData) {
+        setVerificationStatus('invalid');
+        setVerificationData(null);
+        setLoading(false);
+        return;
+      }
+      
+      setVerificationStatus('valid');
+      setVerificationData({ ...certificateData, isExpired: false });
+      
+      await supabase
+        .from('internship_certificates')
+        .update({ 
+          verified_at: new Date().toISOString(),
+          verification_count: (certificateData.verification_count || 0) + 1 
+        })
+        .eq('certificate_id', id);
+      
+      const { error: verificationError } = await supabase
+        .from('internship_verifications')
+        .insert([
+          {
+            certificate_id: id,
+            ip_address: null,
+            user_agent: navigator.userAgent,
+            status: 'valid'
+          }
+        ]);
+      
+      if (!verificationError) {
+        setVerificationAttempts(prev => prev + 1);
+      }
+      
+    } catch (error) {
+      console.error('Verification error:', error);
+      setVerificationStatus('invalid');
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     if (certificateId) {
-      setTimeout(() => {
-        setVerificationData(mockVerificationData);
-        setVerificationStatus('valid');
-        setLoading(false);
-      }, 1000);
+      verifyCertificate(certificateId);
+    } else {
+      setLoading(false);
     }
   }, [certificateId]);
+
+  const handleSearch = () => {
+    if (searchId.trim()) {
+      window.location.href = `/verify-internship/${searchId.trim()}`;
+    }
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
 
   const formatDate = (dateString) => {
     if (!dateString) return 'Not specified';
@@ -79,54 +446,25 @@ const InternshipVerification = () => {
     });
   };
 
-  const handleSearch = () => {
-    if (searchId.trim()) {
-      setLoading(true);
-      setTimeout(() => {
-        setVerificationData(mockVerificationData);
-        setVerificationStatus('valid');
-        setLoading(false);
-      }, 2000);
-    }
-  };
-
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter') {
-      handleSearch();
-    }
-  };
-
   const getStatusBadge = () => {
     switch (verificationStatus) {
       case 'valid':
         return (
-          <div className="relative group">
-            <div className="absolute -inset-1 bg-gradient-to-r from-green-400 via-emerald-500 to-teal-500 rounded-2xl blur-lg opacity-30 group-hover:opacity-50 animate-pulse"></div>
-            <div className="relative inline-flex items-center px-6 py-4 bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 text-white rounded-2xl font-bold shadow-2xl transform transition-all duration-500 hover:scale-105 hover:shadow-green-500/40">
-              <div className="flex items-center">
-                <div className="relative mr-3">
-                  <CheckCircle size={24} className="relative z-10" />
-                  <div className="absolute -inset-1 bg-white/30 rounded-full animate-ping"></div>
-                </div>
-                <div>
-                  <div className="text-lg font-extrabold">Verified & Valid</div>
-                  <div className="text-xs opacity-90 font-medium">Certificate Authenticated</div>
-                </div>
-              </div>
-              <Sparkles size={20} className="ml-3 animate-bounce" />
+          <div style={styles.statusBadgeValid}>
+            <CheckCircle size={24} />
+            <div>
+              <div style={{ fontSize: '18px', fontWeight: 'bold' }}>Verified & Valid</div>
+              <div style={{ fontSize: '12px', opacity: 0.9 }}>Certificate Authenticated</div>
             </div>
           </div>
         );
       case 'invalid':
         return (
-          <div className="relative group">
-            <div className="absolute -inset-1 bg-gradient-to-r from-red-400 via-rose-500 to-pink-500 rounded-2xl blur-lg opacity-30 group-hover:opacity-50"></div>
-            <div className="relative inline-flex items-center px-6 py-4 bg-gradient-to-r from-red-500 via-rose-500 to-pink-500 text-white rounded-2xl font-bold shadow-2xl transform transition-all duration-300 hover:scale-105">
-              <XCircle className="mr-3" size={24} />
-              <div>
-                <div className="text-lg font-extrabold">Invalid Certificate</div>
-                <div className="text-xs opacity-90">ID Not Found</div>
-              </div>
+          <div style={styles.statusBadgeInvalid}>
+            <XCircle size={24} />
+            <div>
+              <div style={{ fontSize: '18px', fontWeight: 'bold' }}>Invalid Certificate</div>
+              <div style={{ fontSize: '12px', opacity: 0.9 }}>ID Not Found</div>
             </div>
           </div>
         );
@@ -136,338 +474,319 @@ const InternshipVerification = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 via-rose-50 to-pink-50 relative overflow-hidden">
-      {/* Animated Background Elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-orange-200/30 to-amber-200/30 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-gradient-to-tr from-pink-200/30 to-rose-200/30 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-to-r from-amber-200/20 to-orange-200/20 rounded-full blur-3xl animate-pulse delay-500"></div>
+    <div style={styles.pageContainer}>
+      {/* Background Elements */}
+      <div style={styles.backgroundOrb1}></div>
+      <div style={styles.backgroundOrb2}></div>
+
+      {/* Header */}
+      <div style={styles.header}>
+        <div style={styles.headerContent}>
+          <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+            <div style={styles.logo} className="logo">
+              <div style={styles.logoText}>SSE</div>
+            </div>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <h1 style={styles.headerTitle}>Certificate Verification</h1>
+              <p style={styles.headerSubtitle}>🔐 Secure • ⚡ Instant • ✅ Verified</p>
+            </div>
+          </div>
+          <button 
+            style={styles.backButton} 
+            className="back-button"
+            onClick={() => window.location.href = '/'}
+          >
+            <ArrowLeft size={18} style={{ marginRight: '8px' }} />
+            Back to Home
+          </button>
+        </div>
       </div>
 
-      {/* Enhanced Header */}
-      <div className="relative bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 shadow-2xl border-b border-orange-400/50 backdrop-blur-sm">
-        <div className="absolute inset-0 bg-gradient-to-r from-orange-600/10 via-transparent to-amber-600/10"></div>
-        <div className="relative max-w-7xl mx-auto px-4 lg:px-6 py-6">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center w-full sm:w-auto group">
-              <div className="relative">
-                <div className="w-16 h-16 bg-gradient-to-br from-white/20 to-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center text-white font-bold text-xl mr-4 shadow-2xl border border-white/20 group-hover:scale-110 transition-transform duration-300">
-                  <div className="transform rotate-3 relative">
-                    <span className="relative z-10">SSE</span>
-                    <div className="absolute inset-0 bg-gradient-to-r from-orange-400 to-amber-400 opacity-50 blur-sm rounded"></div>
-                  </div>
-                </div>
-                <div className="absolute -top-1 -right-1 w-6 h-6 bg-green-400 rounded-full flex items-center justify-center shadow-lg animate-bounce">
-                  <Star size={12} className="text-white" />
-                </div>
-              </div>
-              <div className="min-w-0 flex-1">
-                <h1 className="text-2xl md:text-3xl lg:text-4xl font-extrabold text-white leading-tight bg-gradient-to-r from-white to-amber-100 bg-clip-text text-transparent">
-                  Certificate Verification
-                </h1>
-                <p className="text-sm text-amber-100/90 mt-1 font-medium">
-                  🔐 Secure • ⚡ Instant • ✅ Verified
-                </p>
-              </div>
+      <div style={styles.searchSection}>
+        {/* Search Section */}
+        <div style={styles.searchCard}>
+          <div style={styles.searchTitle}>
+            <div style={styles.searchIcon}>
+              <Search size={24} color="white" />
             </div>
+            <h2 style={styles.searchTitleText}>Verify Certificate</h2>
+            <p style={{ color: '#6b7280' }}>Enter your certificate ID to verify authenticity</p>
+          </div>
+          
+          <div style={{ maxWidth: '400px', margin: '0 auto' }}>
+            <input
+              type="text"
+              value={searchId}
+              onChange={(e) => setSearchId(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="SSE-IC-20250901-1234"
+              style={styles.searchInput}
+              className="search-input"
+            />
             <button
-              onClick={() => window.location.href = '/'}
-              className="group flex items-center px-5 py-3 bg-white/20 hover:bg-white/30 text-white rounded-2xl transition-all duration-300 backdrop-blur-sm border border-white/30 shadow-2xl hover:shadow-white/20 text-sm font-semibold"
+              onClick={handleSearch}
+              disabled={loading || !searchId.trim()}
+              style={styles.searchButton}
+              className="search-button"
             >
-              <ArrowLeft className="mr-2 group-hover:-translate-x-1 transition-transform duration-300" size={18} />
-              Back to Home
+              {loading ? (
+                <>
+                  <Loader size={20} style={{ animation: 'spin 1s linear infinite' }} />
+                  <span>Verifying...</span>
+                </>
+              ) : (
+                <>
+                  <Search size={20} />
+                  <span>Verify Certificate</span>
+                </>
+              )}
             </button>
           </div>
-        </div>
-      </div>
-
-      <div className="relative max-w-5xl mx-auto px-4 lg:px-6 py-8">
-        {/* Enhanced Search Section */}
-        <div className="relative group mb-8">
-          <div className="absolute -inset-1 bg-gradient-to-r from-orange-400 to-amber-400 rounded-3xl blur-xl opacity-20 group-hover:opacity-30 transition-opacity duration-500"></div>
-          <div className="relative bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/50">
-            <div className="text-center mb-6">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-orange-500 to-amber-500 rounded-2xl mb-4 shadow-xl">
-                <Search className="text-white" size={24} />
-              </div>
-              <h2 className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent mb-2">
-                Verify Certificate
-              </h2>
-              <p className="text-gray-600">Enter your certificate ID to verify authenticity</p>
-            </div>
-            
-            <div className="max-w-md mx-auto space-y-4">
-              <div className="relative group">
-                <input
-                  type="text"
-                  value={searchId}
-                  onChange={(e) => setSearchId(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder="SSE-IC-20250901-1234"
-                  className="w-full px-6 py-4 bg-white border-2 border-orange-200 rounded-2xl focus:ring-4 focus:ring-orange-500/20 focus:border-orange-500 transition-all duration-300 shadow-lg font-mono text-center text-lg group-hover:shadow-xl"
-                />
-                <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
-                  <Shield className="text-orange-400" size={20} />
-                </div>
-              </div>
-              <button
-                onClick={handleSearch}
-                disabled={loading || !searchId.trim()}
-                className="w-full group relative overflow-hidden bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-4 rounded-2xl font-bold transition-all duration-300 shadow-xl hover:shadow-2xl hover:shadow-orange-500/30 transform hover:-translate-y-1"
-              >
-                <div className="relative flex items-center justify-center">
-                  {loading ? (
-                    <>
-                      <Loader className="animate-spin mr-2" size={20} />
-                      <span>Verifying...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Search className="mr-2 group-hover:scale-110 transition-transform duration-300" size={20} />
-                      <span>Verify Certificate</span>
-                    </>
-                  )}
-                </div>
-                <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              </button>
-            </div>
-            
-            <div className="mt-6 flex items-center justify-center text-sm text-amber-700">
-              <ChevronRight size={16} className="mr-1" />
-              <span>Secure verification powered by blockchain technology</span>
-            </div>
+          
+          <div style={{ marginTop: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', color: '#f59e0b' }}>
+            <ChevronRight size={16} style={{ marginRight: '4px' }} />
+            <span>Secure verification powered by blockchain technology</span>
           </div>
         </div>
 
-        {/* Enhanced Loading State */}
+        {/* Loading State */}
         {loading && (
-          <div className="relative group mb-8">
-            <div className="absolute -inset-1 bg-gradient-to-r from-blue-400 to-purple-400 rounded-3xl blur-xl opacity-20 animate-pulse"></div>
-            <div className="relative bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl p-12 text-center border border-white/50">
-              <div className="relative inline-block mb-6">
-                <div className="w-20 h-20 border-4 border-orange-500/20 border-t-orange-500 rounded-full animate-spin"></div>
-                <div className="absolute inset-0 w-20 h-20 border-4 border-amber-500/20 border-r-amber-500 rounded-full animate-spin animate-reverse delay-150"></div>
-              </div>
-              <h3 className="text-2xl font-bold text-gray-800 mb-2">Verifying Certificate</h3>
-              <p className="text-gray-600">Please wait while we authenticate your certificate...</p>
-              <div className="flex items-center justify-center mt-4 space-x-2">
-                <div className="w-2 h-2 bg-orange-400 rounded-full animate-bounce"></div>
-                <div className="w-2 h-2 bg-amber-400 rounded-full animate-bounce delay-100"></div>
-                <div className="w-2 h-2 bg-orange-400 rounded-full animate-bounce delay-200"></div>
-              </div>
-            </div>
+          <div style={styles.loadingCard}>
+            <div style={styles.loadingSpinner}></div>
+            <h3 style={{ fontSize: '24px', fontWeight: 'bold', color: '#1f2937', marginBottom: '8px' }}>
+              Verifying Certificate
+            </h3>
+            <p style={{ color: '#6b7280' }}>Please wait while we authenticate your certificate...</p>
           </div>
         )}
 
-        {/* Enhanced Verification Results */}
+        {/* Verification Results */}
         {!loading && verificationStatus && (
-          <div className="relative group mb-8">
-            <div className="absolute -inset-1 bg-gradient-to-r from-green-400 to-emerald-400 rounded-3xl blur-xl opacity-20"></div>
-            <div className="relative bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/50">
-              <div className="text-center mb-8">
-                {getStatusBadge()}
+          <div style={styles.resultsCard}>
+            <div style={{ textAlign: 'center', marginBottom: '48px' }}>
+              {getStatusBadge()}
+            </div>
+
+            {verificationStatus === 'invalid' && (
+              <div style={{ textAlign: 'center', padding: '48px 0' }}>
+                <XCircle size={60} color="#ef4444" style={{ margin: '0 auto 24px' }} />
+                <h3 style={{ fontSize: '32px', fontWeight: 'bold', color: '#1f2937', marginBottom: '16px' }}>
+                  Certificate Not Found
+                </h3>
+                <p style={{ fontSize: '16px', color: '#6b7280', marginBottom: '32px', maxWidth: '400px', margin: '0 auto 32px' }}>
+                  The certificate ID you entered could not be found in our database. Please check the ID and try again.
+                </p>
               </div>
+            )}
 
-              {verificationStatus === 'valid' && verificationData && (
-                <div>
-                  <div className="grid lg:grid-cols-2 gap-8">
-                    {/* Enhanced Candidate Information */}
-                    <div className="space-y-6">
-                      <div className="relative group">
-                        <div className="absolute -inset-0.5 bg-gradient-to-r from-orange-400 to-amber-400 rounded-2xl blur opacity-20 group-hover:opacity-30 transition-opacity duration-300"></div>
-                        <div className="relative bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl p-6 border border-orange-100/50 shadow-xl backdrop-blur-sm">
-                          <div className="flex items-center mb-6">
-                            <div className="p-3 bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl mr-3 shadow-lg">
-                              <User className="text-white" size={20} />
-                            </div>
-                            <div>
-                              <h3 className="text-xl font-bold text-gray-800">Candidate Information</h3>
-                              <p className="text-sm text-orange-600">Personal Details</p>
-                            </div>
-                            <Award className="ml-auto text-amber-500" size={24} />
-                          </div>
-                          <div className="space-y-4">
-                            {[
-                              { icon: User, label: 'Full Name', value: verificationData.candidate_name },
-                              { icon: User, label: "Father's Name", value: verificationData.father_name },
-                              { icon: Calendar, label: 'Date of Birth', value: formatDate(verificationData.dob) },
-                              { icon: Mail, label: 'Email', value: verificationData.email },
-                              { icon: Phone, label: 'Contact', value: verificationData.contact },
-                            ].map((item, index) => (
-                              <div key={index} className="flex items-start p-3 bg-white/70 rounded-xl hover:bg-white/90 transition-colors duration-200 group">
-                                <div className="p-2 bg-gradient-to-r from-amber-100 to-orange-100 rounded-lg mr-3 group-hover:scale-110 transition-transform duration-200">
-                                  <item.icon className="text-amber-600" size={16} />
-                                </div>
-                                <div className="flex-1">
-                                  <p className="text-sm text-gray-500 font-medium">{item.label}</p>
-                                  <p className="font-semibold text-gray-800 break-words">{item.value}</p>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
+            {verificationStatus === 'valid' && verificationData && (
+              <div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '32px' }}>
+                  {/* Candidate Information */}
+                  <div>
+                    <div style={styles.infoCard}>
+                      <div style={styles.infoCardHeader}>
+                        <div style={styles.infoCardIcon}>
+                          <User size={20} />
+                        </div>
+                        <div>
+                          <h3 style={styles.infoCardTitle}>Candidate Information</h3>
+                          <p style={styles.infoCardSubtitle}>Personal Details</p>
                         </div>
                       </div>
-
-                      {verificationData.university_name && (
-                        <div className="relative group">
-                          <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-400 to-orange-400 rounded-2xl blur opacity-20 group-hover:opacity-30 transition-opacity duration-300"></div>
-                          <div className="relative bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-6 border border-amber-100/50 shadow-xl">
-                            <div className="flex items-center mb-4">
-                              <div className="p-3 bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl mr-3 shadow-lg">
-                                <BookOpen className="text-white" size={20} />
-                              </div>
-                              <div>
-                                <h3 className="text-xl font-bold text-gray-800">University</h3>
-                                <p className="text-sm text-amber-600">Educational Institution</p>
-                              </div>
-                            </div>
-                            <div className="p-3 bg-white/70 rounded-xl">
-                              <p className="text-sm text-gray-500 font-medium">University Name</p>
-                              <p className="font-semibold text-gray-800">{verificationData.university_name}</p>
-                            </div>
+                      <div>
+                        <div style={styles.infoItem} className="info-item">
+                          <div style={styles.infoItemIcon}>
+                            <User size={16} />
+                          </div>
+                          <div>
+                            <p style={{ fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>Full Name</p>
+                            <p style={{ fontWeight: '600', color: '#1f2937' }}>{verificationData.candidate_name}</p>
                           </div>
                         </div>
-                      )}
-                    </div>
-
-                    {/* Enhanced Certificate Details */}
-                    <div className="space-y-6">
-                      <div className="relative group">
-                        <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-400 to-purple-400 rounded-2xl blur opacity-20 group-hover:opacity-30 transition-opacity duration-300"></div>
-                        <div className="relative bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl p-6 border border-blue-100/50 shadow-xl">
-                          <div className="flex items-center mb-6">
-                            <div className="p-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl mr-3 shadow-lg">
-                              <FileText className="text-white" size={20} />
-                            </div>
-                            <div>
-                              <h3 className="text-xl font-bold text-gray-800">Certificate Details</h3>
-                              <p className="text-sm text-blue-600">Official Information</p>
-                            </div>
-                            <Shield className="ml-auto text-blue-500" size={24} />
+                        <div style={styles.infoItem} className="info-item">
+                          <div style={styles.infoItemIcon}>
+                            <User size={16} />
                           </div>
-                          <div className="space-y-4">
-                            {[
-                              { icon: Shield, label: 'Certificate ID', value: verificationData.certificate_id, mono: true },
-                              { icon: Calendar, label: 'Issue Date', value: formatDate(verificationData.issue_date) },
-                              { icon: Calendar, label: 'Joining Date', value: formatDate(verificationData.joining_date) },
-                              { icon: Calendar, label: 'Leaving Date', value: formatDate(verificationData.leaving_date) },
-                              { 
-                                icon: Clock, 
-                                label: 'Duration', 
-                                value: `${Math.ceil(Math.abs(new Date(verificationData.leaving_date) - new Date(verificationData.joining_date)) / (1000 * 60 * 60 * 24 * 7))} weeks` 
-                              },
-                            ].map((item, index) => (
-                              <div key={index} className="flex items-start p-3 bg-white/70 rounded-xl hover:bg-white/90 transition-colors duration-200 group">
-                                <div className="p-2 bg-gradient-to-r from-blue-100 to-purple-100 rounded-lg mr-3 group-hover:scale-110 transition-transform duration-200">
-                                  <item.icon className="text-blue-600" size={16} />
-                                </div>
-                                <div className="flex-1">
-                                  <p className="text-sm text-gray-500 font-medium">{item.label}</p>
-                                  <p className={`font-semibold text-gray-800 ${item.mono ? 'font-mono text-sm' : ''} break-words`}>{item.value}</p>
-                                </div>
-                              </div>
-                            ))}
+                          <div>
+                            <p style={{ fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>Father's Name</p>
+                            <p style={{ fontWeight: '600', color: '#1f2937' }}>{verificationData.father_name}</p>
                           </div>
                         </div>
-                      </div>
-
-                      {/* Enhanced Electronic Signature */}
-                      <div className="relative group">
-                        <div className="absolute -inset-0.5 bg-gradient-to-r from-green-400 to-teal-400 rounded-2xl blur opacity-20 group-hover:opacity-30 transition-opacity duration-300"></div>
-                        <div className="relative bg-gradient-to-br from-green-50 to-teal-50 rounded-2xl p-6 border border-green-100/50 shadow-xl">
-                          <div className="flex items-center mb-6">
-                            <div className="p-3 bg-gradient-to-r from-green-500 to-teal-500 rounded-xl mr-3 shadow-lg">
-                              <Shield className="text-white" size={20} />
-                            </div>
-                            <div>
-                              <h3 className="text-xl font-bold text-gray-800">Digital Signature</h3>
-                              <p className="text-sm text-green-600">Blockchain Verified</p>
-                            </div>
-                            <Sparkles className="ml-auto text-green-500 animate-pulse" size={24} />
+                        <div style={styles.infoItem} className="info-item">
+                          <div style={styles.infoItemIcon}>
+                            <Calendar size={16} />
                           </div>
-                          <div className="space-y-4">
-                            <div className="flex items-center p-3 bg-white/70 rounded-xl">
-                              <div className="bg-white p-3 rounded-xl mr-4 border-2 border-green-200 shadow-lg">
-                                <div className="w-16 h-16 bg-gradient-to-br from-green-100 to-teal-100 rounded-lg flex items-center justify-center">
-                                  <Shield className="text-green-600" size={24} />
-                                </div>
-                              </div>
-                              <div>
-                                <p className="text-sm text-gray-500 font-medium">Verification Code</p>
-                                <p className="font-mono text-sm font-bold text-green-600">#{verificationData.certificate_id}</p>
-                              </div>
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                              <div className="p-3 bg-white/70 rounded-xl">
-                                <p className="text-sm text-gray-500 font-medium">Signed By</p>
-                                <p className="font-semibold text-gray-800">{verificationData.signature_signer_name}</p>
-                                <p className="text-sm text-gray-600">{verificationData.signature_signer_title}</p>
-                              </div>
-                              <div className="p-3 bg-white/70 rounded-xl">
-                                <p className="text-sm text-gray-500 font-medium">Verification Count</p>
-                                <p className="font-bold text-2xl text-green-600">#{verificationData.verification_count}</p>
-                              </div>
-                            </div>
+                          <div>
+                            <p style={{ fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>Date of Birth</p>
+                            <p style={{ fontWeight: '600', color: '#1f2937' }}>{formatDate(verificationData.dob)}</p>
+                          </div>
+                        </div>
+                        <div style={styles.infoItem} className="info-item">
+                          <div style={styles.infoItemIcon}>
+                            <Mail size={16} />
+                          </div>
+                          <div>
+                            <p style={{ fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>Email</p>
+                            <p style={{ fontWeight: '600', color: '#1f2937', wordBreak: 'break-all' }}>{verificationData.email}</p>
                           </div>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Enhanced Company Info */}
-                  <div className="mt-8 relative group">
-                    <div className="absolute -inset-1 bg-gradient-to-r from-orange-400 via-amber-400 to-orange-400 rounded-3xl blur-xl opacity-20"></div>
-                    <div className="relative bg-gradient-to-r from-orange-600 via-amber-500 to-orange-600 text-white rounded-3xl p-8 shadow-2xl backdrop-blur-sm">
-                      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
-                        <div className="flex-1">
-                          <div className="flex items-center mb-4">
-                            <div className="p-3 bg-white/20 rounded-xl mr-3 backdrop-blur-sm">
-                              <Building size={24} />
-                            </div>
-                            <div>
-                              <h3 className="text-2xl font-bold">{companyInfo?.company_name}</h3>
-                              <p className="text-amber-100">Certificate Issuing Authority</p>
-                            </div>
+                  {/* Certificate Details */}
+                  <div>
+                    <div style={styles.infoCard}>
+                      <div style={styles.infoCardHeader}>
+                        <div style={styles.infoCardIcon}>
+                          <FileText size={20} />
+                        </div>
+                        <div>
+                          <h3 style={styles.infoCardTitle}>Certificate Details</h3>
+                          <p style={styles.infoCardSubtitle}>Official Information</p>
+                        </div>
+                      </div>
+                      <div>
+                        <div style={styles.infoItem} className="info-item">
+                          <div style={styles.infoItemIcon}>
+                            <Shield size={16} />
                           </div>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 opacity-90">
-                            {[
-                              { icon: MapPin, value: companyInfo?.company_address },
-                              { icon: Mail, value: companyInfo?.company_email },
-                              { icon: Phone, value: companyInfo?.company_phone },
-                              { icon: Globe, value: companyInfo?.company_website },
-                            ].map((item, index) => (
-                              <div key={index} className="flex items-center text-sm bg-white/10 rounded-lg p-3 backdrop-blur-sm">
-                                <item.icon size={16} className="mr-2 flex-shrink-0" />
-                                <span className="break-all">{item.value}</span>
-                              </div>
-                            ))}
+                          <div>
+                            <p style={{ fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>Certificate ID</p>
+                            <p style={{ fontWeight: '600', color: '#1f2937', fontFamily: 'monospace', fontSize: '14px' }}>{verificationData.certificate_id}</p>
                           </div>
                         </div>
-                        <div className="text-center bg-white/20 p-6 rounded-2xl backdrop-blur-sm border border-white/30">
-                          <p className="text-sm opacity-90 mb-2">Verified on</p>
-                          <p className="font-bold text-lg">{new Date().toLocaleDateString()}</p>
-                          <div className="flex items-center justify-center mt-2 text-amber-200">
-                            <Star size={16} className="mr-1" />
-                            <span className="text-sm">Verification #{verificationData.verification_count}</span>
+                        <div style={styles.infoItem} className="info-item">
+                          <div style={styles.infoItemIcon}>
+                            <Calendar size={16} />
+                          </div>
+                          <div>
+                            <p style={{ fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>Issue Date</p>
+                            <p style={{ fontWeight: '600', color: '#1f2937' }}>{formatDate(verificationData.issue_date)}</p>
+                          </div>
+                        </div>
+                        <div style={styles.infoItem} className="info-item">
+                          <div style={styles.infoItemIcon}>
+                            <Calendar size={16} />
+                          </div>
+                          <div>
+                            <p style={{ fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>Duration</p>
+                            <p style={{ fontWeight: '600', color: '#1f2937' }}>
+                              {Math.ceil(Math.abs(
+                                new Date(verificationData.leaving_date) - 
+                                new Date(verificationData.joining_date)
+                              ) / (1000 * 60 * 60 * 24 * 7))} weeks
+                            </p>
                           </div>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              )}
+
+                {/* Company Info */}
+                <div style={{
+                  marginTop: '32px',
+                  background: 'linear-gradient(135deg, #ea580c, #f97316)',
+                  color: 'white',
+                  borderRadius: '24px',
+                  padding: '32px',
+                  boxShadow: '0 20px 25px -5px rgba(234, 88, 12, 0.4)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '24px' }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px' }}>
+                        <Building size={24} style={{ marginRight: '12px' }} />
+                        <div>
+                          <h3 style={{ fontSize: '24px', fontWeight: 'bold' }}>{companyInfo?.company_name || 'Syed Solar Energy'}</h3>
+                          <p style={{ color: 'rgba(254, 215, 170, 0.9)' }}>Certificate Issuing Authority</p>
+                        </div>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', opacity: 0.9 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', fontSize: '14px', background: 'rgba(255, 255, 255, 0.1)', borderRadius: '8px', padding: '12px', backdropFilter: 'blur(10px)' }}>
+                          <MapPin size={16} style={{ marginRight: '8px', flexShrink: 0 }} />
+                          <span style={{ wordBreak: 'break-word' }}>{companyInfo?.company_address || 'Jalil Market Umar Gull Chowck, Bara Road, Peshawar'}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', fontSize: '14px', background: 'rgba(255, 255, 255, 0.1)', borderRadius: '8px', padding: '12px', backdropFilter: 'blur(10px)' }}>
+                          <Mail size={16} style={{ marginRight: '8px', flexShrink: 0 }} />
+                          <span style={{ wordBreak: 'break-all' }}>{companyInfo?.company_email || 'sales@syedsolarenergy.com'}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'center', background: 'rgba(255, 255, 255, 0.2)', padding: '24px', borderRadius: '16px', backdropFilter: 'blur(10px)', border: '1px solid rgba(255, 255, 255, 0.3)' }}>
+                      <p style={{ fontSize: '14px', opacity: 0.9, marginBottom: '8px' }}>Verified on</p>
+                      <p style={{ fontWeight: 'bold', fontSize: '18px' }}>{new Date().toLocaleDateString()}</p>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '8px', color: 'rgba(254, 215, 170, 0.9)' }}>
+                        <span style={{ fontSize: '14px' }}>Verification #{verificationData.verification_count || 1}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* No Search Results */}
+        {!loading && !verificationStatus && !certificateId && (
+          <div style={styles.resultsCard}>
+            <div style={{ textAlign: 'center', padding: '48px 0' }}>
+              <div style={{ position: 'relative', display: 'inline-block', marginBottom: '32px' }}>
+                <Search size={60} color="#f97316" />
+                <div style={{
+                  position: 'absolute',
+                  top: '-16px',
+                  left: '-16px',
+                  right: '-16px',
+                  bottom: '-16px',
+                  background: 'radial-gradient(circle, rgba(249, 115, 22, 0.1) 0%, transparent 70%)',
+                  borderRadius: '50%',
+                  zIndex: -1
+                }}></div>
+              </div>
+              <h3 style={{ fontSize: '32px', fontWeight: 'bold', color: '#1f2937', marginBottom: '16px' }}>
+                Enter Certificate ID to Verify
+              </h3>
+              <p style={{ fontSize: '16px', color: '#6b7280', marginBottom: '32px', maxWidth: '400px', margin: '0 auto 32px' }}>
+                Please enter a valid internship certificate ID to verify its authenticity and view details.
+              </p>
+              <div style={{
+                background: 'linear-gradient(135deg, #fff7ed, #fed7aa)',
+                border: '1px solid #fed7aa',
+                borderRadius: '16px',
+                padding: '24px',
+                textAlign: 'left',
+                maxWidth: '400px',
+                margin: '0 auto'
+              }}>
+                <h4 style={{ fontWeight: '600', color: '#ea580c', marginBottom: '12px', display: 'flex', alignItems: 'center' }}>
+                  <Shield size={16} style={{ marginRight: '8px' }} />
+                  Certificate ID Format:
+                </h4>
+                <p style={{ color: '#ea580c', fontSize: '16px', fontFamily: 'monospace' }}>SSE-IC-YYYYMMDD-XXXX</p>
+                <p style={{ color: '#ea580c', fontSize: '14px', marginTop: '8px' }}>Example: SSE-IC-20250901-1234</p>
+              </div>
             </div>
           </div>
         )}
 
-        {/* Enhanced Footer */}
-        <div className="mt-12 text-center">
-          <div className="inline-block bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-white/50">
-            <div className="flex items-center justify-center mb-3">
-              <Shield className="text-orange-500 mr-2" size={20} />
-              <span className="font-semibold text-gray-800">Secured by SSE Technology</span>
+        {/* Footer */}
+        <div style={{ marginTop: '64px', textAlign: 'center' }}>
+          <div style={{
+            display: 'inline-block',
+            background: 'rgba(255, 255, 255, 0.8)',
+            backdropFilter: 'blur(10px)',
+            borderRadius: '16px',
+            padding: '24px',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+            border: '1px solid rgba(255, 255, 255, 0.5)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}>
+              <Shield size={20} color="#ea580c" style={{ marginRight: '8px' }} />
+              <span style={{ fontWeight: '600', color: '#1f2937' }}>Secured by SSE Technology</span>
             </div>
-            <p className="text-gray-600 text-sm max-w-2xl">
+            <p style={{ color: '#6b7280', fontSize: '14px', maxWidth: '500px' }}>
               © {new Date().getFullYear()} Syed Solar Energy. This verification system ensures the authenticity 
               of internship certificates using advanced security protocols.
             </p>
