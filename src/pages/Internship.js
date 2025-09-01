@@ -250,7 +250,7 @@ const Internship = () => {
     }
   };
 
-  const generateProfessionalPDF = (certificateData) => {
+const generateProfessionalPDF = (certificateData) => {
     const certificateId = certificateData?.certificate_id || generateCertificateId();
     const issueDateISO = certificateData?.issue_date || formData.issueDate || new Date().toISOString().split('T')[0];
     const displayIssueDate = formatDate(issueDateISO);
@@ -267,27 +267,27 @@ const Internship = () => {
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         
         * {
-          margin: 0;
+          margin: 0.1;
           padding: 0;
           box-sizing: border-box;
         }
         
         body {
           font-family: 'Inter', Arial, sans-serif;
-          line-height: 1.6;
+          line-height: 1.5;
           color: #1a1a1a;
           background: white;
         }
         
         html, body {
-        font-size: 13px; /* Reduced from default ~16px */
+        font-size: 12px; /* Reduced from default ~16px */
          }
 
         
 .container {
   max-width: 800px;
   margin: 0 auto;
-  padding: 20px; /* Reduced padding */
+  padding: 18px; /* Reduced padding */
   background: white;
 }
 
@@ -296,8 +296,8 @@ const Internship = () => {
           display: flex;
           justify-content: space-between;
           align-items: flex-start;
-          margin-bottom: 20px;
-          padding-bottom: 10px;
+          margin-bottom: 12px;
+          padding-bottom: 8px;
           border-bottom: 3px solid #ffa12eff;
         }
         
@@ -345,17 +345,17 @@ const Internship = () => {
         
         .document-info {
           text-align: right;
-          margin-bottom: 30px;
+          margin-bottom: 20px;
           font-size: 14px;
           color: #6b7280;
         }
         
         .title {
           text-align: center;
-          font-size: 32px;
+          font-size: 31px;
           font-weight: 700;
           color: #1a1a1a;
-          margin-bottom: 20px;
+          margin-bottom: 15px;
           text-transform: uppercase;
           letter-spacing: 1px;
           position: relative;
@@ -365,33 +365,33 @@ const Internship = () => {
           content: '';
           display: block;
           width: 120px;
-          height: 4px;
+          height: 3px;
           background: linear-gradient(90deg, #ffa12eff, #ffa12eff);
           margin: 12px auto 0;
           border-radius: 2px;
         }
         
         .content {
-          font-size: 13px;
+          font-size: 12px;
           line-height: 1.5;
-          margin-bottom: 15px;
+          margin-bottom: 12px;
           text-align: justify;
         }
         
 .candidate-details {
   background: #f8fafc;
-  padding: 15px;
+  padding: 8px;
   border-radius: 10px;
-  margin: 15px 0;
+  margin: 12px 0;
   border-left: 3px solid #ffa12eff;
 }
 
         
         .candidate-details h3 {
-          font-size: 18px;
+          font-size: 16px;
           font-weight: 600;
           color: #1a1a1a;
-          margin-bottom: 20px;
+          margin-bottom: 12px;
         }
         
         .details-grid {
@@ -414,32 +414,32 @@ const Internship = () => {
           display: grid;
           grid-template-columns: 1fr 1fr;
           gap: 10px;
-          margin: 15px 0;
+          margin: 13px 0;
         }
         
         .date-card {
           background: #f8fafc;
-          padding: 12px;
+          padding: 5px;
           border-radius: 12px;
           text-align: center;
           border-left: 4px solid #ffa12eff;
         }
         
         .date-card h4 {
-          font-size: 16px;
+          font-size: 15px;
           font-weight: 600;
           color: #1a1a1a;
           margin-bottom: 10px;
         }
         
         .date-card p {
-          font-size: 18px;
+          font-size: 17px;
           font-weight: 700;
           color: #059669;
         }
         
         .signature-section {
-          margin-top: 60px;
+          margin-top: 40px;
           display: flex;
           justify-content: space-between;
           align-items: flex-end;
@@ -494,6 +494,16 @@ const Internship = () => {
         .highlight {
           color: #ffa12eff;
           font-weight: 600;
+        }
+
+        .footer {
+          margin-top: 15px;
+          padding-top: 8px;
+          border-top: 1px solid #e5e7eb;
+          text-align: center;
+          font-size: 10px;
+          color: #6b7280;
+          font-style: italic;
         }
         
         @media print {
@@ -632,9 +642,11 @@ body {
             </div>
           </div>
         </div>
-              <div class="footer">
-        This certificate was issued electronically and is verifiable through the QR code or at ${companyInfo?.company_website || 'www.syedsolarenergy.com'}.
-      </div>
+
+        <!-- Footer -->
+        <div class="footer">
+          This certificate was issued electronically and is verifiable through the QR code or at ${companyInfo?.company_website || 'www.syedsolarenergy.com'}.
+        </div>
 
       </div>
     </body>
