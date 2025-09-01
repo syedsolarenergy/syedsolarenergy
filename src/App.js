@@ -21,6 +21,7 @@ import BlogList from "./pages/BlogList";
 import BlogPost from "./pages/BlogPost";
 import OfferVerification from "./pages/OfferVerification";
 import InternshipVerification from "./pages/InternshipVerification";
+import ExperienceVerification from "./pages/ExperienceVerification";
 
 // Enhanced Auth Pages (with Supabase integration)
 import Login from "./pages/Login";
@@ -38,6 +39,8 @@ import Staff from "./pages/Staff";
 import Quotationsoftware from "./pages/Quotationsoftware";
 import OfferLetter from "./pages/OfferLetter";
 import Internship from "./pages/Internship";
+import Experience from "./pages/Experience";
+
 
 // Enhanced Admin & Security Pages (with Supabase integration)
 import Admin from "./pages/Admin";
@@ -47,6 +50,7 @@ import ChangePassword from "./pages/ChangePassword";
 import AdminPanel from "./pages/AdminPanel";
 import EmailVerified from "./pages/email-verified";
 import CertificateVerification from './pages/CertificateVerification';
+
 
 
 function AppContent() {
@@ -116,6 +120,7 @@ function AppContent() {
           <Route path="/verify-offer/:offerId" element={<OfferVerification />} />
           <Route path="/InternshipVerification" element={<InternshipVerification />} />
           <Route path="/verify-internship/:certificateId" element={<InternshipVerification />} />
+          <Route path="/verify-experience/:certificateId" element={<ExperienceVerification />} />
 
           {/* Legacy Admin Panel (keeping for backward compatibility) */}
           <Route path="/adminpanel" element={<AdminPanel />} />
@@ -140,6 +145,7 @@ function AppContent() {
           <Route path="/quotationsoftware" element={<PrivateRoute><Quotationsoftware /></PrivateRoute>} />
           <Route path="/offer-generator" element={<PrivateRoute><OfferLetter /></PrivateRoute>} />
           <Route path="/Internship" element={<PrivateRoute><Internship /></PrivateRoute>} />
+          <Route path="/Experience" element={<PrivateRoute><Experience /></PrivateRoute>} />
 
           {/* Enhanced Admin & Security Pages with Supabase Integration */}
           <Route path="/admin" element={<PrivateRoute><Admin /></PrivateRoute>} />

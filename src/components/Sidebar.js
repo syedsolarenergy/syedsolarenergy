@@ -4,7 +4,8 @@ import { NavLink, useLocation } from "react-router-dom";
 import {
   MdDashboard, MdInventory, MdBuild, MdReceipt, MdBarChart, MdStore,
   MdAdminPanelSettings, MdHistory, MdPeople, MdLockReset, MdMenu,
-  MdMenuOpen, MdLogout
+  MdMenuOpen, MdLogout,
+  MdWorkspacePremium
 } from "react-icons/md";
 import { FaTools, FaFileInvoice, FaUserCircle, FaCrown } from "react-icons/fa";
 import { TbReportMoney } from "react-icons/tb";
@@ -83,6 +84,12 @@ const sidebarLinks = [
   to: "/Internship",       // ✅ Correct route
   label: "Internship", 
   icon: <Workflow size={18} />,
+  permission: { category: "hr", key: "view" }
+},
+ {
+  to: "/Experience",       // ✅ Correct route
+  label: "Experience", 
+  icon: <MdWorkspacePremium size={18} />,
   permission: { category: "hr", key: "view" }
 }
 ];
