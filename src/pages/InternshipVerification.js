@@ -19,6 +19,7 @@ import {
   Globe,
   ChevronRight
 } from 'lucide-react';
+import { supabase } from '../supabaseClient';
 
 const InternshipVerification = () => {
   const { certificateId } = useParams();
@@ -541,12 +542,14 @@ const InternshipVerification = () => {
 
   useEffect(() => {
     const fetchCompanyInfo = async () => {
-      // Mock data for demonstration
-      setCompanyInfo({
-        company_name: 'Syed Solar Energy',
-        company_address: 'Jalil Market Umar Gull Chowck, Bara Road, Peshawar',
-        company_email: 'sales@syedsolarenergy.com'
-      });
+      const { data, error } = await supabase
+        .from('company_settings')
+        .select('*')
+        .single();
+      
+      if (!error && data) {
+        setCompanyInfo(data);
+      }
     };
     
     fetchCompanyInfo();
@@ -557,27 +560,45 @@ const InternshipVerification = () => {
     setVerificationStatus(null);
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const { data: certificateData, error: certificateError } = await supabase
+        .from('internship_certificates')
+        .select('*')
+        .eq('certificate_id', id)
+        .single();
       
-      // Mock verification result
-      if (id === 'SSE-IC-20250901-1234' || id.includes('SSE-IC')) {
-        setVerificationStatus('valid');
-        setVerificationData({
-          certificate_id: id,
-          candidate_name: 'John Doe',
-          father_name: 'Robert Doe',
-          dob: '1995-05-15',
-          email: 'john.doe@email.com',
-          issue_date: '2025-01-15',
-          joining_date: '2024-12-01',
-          leaving_date: '2025-01-15',
-          verification_count: 5
-        });
-      } else {
+      if (certificateError || !certificateData) {
         setVerificationStatus('invalid');
         setVerificationData(null);
+        setLoading(false);
+        return;
       }
+      
+      setVerificationStatus('valid');
+      setVerificationData({ ...certificateData, isExpired: false });
+      
+      await supabase
+        .from('internship_certificates')
+        .update({ 
+          verified_at: new Date().toISOString(),
+          verification_count: (certificateData.verification_count || 0) + 1 
+        })
+        .eq('certificate_id', id);
+      
+      const { error: verificationError } = await supabase
+        .from('internship_verifications')
+        .insert([
+          {
+            certificate_id: id,
+            ip_address: null,
+            user_agent: navigator.userAgent,
+            status: 'valid'
+          }
+        ]);
+      
+      if (!verificationError) {
+        setVerificationAttempts(prev => prev + 1);
+      }
+      
     } catch (error) {
       console.error('Verification error:', error);
       setVerificationStatus('invalid');
@@ -596,7 +617,7 @@ const InternshipVerification = () => {
 
   const handleSearch = () => {
     if (searchId.trim()) {
-      verifyCertificate(searchId.trim());
+      window.location.href = `/verify-internship/${searchId.trim()}`;
     }
   };
 
