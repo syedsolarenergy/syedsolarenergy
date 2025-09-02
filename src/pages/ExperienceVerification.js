@@ -600,7 +600,7 @@ const ExperienceVerification = () => {
             color: '#f59e0b' 
           }}>
             <ChevronRight size={isMobile ? 14 : 16} style={{ marginRight: '4px' }} />
-            <span>Professional experience validation system</span>
+            <span>Secure verification powered by blockchain technology</span>
           </div>
         </div>
 
@@ -960,14 +960,7 @@ const ExperienceVerification = () => {
                           <MapPin size={isMobile ? 14 : 16} style={{ marginRight: '8px', flexShrink: 0 }} />
                           <span style={{ wordBreak: 'break-word' }}>{companyInfo?.company_address || 'Jalil Market Umar Gull Chowck, Bara Road, Peshawar'}</span>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', fontSize: isMobile ? '12px' : '14px', background: 'rgba(255, 255, 255, 0.1)', borderRadius: '8px', padding: '12px', backdropFilter: 'blur(10px)' }}>
-                          <Mail size={isMobile ? 14 : 16} style={{ marginRight: '8px', flexShrink: 0 }} />
-                          <span style={{ wordBreak: 'break-all' }}>{companyInfo?.company_email || 'sales@syedsolarenergy.com'}</span>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', fontSize: isMobile ? '12px' : '14px', background: 'rgba(255, 255, 255, 0.1)', borderRadius: '8px', padding: '12px', backdropFilter: 'blur(10px)' }}>
-                          <Phone size={isMobile ? 14 : 16} style={{ marginRight: '8px', flexShrink: 0 }} />
-                          <span>{companyInfo?.company_phone || '03075596695'}</span>
-                        </div>
+                       
                         <div style={{ display: 'flex', alignItems: 'center', fontSize: isMobile ? '12px' : '14px', background: 'rgba(255, 255, 255, 0.1)', borderRadius: '8px', padding: '12px', backdropFilter: 'blur(10px)' }}>
                           <Globe size={isMobile ? 14 : 16} style={{ marginRight: '8px', flexShrink: 0 }} />
                           <span style={{ wordBreak: 'break-all' }}>{companyInfo?.company_website || 'www.syedsolarenergy.com'}</span>
