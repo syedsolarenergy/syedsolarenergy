@@ -45,7 +45,7 @@ const ExperienceVerification = () => {
   const styles = {
     pageContainer: {
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 50%, #3b82f6 100%)',
+      background: 'linear-gradient(135deg, #fff7ed 0%, #fed7aa 50%, #fb923c 100%)',
       position: 'relative',
       overflow: 'hidden',
       padding: isMobile ? '0 12px' : '0 20px'
@@ -56,7 +56,7 @@ const ExperienceVerification = () => {
       right: isMobile ? '-100px' : '-200px',
       width: isMobile ? '200px' : '400px',
       height: isMobile ? '200px' : '400px',
-      background: 'radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 70%)',
+      background: 'radial-gradient(circle, rgba(251, 146, 60, 0.15) 0%, transparent 70%)',
       borderRadius: '50%',
       animation: 'float 6s ease-in-out infinite',
       pointerEvents: 'none'
@@ -67,15 +67,15 @@ const ExperienceVerification = () => {
       left: isMobile ? '-100px' : '-200px',
       width: isMobile ? '250px' : '500px',
       height: isMobile ? '250px' : '500px',
-      background: 'radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%)',
+      background: 'radial-gradient(circle, rgba(245, 101, 101, 0.15) 0%, transparent 70%)',
       borderRadius: '50%',
       animation: 'float 8s ease-in-out infinite reverse',
       pointerEvents: 'none'
     },
     header: {
-      background: 'linear-gradient(135deg, #2563eb 0%, #3b82f6 50%, #6366f1 100%)',
-      boxShadow: '0 25px 50px -12px rgba(37, 99, 235, 0.25)',
-      borderBottom: '1px solid rgba(59, 130, 246, 0.3)',
+      background: 'linear-gradient(135deg, #ea580c 0%, #f97316 50%, #fb923c 100%)',
+      boxShadow: '0 25px 50px -12px rgba(234, 88, 12, 0.25)',
+      borderBottom: '1px solid rgba(251, 146, 60, 0.3)',
       position: 'relative',
       backdropFilter: 'blur(10px)',
       margin: isMobile ? '0 -12px' : '0 -20px',
@@ -91,37 +91,19 @@ const ExperienceVerification = () => {
       flexWrap: 'wrap',
       gap: '16px'
     },
-    logo: {
-      width: isMobile ? '48px' : '64px',
-      height: isMobile ? '48px' : '64px',
-      background: 'rgba(255, 255, 255, 0.2)',
-      backdropFilter: 'blur(10px)',
-      borderRadius: '16px',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      color: 'white',
-      fontWeight: 'bold',
-      fontSize: isMobile ? '16px' : '20px',
-      marginRight: isMobile ? '12px' : '16px',
-      boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
-      border: '1px solid rgba(255, 255, 255, 0.2)',
-      transition: 'transform 0.3s ease',
-      position: 'relative'
-    },
     headerTitle: {
       fontSize: isMobile ? '24px' : '36px',
       fontWeight: '900',
       color: 'white',
       lineHeight: '1.2',
-      background: 'linear-gradient(to right, #ffffff, #dbeafe)',
+      background: 'linear-gradient(to right, #ffffff, #fed7aa)',
       WebkitBackgroundClip: 'text',
       WebkitTextFillColor: 'transparent',
       backgroundClip: 'text'
     },
     headerSubtitle: {
       fontSize: isMobile ? '12px' : '14px',
-      color: 'rgba(219, 234, 254, 0.9)',
+      color: 'rgba(254, 215, 170, 0.9)',
       marginTop: '4px',
       fontWeight: '500'
     },
@@ -164,18 +146,18 @@ const ExperienceVerification = () => {
     searchIcon: {
       width: isMobile ? '48px' : '64px',
       height: isMobile ? '48px' : '64px',
-      background: 'linear-gradient(135deg, #2563eb, #3b82f6)',
+      background: 'linear-gradient(135deg, #ea580c, #f97316)',
       borderRadius: '16px',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
       margin: '0 auto 16px',
-      boxShadow: '0 20px 25px -5px rgba(37, 99, 235, 0.4)'
+      boxShadow: '0 20px 25px -5px rgba(234, 88, 12, 0.4)'
     },
     searchTitleText: {
       fontSize: isMobile ? '24px' : '32px',
       fontWeight: 'bold',
-      background: 'linear-gradient(135deg, #2563eb, #3b82f6)',
+      background: 'linear-gradient(135deg, #ea580c, #f97316)',
       WebkitBackgroundClip: 'text',
       WebkitTextFillColor: 'transparent',
       backgroundClip: 'text',
@@ -190,7 +172,7 @@ const ExperienceVerification = () => {
       textAlign: 'center',
       fontFamily: 'monospace',
       background: 'white',
-      border: '2px solid #dbeafe',
+      border: '2px solid #fed7aa',
       borderRadius: '16px',
       boxShadow: '0 10px 25px -3px rgba(0, 0, 0, 0.1)',
       transition: 'all 0.3s ease',
@@ -201,7 +183,7 @@ const ExperienceVerification = () => {
       maxWidth: '400px',
       margin: '0 auto',
       padding: isMobile ? '14px 20px' : '16px 24px',
-      background: 'linear-gradient(135deg, #2563eb, #3b82f6)',
+      background: 'linear-gradient(135deg, #ea580c, #f97316)',
       color: 'white',
       border: 'none',
       borderRadius: '16px',
@@ -209,7 +191,7 @@ const ExperienceVerification = () => {
       fontWeight: 'bold',
       cursor: 'pointer',
       transition: 'all 0.3s ease',
-      boxShadow: '0 10px 25px -3px rgba(37, 99, 235, 0.4)',
+      boxShadow: '0 10px 25px -3px rgba(234, 88, 12, 0.4)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -250,10 +232,10 @@ const ExperienceVerification = () => {
       marginBottom: isMobile ? '24px' : '32px'
     },
     infoCard: {
-      background: 'linear-gradient(135deg, #eff6ff, #dbeafe)',
+      background: 'linear-gradient(135deg, #fff7ed, #fed7aa)',
       borderRadius: '16px',
       padding: isMobile ? '16px' : '24px',
-      border: '1px solid rgba(59, 130, 246, 0.2)',
+      border: '1px solid rgba(251, 146, 60, 0.2)',
       boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
       marginBottom: isMobile ? '16px' : '24px'
     },
@@ -265,10 +247,10 @@ const ExperienceVerification = () => {
     },
     infoCardIcon: {
       padding: isMobile ? '8px' : '12px',
-      background: 'linear-gradient(135deg, #2563eb, #3b82f6)',
+      background: 'linear-gradient(135deg, #ea580c, #f97316)',
       borderRadius: '12px',
       color: 'white',
-      boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.4)'
+      boxShadow: '0 4px 6px -1px rgba(234, 88, 12, 0.4)'
     },
     infoCardTitle: {
       fontSize: isMobile ? '18px' : '20px',
@@ -277,7 +259,7 @@ const ExperienceVerification = () => {
     },
     infoCardSubtitle: {
       fontSize: isMobile ? '12px' : '14px',
-      color: '#2563eb'
+      color: '#ea580c'
     },
     infoItem: {
       display: 'flex',
@@ -291,9 +273,9 @@ const ExperienceVerification = () => {
     },
     infoItemIcon: {
       padding: isMobile ? '6px' : '8px',
-      background: 'linear-gradient(135deg, #dbeafe, #3b82f6)',
+      background: 'linear-gradient(135deg, #fed7aa, #fb923c)',
       borderRadius: '8px',
-      color: '#2563eb',
+      color: '#ea580c',
       flexShrink: 0
     },
     projectCard: {
@@ -302,7 +284,7 @@ const ExperienceVerification = () => {
       borderRadius: '16px',
       padding: isMobile ? '16px' : '20px',
       marginBottom: isMobile ? '12px' : '16px',
-      borderLeft: '4px solid #3b82f6',
+      borderLeft: '4px solid #fb923c',
       transition: 'all 0.3s ease',
       boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
     },
@@ -319,8 +301,8 @@ const ExperienceVerification = () => {
     loadingSpinner: {
       width: isMobile ? '60px' : '80px',
       height: isMobile ? '60px' : '80px',
-      border: '4px solid #dbeafe',
-      borderTop: '4px solid #2563eb',
+      border: '4px solid #fed7aa',
+      borderTop: '4px solid #ea580c',
       borderRadius: '50%',
       animation: 'spin 1s linear infinite',
       margin: '0 auto 24px'
@@ -346,12 +328,12 @@ const ExperienceVerification = () => {
       }
       .search-input:focus {
         outline: none;
-        border-color: #2563eb;
-        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        border-color: #ea580c;
+        box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.1);
       }
       .search-button:hover {
         transform: translateY(-2px);
-        box-shadow: 0 15px 35px -3px rgba(37, 99, 235, 0.5);
+        box-shadow: 0 15px 35px -3px rgba(234, 88, 12, 0.5);
       }
       .back-button:hover {
         background: rgba(255, 255, 255, 0.3);
@@ -365,19 +347,12 @@ const ExperienceVerification = () => {
         box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.15);
         background: rgba(255, 255, 255, 0.95);
       }
-      .logo:hover {
-        transform: scale(1.1);
-      }
       
       /* Responsive adjustments */
       @media (max-width: 768px) {
         .header-content {
           flex-direction: column;
           text-align: center;
-        }
-        
-        .logo-container {
-          margin-bottom: 16px;
         }
         
         .results-grid {
@@ -560,14 +535,9 @@ const ExperienceVerification = () => {
       {/* Header */}
       <div style={styles.header}>
         <div style={styles.headerContent} className="header-content">
-          <div style={{ display: 'flex', alignItems: 'center', flex: 1 }} className="logo-container">
-            <div style={styles.logo} className="logo">
-              <div>SSE</div>
-            </div>
-            <div style={{ minWidth: 0, flex: 1 }}>
-              <h1 style={styles.headerTitle}>Experience Verification</h1>
-              <p style={styles.headerSubtitle}>🏆 Professional • ⚡ Validated • ✅ Certified</p>
-            </div>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <h1 style={styles.headerTitle}>Experience Verification</h1>
+            <p style={styles.headerSubtitle}>🏆 Professional • ⚡ Validated • ✅ Certified</p>
           </div>
           <button 
             style={styles.backButton} 
@@ -627,7 +597,7 @@ const ExperienceVerification = () => {
             alignItems: 'center', 
             justifyContent: 'center', 
             fontSize: isMobile ? '12px' : '14px', 
-            color: '#3b82f6' 
+            color: '#f59e0b' 
           }}>
             <ChevronRight size={isMobile ? 14 : 16} style={{ marginRight: '4px' }} />
             <span>Professional experience validation system</span>
@@ -772,7 +742,7 @@ const ExperienceVerification = () => {
                             <Shield size={isMobile ? 14 : 16} />
                           </div>
                           <div>
-                            <p style={{ fontSize: isMobile ? '11px' : '12px', color: '#6b7280', fontWeight: '500' }}>Certificate ID</p>
+                            <p style={{ fontSize: isMobile? '11px' : '12px', color: '#6b7280', fontWeight: '500' }}>Certificate ID</p>
                             <p style={{ fontWeight: '600', color: '#1f2937', fontFamily: 'monospace', fontSize: isMobile ? '14px' : '16px', wordBreak: 'break-all' }}>{verificationData.certificate_id}</p>
                           </div>
                         </div>
@@ -802,8 +772,8 @@ const ExperienceVerification = () => {
                   <div>
                     <div style={{
                       ...styles.infoCard,
-                      background: 'linear-gradient(135deg, #f0fdf4, #dcfce7)',
-                      border: '1px solid rgba(34, 197, 94, 0.2)',
+                      background: 'linear-gradient(135deg, #ffedd5, #fed7aa)',
+                      border: '1px solid rgba(251, 146, 60, 0.2)',
                       maxHeight: isMobile ? 'none' : '500px',
                       display: 'flex',
                       flexDirection: 'column'
@@ -811,13 +781,13 @@ const ExperienceVerification = () => {
                       <div style={styles.infoCardHeader}>
                         <div style={{
                           ...styles.infoCardIcon,
-                          background: 'linear-gradient(135deg, #16a34a, #22c55e)'
+                          background: 'linear-gradient(135deg, #ea580c, #f97316)'
                         }}>
                           <Briefcase size={isMobile ? 18 : 20} />
                         </div>
                         <div>
                           <h3 style={styles.infoCardTitle}>Project Portfolio</h3>
-                          <p style={{ fontSize: isMobile ? '12px' : '14px', color: '#16a34a' }}>Professional Experience</p>
+                          <p style={{ fontSize: isMobile ? '12px' : '14px', color: '#ea580c' }}>Professional Experience</p>
                         </div>
                       </div>
                       <div style={{ 
@@ -831,12 +801,12 @@ const ExperienceVerification = () => {
                             <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '12px' }}>
                               <div style={{
                                 padding: '8px',
-                                background: 'linear-gradient(135deg, #dcfce7, #16a34a)',
+                                background: 'linear-gradient(135deg, #fed7aa, #ea580c)',
                                 borderRadius: '8px',
                                 marginRight: '12px',
                                 flexShrink: 0
                               }}>
-                                <Briefcase size={isMobile ? 14 : 16} color="#16a34a" />
+                                <Briefcase size={isMobile ? 14 : 16} color="#ea580c" />
                               </div>
                               <div style={{ flex: 1 }}>
                                 <h4 style={{ fontWeight: 'bold', color: '#1f2937', fontSize: isMobile ? '14px' : '16px', marginBottom: '4px', wordBreak: 'break-word' }}>
@@ -846,8 +816,8 @@ const ExperienceVerification = () => {
                                   display: 'inline-flex',
                                   alignItems: 'center',
                                   padding: '4px 8px',
-                                  background: 'linear-gradient(135deg, #dcfce7, #bbf7d0)',
-                                  color: '#166534',
+                                  background: 'linear-gradient(135deg, #ffedd5, #fed7aa)',
+                                  color: '#9a3412',
                                   borderRadius: '8px',
                                   fontSize: isMobile ? '11px' : '12px',
                                   fontWeight: '600'
@@ -859,11 +829,11 @@ const ExperienceVerification = () => {
                             
                             {project.projectDetails && (
                               <div style={{
-                                background: 'linear-gradient(135deg, #f0fdf4, #dcfce7)',
+                                background: 'linear-gradient(135deg, #fff7ed, #fed7aa)',
                                 borderRadius: '8px',
                                 padding: '12px',
                                 marginBottom: '12px',
-                                border: '1px solid rgba(34, 197, 94, 0.1)'
+                                border: '1px solid rgba(251, 146, 60, 0.1)'
                               }}>
                                 <p style={{ fontSize: isMobile ? '12px' : '13px', color: '#374151', lineHeight: '1.5', wordBreak: 'break-word' }}>
                                   {project.projectDetails}
@@ -898,19 +868,19 @@ const ExperienceVerification = () => {
                     {/* Electronic Signature Verification */}
                     <div style={{
                       ...styles.infoCard,
-                      background: 'linear-gradient(135deg, #fdf4ff, #e879f9)',
-                      border: '1px solid rgba(168, 85, 247, 0.2)'
+                      background: 'linear-gradient(135deg, #fef3c7, #f59e0b)',
+                      border: '1px solid rgba(245, 158, 11, 0.2)'
                     }} className="info-card">
                       <div style={styles.infoCardHeader}>
                         <div style={{
                           ...styles.infoCardIcon,
-                          background: 'linear-gradient(135deg, #a855f7, #d946ef)'
+                          background: 'linear-gradient(135deg, #d97706, #f59e0b)'
                         }}>
                           <Shield size={isMobile ? 18 : 20} />
                         </div>
                         <div>
                           <h3 style={styles.infoCardTitle}>Digital Authentication</h3>
-                          <p style={{ fontSize: isMobile ? '12px' : '14px', color: '#a855f7' }}>Cryptographic Verification</p>
+                          <p style={{ fontSize: isMobile ? '12px' : '14px', color: '#d97706' }}>Cryptographic Verification</p>
                         </div>
                       </div>
                       <div>
@@ -920,24 +890,24 @@ const ExperienceVerification = () => {
                             padding: '12px',
                             borderRadius: '12px',
                             marginRight: '16px',
-                            border: '2px solid #e879f9',
+                            border: '2px solid #f59e0b',
                             boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                           }}>
                             <div style={{
                               width: isMobile ? '48px' : '64px',
                               height: isMobile ? '48px' : '64px',
-                              background: 'linear-gradient(135deg, #fdf4ff, #e879f9)',
+                              background: 'linear-gradient(135deg, #fef3c7, #f59e0b)',
                               borderRadius: '8px',
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center'
                             }}>
-                              <Shield size={isMobile ? 20 : 24} color="#a855f7" />
+                              <Shield size={isMobile ? 20 : 24} color="#d97706" />
                             </div>
                           </div>
                           <div>
                             <p style={{ fontSize: isMobile ? '11px' : '12px', color: '#6b7280', fontWeight: '500' }}>Authentication Code</p>
-                            <p style={{ fontFamily: 'monospace', fontSize: isMobile ? '12px' : '14px', fontWeight: 'bold', color: '#a855f7' }}>
+                            <p style={{ fontFamily: 'monospace', fontSize: isMobile ? '12px' : '14px', fontWeight: 'bold', color: '#d97706' }}>
                               #{verificationData.certificate_id}
                             </p>
                           </div>
@@ -954,7 +924,7 @@ const ExperienceVerification = () => {
                           </div>
                           <div style={{ padding: '12px', background: 'rgba(255, 255, 255, 0.8)', borderRadius: '12px' }}>
                             <p style={{ fontSize: isMobile ? '11px' : '12px', color: '#6b7280', fontWeight: '500' }}>Total Verifications</p>
-                            <p style={{ fontWeight: 'bold', fontSize: isMobile ? '20px' : '24px', color: '#a855f7' }}>#{verificationData.verification_count || 1}</p>
+                            <p style={{ fontWeight: 'bold', fontSize: isMobile ? '20px' : '24px', color: '#d97706' }}>#{verificationData.verification_count || 1}</p>
                           </div>
                         </div>
                       </div>
@@ -965,11 +935,11 @@ const ExperienceVerification = () => {
                 {/* Company Info */}
                 <div style={{
                   marginTop: isMobile ? '24px' : '32px',
-                  background: 'linear-gradient(135deg, #2563eb, #3b82f6, #6366f1)',
+                  background: 'linear-gradient(135deg, #ea580c, #f97316, #fb923c)',
                   color: 'white',
                   borderRadius: isMobile ? '16px' : '24px',
                   padding: isMobile ? '24px' : '32px',
-                  boxShadow: '0 20px 25px -5px rgba(37, 99, 235, 0.4)'
+                  boxShadow: '0 20px 25px -5px rgba(234, 88, 12, 0.4)'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '24px' }}>
                     <div style={{ flex: 1 }}>
@@ -977,7 +947,7 @@ const ExperienceVerification = () => {
                         <Building size={isMobile ? 20 : 24} style={{ marginRight: '12px' }} />
                         <div>
                           <h3 style={{ fontSize: isMobile ? '20px' : '24px', fontWeight: 'bold' }}>{companyInfo?.company_name || 'Syed Solar Energy'}</h3>
-                          <p style={{ color: 'rgba(219, 234, 254, 0.9)', fontSize: isMobile ? '12px' : '14px' }}>Professional Certification Authority</p>
+                          <p style={{ color: 'rgba(254, 215, 170, 0.9)', fontSize: isMobile ? '12px' : '14px' }}>Professional Certification Authority</p>
                         </div>
                       </div>
                       <div style={{ 
@@ -1007,7 +977,7 @@ const ExperienceVerification = () => {
                     <div style={{ textAlign: 'center', background: 'rgba(255, 255, 255, 0.2)', padding: isMobile ? '16px' : '24px', borderRadius: '16px', backdropFilter: 'blur(10px)', border: '1px solid rgba(255, 255, 255, 0.3)' }}>
                       <p style={{ fontSize: isMobile ? '12px' : '14px', opacity: 0.9, marginBottom: '8px' }}>Verified on</p>
                       <p style={{ fontWeight: 'bold', fontSize: isMobile ? '16px' : '18px' }}>{new Date().toLocaleDateString()}</p>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '8px', color: 'rgba(219, 234, 254, 0.9)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '8px', color: 'rgba(254, 215, 170, 0.9)' }}>
                         <span style={{ fontSize: isMobile ? '12px' : '14px' }}>Verification #{verificationData.verification_count || 1}</span>
                       </div>
                     </div>
@@ -1023,14 +993,14 @@ const ExperienceVerification = () => {
           <div style={styles.resultsCard} className="results-card">
             <div style={{ textAlign: 'center', padding: isMobile ? '32px 0' : '48px 0' }}>
               <div style={{ position: 'relative', display: 'inline-block', marginBottom: isMobile ? '24px' : '32px' }}>
-                <Search size={isMobile ? 48 : 60} color="#3b82f6" />
+                <Search size={isMobile ? 48 : 60} color="#f97316" />
                 <div style={{
                   position: 'absolute',
                   top: '-16px',
                   left: '-16px',
                   right: '-16px',
                   bottom: '-16px',
-                  background: 'radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%)',
+                  background: 'radial-gradient(circle, rgba(249, 115, 22, 0.1) 0%, transparent 70%)',
                   borderRadius: '50%',
                   zIndex: -1
                 }}></div>
@@ -1042,20 +1012,20 @@ const ExperienceVerification = () => {
                 Please enter a valid experience certificate ID to verify its authenticity and view professional details.
               </p>
               <div style={{
-                background: 'linear-gradient(135deg, #eff6ff, #dbeafe)',
-                border: '1px solid #dbeafe',
+                background: 'linear-gradient(135deg, #fff7ed, #fed7aa)',
+                border: '1px solid #fed7aa',
                 borderRadius: '16px',
                 padding: isMobile ? '16px' : '24px',
                 textAlign: 'left',
                 maxWidth: '400px',
                 margin: '0 auto'
               }}>
-                <h4 style={{ fontWeight: '600', color: '#2563eb', marginBottom: '12px', display: 'flex', alignItems: 'center' }}>
+                <h4 style={{ fontWeight: '600', color: '#ea580c', marginBottom: '12px', display: 'flex', alignItems: 'center' }}>
                   <Shield size={isMobile ? 14 : 16} style={{ marginRight: '8px' }} />
                   Certificate ID Format:
                 </h4>
-                <p style={{ color: '#2563eb', fontSize: isMobile ? '14px' : '16px', fontFamily: 'monospace' }}>SSE-EC-YYYYMMDD-XXXX</p>
-                <p style={{ color: '#2563eb', fontSize: isMobile ? '12px' : '14px', marginTop: '8px' }}>Example: SSE-EC-20250901-5678</p>
+                <p style={{ color: '#ea580c', fontSize: isMobile ? '14px' : '16px', fontFamily: 'monospace' }}>SSE-EC-YYYYMMDD-XXXX</p>
+                <p style={{ color: '#ea580c', fontSize: isMobile ? '12px' : '14px', marginTop: '8px' }}>Example: SSE-EC-20250901-5678</p>
               </div>
             </div>
           </div>
@@ -1073,7 +1043,7 @@ const ExperienceVerification = () => {
             border: '1px solid rgba(255, 255, 255, 0.5)'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}>
-              <Shield size={isMobile ? 16 : 20} color="#2563eb" style={{ marginRight: '8px' }} />
+              <Shield size={isMobile ? 16 : 20} color="#ea580c" style={{ marginRight: '8px' }} />
               <span style={{ fontWeight: '600', color: '#1f2937', fontSize: isMobile ? '14px' : '16px' }}>Secured by SSE Technology</span>
             </div>
             <p style={{ color: '#6b7280', fontSize: isMobile ? '12px' : '14px', maxWidth: '500px' }}>

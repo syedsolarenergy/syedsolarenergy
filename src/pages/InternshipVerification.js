@@ -672,8 +672,8 @@ const InternshipVerification = () => {
       {/* Header */}
       <div style={styles.header}>
         <div style={styles.headerContent}>
-          <div style={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
-            <div style={{ minWidth: 0, flex: 1 }}>
+          <div style={{ display: 'flex',justifyContent: 'center', alignItems: 'center', flex: 1, minWidth: 0 }}>
+            <div style={{ minWidth: 0, flex: 1, textAlign: 'center' }}>
               <h1 style={styles.headerTitle}>Certificate Verification</h1>
               <p style={styles.headerSubtitle}>🔐 Secure • ⚡ Instant • ✅ Verified</p>
             </div>
