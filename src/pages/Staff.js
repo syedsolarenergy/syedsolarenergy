@@ -26,7 +26,7 @@ function Staff() {
     name: "Syed Solar Energy Pvt Ltd",
     email: "sales@syedsolarenergy.com",
     phone: "+92 307 5596695",
-    address: "Jalil Market Umar Gull Chowck Bara Road, Peshawar",
+    address: "Market Umar Gull Chowck Bara Road, Peshawar",
     brand: {
       primary: "#FF6B35",
       primaryDark: "#E85F2F",

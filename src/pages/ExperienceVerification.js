@@ -958,7 +958,7 @@ const ExperienceVerification = () => {
                       }} className="company-info-grid">
                         <div style={{ display: 'flex', alignItems: 'center', fontSize: isMobile ? '12px' : '14px', background: 'rgba(255, 255, 255, 0.1)', borderRadius: '8px', padding: '12px', backdropFilter: 'blur(10px)' }}>
                           <MapPin size={isMobile ? 14 : 16} style={{ marginRight: '8px', flexShrink: 0 }} />
-                          <span style={{ wordBreak: 'break-word' }}>{companyInfo?.company_address || 'Jalil Market Umar Gull Chowck, Bara Road, Peshawar'}</span>
+                          <span style={{ wordBreak: 'break-word' }}>{companyInfo?.company_address || 'Office B5, Mustafa Plaza, near Imtiaz Mart Ring Road Peshawar'}</span>
                         </div>
                        
                         <div style={{ display: 'flex', alignItems: 'center', fontSize: isMobile ? '12px' : '14px', background: 'rgba(255, 255, 255, 0.1)', borderRadius: '8px', padding: '12px', backdropFilter: 'blur(10px)' }}>
