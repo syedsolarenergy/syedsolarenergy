@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "../supabaseClient";
+import { supabase, rpc } from "../supabaseClient";
 import syedSolarLogo from "../assets/logo.png";
 
 // Password hashing utility
@@ -247,78 +247,35 @@ function ChangePassword() {
     setLoading(true);
 
     try {
-      // Verify old password
+      // Old-password check, the update, the audit row and revoking the
+      // user's other sessions all happen in one database call. Password
+      // hashes never travel to the browser.
       const oldPasswordHash = await hashPassword(formData.oldPassword);
-      
-      if (currentUser.password !== oldPasswordHash) {
-        showToast("Current password is incorrect", 'error');
-        await logActivity('FAILED_PASSWORD_CHANGE', {
-          reason: 'incorrect_old_password',
-          username: currentUser.username
-        });
+      const newPasswordHash = await hashPassword(formData.newPassword);
+
+      const result = await rpc('app_change_password', {
+        p_old_hash: oldPasswordHash,
+        p_new_hash: newPasswordHash,
+      });
+
+      if (!result?.ok) {
+        showToast(
+          result?.error === 'invalid_old_password'
+            ? "Current password is incorrect"
+            : "Could not change password. Please log in again.",
+          'error'
+        );
         return;
       }
 
-      // Hash new password
-      const newPasswordHash = await hashPassword(formData.newPassword);
+      showToast("Password changed successfully!", 'success');
 
-      // Start transaction-like operations
-      try {
-        // Log password change
-        await supabase.from('admin_password_changes').insert({
-          user_id: currentUser.id,
-          old_password_hash: oldPasswordHash,
-          new_password_hash: newPasswordHash,
-          changed_by: currentUser.id,
-          ip_address: '127.0.0.1',
-          user_agent: navigator.userAgent
-        });
+      setFormData({ oldPassword: "", newPassword: "", confirmPassword: "" });
+      setPasswordStrength(null);
 
-        // Update password in admin_users table
-        const { error: updateError } = await supabase
-          .from('admin_users')
-          .update({ 
-            password: newPasswordHash,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', currentUser.id);
-
-        if (updateError) throw updateError;
-
-        // Invalidate all existing sessions for this user except current session
-        const currentSessionToken = localStorage.getItem("sessionToken");
-        await supabase
-          .from('admin_sessions')
-          .update({ is_active: false })
-          .eq('user_id', currentUser.id)
-          .neq('session_token', currentSessionToken);
-
-        // Log successful password change
-        await logActivity('PASSWORD_CHANGE', {
-          username: currentUser.username,
-          changed_by: currentUser.username
-        });
-
-        showToast("Password changed successfully!", 'success');
-
-        // Clear form
-        setFormData({
-          oldPassword: "",
-          newPassword: "",
-          confirmPassword: ""
-        });
-        setPasswordStrength(null);
-
-        // Redirect to dashboard after 2 seconds
-        setTimeout(() => {
-          navigate("/dashboard", { replace: true });
-        }, 2000);
-
-      } catch (transactionError) {
-        // If any part of the transaction fails, attempt rollback
-        console.error('Transaction error:', transactionError);
-        throw transactionError;
-      }
+      setTimeout(() => {
+        navigate("/dashboard", { replace: true });
+      }, 2000);
 
     } catch (error) {
       console.error('Error changing password:', error);

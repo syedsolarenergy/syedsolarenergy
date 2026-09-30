@@ -360,16 +360,17 @@ export default function Quotation() {
         follow_up_status: 'Pending' // Match the default value in the table
       };
       
-      const { data, error } = await supabase
+      // No .select() here: the public may submit an enquiry but must not
+      // be able to read quotation rows back, so there is no RETURNING.
+      const { error } = await supabase
         .from("quotations")
-        .insert([supabaseData])
-        .select();
-        
+        .insert([supabaseData]);
+
       if (error) {
         console.error("Supabase error:", error);
         return null;
       }
-      return data[0];
+      return supabaseData;
     } catch (err) {
       console.error("Unexpected Supabase error:", err);
       return null;

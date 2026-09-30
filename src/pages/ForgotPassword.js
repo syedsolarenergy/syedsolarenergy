@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { supabase } from "../supabaseClient";
+import { rpc } from "../supabaseClient";
 import syedSolarLogo from "../assets/logo.png";
 
 // Password hashing utility
@@ -13,10 +13,6 @@ const hashPassword = async (password) => {
     .join('');
 };
 
-// Generate secure token
-const generateResetToken = () => {
-  return crypto.randomUUID() + '-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
-};
 
 // Toast notification component
 const Toast = ({ message, type, onClose }) => (
@@ -58,21 +54,6 @@ function ForgotPassword() {
     setTimeout(() => setToast(null), type === 'error' ? 5000 : 3000);
   };
 
-  // Log activity helper
-  const logActivity = async (userId, action, details = null) => {
-    try {
-      await supabase.from('admin_activity_log').insert({
-        user_id: userId,
-        action,
-        resource: 'password_reset',
-        details,
-        ip_address: '127.0.0.1',
-        user_agent: navigator.userAgent
-      });
-    } catch (error) {
-      console.error('Failed to log activity:', error);
-    }
-  };
 
   // Step 1: Find user by username
   const handleStep1Submit = async (e) => {
@@ -82,42 +63,21 @@ function ForgotPassword() {
     setIsLoading(true);
 
     try {
-      const { data: users, error: fetchError } = await supabase
-        .from('admin_users')
-        .select(`
-          id, username, email, is_active,
-          admin_security_questions (question, answer_hash)
-        `)
-        .eq('username', formData.username.trim().toLowerCase())
-        .eq('is_active', true)
-        .limit(1);
+      // Returns the security question only. The stored answer hash
+      // is no longer sent to the browser.
+      const result = await rpc('app_reset_begin', {
+        p_username: formData.username.trim().toLowerCase(),
+      });
 
-      if (fetchError) throw fetchError;
-
-      const user = users?.[0];
-
-      if (user && user.admin_security_questions?.length > 0) {
-        setFoundUser(user);
-        setSecurityQuestion(user.admin_security_questions[0].question);
-        setMessage(`User found! Please answer the security question.`);
+      if (result?.ok) {
+        setFoundUser({ username: formData.username.trim().toLowerCase() });
+        setSecurityQuestion(result.question);
+        setMessage("Account found. Please answer the security question.");
         setStep(2);
-
-        await logActivity(user.id, 'PASSWORD_RESET_INITIATED', {
-          username: user.username,
-          step: 'security_question'
-        });
-      } else if (user && !user.admin_security_questions?.length) {
-        setError("No security question found for this user. Please contact administrator.");
-        await logActivity(user.id, 'PASSWORD_RESET_FAILED', {
-          username: user.username,
-          reason: 'no_security_question'
-        });
+      } else if (result?.error === 'no_security_question') {
+        setError("No security question is set for this account. Please contact your administrator.");
       } else {
         setError("Username not found! Please check your username and try again.");
-        await logActivity(null, 'PASSWORD_RESET_FAILED', {
-          username: formData.username,
-          reason: 'user_not_found'
-        });
       }
     } catch (error) {
       console.error('Error finding user:', error);
@@ -136,38 +96,20 @@ function ForgotPassword() {
 
     try {
       const answerHash = await hashPassword(formData.securityAnswer.toLowerCase().trim());
-      const correctAnswerHash = foundUser.admin_security_questions[0].answer_hash;
-      
-      if (answerHash === correctAnswerHash) {
-        const token = generateResetToken();
-        const expiresAt = new Date();
-        expiresAt.setHours(expiresAt.getHours() + 1);
 
-        const { error: tokenError } = await supabase
-          .from('admin_password_reset_tokens')
-          .insert({
-            user_id: foundUser.id,
-            token,
-            expires_at: expiresAt.toISOString(),
-            ip_address: '127.0.0.1'
-          });
+      // The comparison happens in the database; a wrong answer is logged
+      // there too.
+      const result = await rpc('app_reset_verify', {
+        p_username: foundUser.username,
+        p_answer_hash: answerHash,
+      });
 
-        if (tokenError) throw tokenError;
-
-        setResetToken(token);
-        setMessage("Security question answered correctly! Now set your new password.");
+      if (result?.ok) {
+        setResetToken(result.reset_token);
+        setMessage("Correct. Now choose your new password.");
         setStep(3);
-
-        await logActivity(foundUser.id, 'PASSWORD_RESET_VERIFIED', {
-          username: foundUser.username,
-          step: 'new_password'
-        });
       } else {
         setError("Incorrect answer. Please try again or contact support.");
-        await logActivity(foundUser.id, 'PASSWORD_RESET_FAILED', {
-          username: foundUser.username,
-          reason: 'incorrect_security_answer'
-        });
       }
     } catch (error) {
       console.error('Error verifying security answer:', error);
@@ -197,84 +139,32 @@ function ForgotPassword() {
         return;
       }
 
-      const { data: tokenData, error: tokenError } = await supabase
-        .from('admin_password_reset_tokens')
-        .select('*')
-        .eq('token', resetToken)
-        .eq('user_id', foundUser.id)
-        .is('used_at', null)
-        .gt('expires_at', new Date().toISOString())
-        .single();
+      const newPasswordHash = await hashPassword(formData.newPassword);
 
-      if (tokenError || !tokenData) {
-        setError("Reset token is invalid or expired. Please start over.");
+      // Token check, password update, audit trail and revoking the
+      // account's sessions all happen in one database call.
+      const result = await rpc('app_reset_complete', {
+        p_username: foundUser.username,
+        p_token: resetToken,
+        p_new_hash: newPasswordHash,
+      });
+
+      if (!result?.ok) {
+        setError("Reset link is invalid or has expired. Please start over.");
         setStep(1);
         resetForm();
         return;
       }
 
-      const newPasswordHash = await hashPassword(formData.newPassword);
+      setMessage("Password reset successful! You can now login with your new password.");
+      showToast("Password reset successful! Redirecting to login...", 'success');
 
-      const { data: currentUserData } = await supabase
-        .from('admin_users')
-        .select('password')
-        .eq('id', foundUser.id)
-        .single();
-
-      try {
-        const { error: updateError } = await supabase
-          .from('admin_users')
-          .update({
-            password: newPasswordHash,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', foundUser.id);
-
-        if (updateError) throw updateError;
-
-        await supabase
-          .from('admin_password_reset_tokens')
-          .update({ used_at: new Date().toISOString() })
-          .eq('id', tokenData.id);
-
-        await supabase.from('admin_password_changes').insert({
-          user_id: foundUser.id,
-          old_password_hash: currentUserData?.password || null,
-          new_password_hash: newPasswordHash,
-          changed_by: foundUser.id,
-          ip_address: '127.0.0.1',
-          user_agent: navigator.userAgent
-        });
-
-        await supabase
-          .from('admin_sessions')
-          .update({ is_active: false })
-          .eq('user_id', foundUser.id);
-
-        await logActivity(foundUser.id, 'PASSWORD_RESET_COMPLETED', {
-          username: foundUser.username
-        });
-
-        setMessage("Password reset successful! You can now login with your new password.");
-        showToast("Password reset successful! Redirecting to login...", 'success');
-        
-        setTimeout(() => {
-          navigate("/login");
-        }, 3000);
-
-      } catch (transactionError) {
-        console.error('Password reset transaction error:', transactionError);
-        throw transactionError;
-      }
-
+      setTimeout(() => {
+        navigate("/login");
+      }, 3000);
     } catch (error) {
       console.error('Error resetting password:', error);
       setError("Failed to reset password. Please try again.");
-      await logActivity(foundUser?.id, 'PASSWORD_RESET_FAILED', {
-        username: foundUser?.username,
-        reason: 'system_error',
-        error: error.message
-      });
     } finally {
       setIsLoading(false);
     }

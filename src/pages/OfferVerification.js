@@ -22,7 +22,7 @@ import {
   Globe,
   ChevronRight
 } from 'lucide-react';
-import { supabase } from '../supabaseClient';
+import { supabase, rpc } from '../supabaseClient';
 
 const OfferVerification = () => {
   const { offerId } = useParams();
@@ -54,62 +54,22 @@ const OfferVerification = () => {
     setVerificationStatus(null);
     
     try {
-      // First, check if offer exists
-      const { data: offerData, error: offerError } = await supabase
-        .from('offer_letters')
-        .select('*')
-        .eq('offer_id', id)
-        .single();
-      
-      if (offerError || !offerData) {
+      // Returns validity plus the non-sensitive fields only. Salary,
+      // personal email, phone and home address are no longer sent to
+      // the browser. The counter and audit row are written server-side.
+      const result = await rpc('verify_offer', { p_offer_id: id });
+
+      if (!result?.ok) {
         setVerificationStatus('invalid');
         setVerificationData(null);
         setLoading(false);
         return;
       }
-      
-      // Check if offer is expired
-      const currentDate = new Date();
-      const expiryDate = new Date(offerData.expiry_date);
-      
-      if (currentDate > expiryDate) {
-        // Update status to expired
-        await supabase
-          .from('offer_letters')
-          .update({ status: 'expired' })
-          .eq('offer_id', id);
-        
-        setVerificationStatus('expired');
-        setVerificationData({ ...offerData, isExpired: true });
-      } else {
-        setVerificationStatus('valid');
-        setVerificationData({ ...offerData, isExpired: false });
-        
-        // Update verification count and timestamp
-        await supabase
-          .from('offer_letters')
-          .update({ 
-            verified_at: new Date().toISOString(),
-            verification_count: (offerData.verification_count || 0) + 1 
-          })
-          .eq('offer_id', id);
-      }
-      
-      // Log verification attempt
-      const { error: verificationError } = await supabase
-        .from('offer_verifications')
-        .insert([
-          {
-            offer_id: id,
-            ip_address: null, // Would be captured in a real implementation
-            user_agent: navigator.userAgent,
-            status: currentDate > expiryDate ? 'expired' : 'valid'
-          }
-        ]);
-      
-      if (!verificationError) {
-        setVerificationAttempts(prev => prev + 1);
-      }
+
+      const isExpired = result.status === 'expired';
+      setVerificationStatus(isExpired ? 'expired' : 'valid');
+      setVerificationData({ ...result.document, isExpired });
+      setVerificationAttempts(prev => prev + 1);
       
     } catch (error) {
       console.error('Verification error:', error);

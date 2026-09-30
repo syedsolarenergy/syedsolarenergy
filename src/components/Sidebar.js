@@ -1,6 +1,7 @@
 // src/components/Sidebar.js
 import React, { useState, useEffect } from "react";
 import { NavLink, useLocation } from "react-router-dom";
+import { rpc } from "../supabaseClient";
 import {
   MdDashboard, MdInventory, MdBuild, MdReceipt, MdBarChart, MdStore,
   MdAdminPanelSettings, MdHistory, MdPeople, MdLockReset, MdMenu,
@@ -182,9 +183,14 @@ export default function Sidebar() {
     setIsCollapsed(!isCollapsed);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    // Revoke server-side first, so a copied token cannot be reused.
+    try { await rpc("app_logout"); } catch { /* sign out regardless */ }
+    localStorage.removeItem("sessionToken");
     localStorage.removeItem("loggedInUser");
-    localStorage.removeItem("authToken");
+    localStorage.removeItem("userRole");
+    localStorage.removeItem("userPermissions");
+    localStorage.removeItem("loggedIn");
     window.location.href = "/login";
   };
 

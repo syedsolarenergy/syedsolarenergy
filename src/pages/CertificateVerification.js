@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { supabase } from '../supabaseClient';
+import { rpc } from '../supabaseClient';
 
 function CertificateVerification() {
   const [searchParams] = useSearchParams();
@@ -22,15 +22,15 @@ function CertificateVerification() {
         return;
       }
 
-      const { data, error } = await supabase
-        .from('staff')
-        .select('*')
-        .eq('employee_id', employeeId)
-        .single();
-      
-      if (error || !data) {
+      // Employment confirmation only. This no longer returns salary,
+      // home address, phone number or emergency contact, all of which
+      // the previous `select('*')` exposed to anyone with the link.
+      const result = await rpc('verify_employee', { p_employee_id: employeeId });
+
+      if (!result?.ok) {
         setVerificationStatus("invalid");
       } else {
+        const data = result.document;
         setEmployee(data);
         setCertificateData({
           issueDate: new Date().toLocaleDateString(),

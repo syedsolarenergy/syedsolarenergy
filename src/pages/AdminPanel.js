@@ -1,10 +1,26 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { supabase } from "../supabaseClient";
+import { supabase, rpc, getSessionToken } from "../supabaseClient";
+
+const sha256Hex = async (text) => {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+};
 
 export default function AdminPanel() {
   const [loggedIn, setLoggedIn] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [loginError, setLoginError] = useState("");
+
+  // Already signed in elsewhere in the app? Don't ask twice.
+  useEffect(() => {
+    if (!getSessionToken()) return;
+    let cancelled = false;
+    rpc('app_current_user')
+      .then(r => { if (!cancelled && r?.ok) setLoggedIn(true); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
   // Data states
   const [sections, setSections] = useState([]);
@@ -117,12 +133,31 @@ export default function AdminPanel() {
     amount: "" 
   });
 
-  // Login function
-  const login = () => {
-    if (username === "admin" && password === "Zub@12345") {
+  // Authenticates against the database, like every other staff page.
+  // The previous version compared against a password written directly in
+  // this file, which shipped in the public JavaScript bundle.
+  const login = async () => {
+    setLoginError("");
+    try {
+      const passwordHash = await sha256Hex(password);
+      const result = await rpc('app_login', {
+        p_username: (username || '').trim().toLowerCase(),
+        p_password_hash: passwordHash,
+        p_user_agent: navigator.userAgent,
+      });
+
+      if (!result?.ok) {
+        setLoginError("Invalid username or password.");
+        return;
+      }
+
+      localStorage.setItem("sessionToken", result.session_token);
+      localStorage.setItem("loggedInUser", result.user.username);
+      localStorage.setItem("userRole", result.user.role || "user");
       setLoggedIn(true);
-    } else {
-      alert("Invalid credentials!");
+    } catch (err) {
+      console.error("Admin panel login failed:", err);
+      setLoginError("Could not sign in. Please try again.");
     }
   };
 
@@ -1150,6 +1185,15 @@ export default function AdminPanel() {
             />
           </div>
           
+          {loginError && (
+            <div role="alert" style={{
+              marginBottom: '16px', padding: '10px 12px', borderRadius: '8px',
+              background: '#fdecea', color: '#b3261e', fontSize: '14px', fontWeight: 600
+            }}>
+              {loginError}
+            </div>
+          )}
+
           <button
             onClick={login}
             style={{

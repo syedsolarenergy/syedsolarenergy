@@ -19,7 +19,7 @@ import {
   Globe,
   ChevronRight
 } from 'lucide-react';
-import { supabase } from '../supabaseClient';
+import { supabase, rpc } from '../supabaseClient';
 
 const InternshipVerification = () => {
   const { certificateId } = useParams();
@@ -560,44 +560,21 @@ const InternshipVerification = () => {
     setVerificationStatus(null);
     
     try {
-      const { data: certificateData, error: certificateError } = await supabase
-        .from('internship_certificates')
-        .select('*')
-        .eq('certificate_id', id)
-        .single();
-      
-      if (certificateError || !certificateData) {
+      // Returns only the fields a verifier needs. Personal contact
+      // details stay in the database. The counter and the audit row are
+      // written server-side by the same call.
+      const result = await rpc('verify_internship', { p_certificate_id: id });
+
+      if (!result?.ok) {
         setVerificationStatus('invalid');
         setVerificationData(null);
         setLoading(false);
         return;
       }
-      
+
       setVerificationStatus('valid');
-      setVerificationData({ ...certificateData, isExpired: false });
-      
-      await supabase
-        .from('internship_certificates')
-        .update({ 
-          verified_at: new Date().toISOString(),
-          verification_count: (certificateData.verification_count || 0) + 1 
-        })
-        .eq('certificate_id', id);
-      
-      const { error: verificationError } = await supabase
-        .from('internship_verifications')
-        .insert([
-          {
-            certificate_id: id,
-            ip_address: null,
-            user_agent: navigator.userAgent,
-            status: 'valid'
-          }
-        ]);
-      
-      if (!verificationError) {
-        setVerificationAttempts(prev => prev + 1);
-      }
+      setVerificationData({ ...result.document, isExpired: false });
+      setVerificationAttempts(prev => prev + 1);
       
     } catch (error) {
       console.error('Verification error:', error);

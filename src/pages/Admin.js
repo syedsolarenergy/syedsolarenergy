@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "../supabaseClient";
+import { supabase, rpc } from "../supabaseClient";
 import syedSolarLogo from "../assets/logo.png";
 
 // Permission templates for different roles
@@ -449,49 +449,27 @@ export default function Admin() {
         return false;
       }
 
-      // Verify session token in Supabase
-      const { data: sessionData, error: sessionError } = await supabase
-        .from('admin_sessions')
-        .select(`
-          *,
-          admin_users!inner (
-            id, username, email, role, is_active,
-            admin_permissions (*)
-          )
-        `)
-        .eq('session_token', sessionToken)
-        .eq('is_active', true)
-        .gt('expires_at', new Date().toISOString())
-        .single();
+      // The database validates the token, refreshes last_activity and
+      // returns the user with permissions. The session table itself is
+      // no longer readable from the browser.
+      const result = await rpc('app_current_user');
 
-      if (sessionError || !sessionData) {
+      if (!result?.ok) {
         showToast("Session expired. Please log in again.", 'error');
         localStorage.clear();
         navigate("/login", { replace: true });
         return false;
       }
 
-      const userData = sessionData.admin_users;
-      
-      // Check if user has admin or manager role for this panel
+      const userData = result.user;
+
       if (!['admin', 'manager'].includes(userData.role)) {
         showToast("Access denied. Admin/Manager privileges required.", 'error');
         navigate("/", { replace: true });
         return false;
       }
 
-      // Update last activity
-      await supabase
-        .from('admin_sessions')
-        .update({ last_activity: new Date().toISOString() })
-        .eq('id', sessionData.id);
-
-      setCurrentUser({
-        ...userData,
-        permissions: userData.admin_permissions?.length > 0 
-          ? unflattenPermissions(userData.admin_permissions[0]) 
-          : {}
-      });
+      setCurrentUser({ ...userData, permissions: result.permissions || {} });
       setPageLoading(false);
       return true;
     } catch (error) {

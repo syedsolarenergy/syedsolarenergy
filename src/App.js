@@ -112,7 +112,6 @@ function AppContent() {
           <Route path="/quotation" element={<Quotation />} />
           <Route path="/careers" element={<Careers />} />
           <Route path="/contact" element={<Contact />} />
-          //new routes
           <Route path="/faq" element={<FAQ />} />
           <Route path="/blog" element={<BlogList />} />
           <Route path="/blog/:slug" element={<BlogPost />} />
@@ -123,7 +122,7 @@ function AppContent() {
           <Route path="/verify-experience/:certificateId" element={<ExperienceVerification />} />
 
           {/* Legacy Admin Panel (keeping for backward compatibility) */}
-          <Route path="/adminpanel" element={<AdminPanel />} />
+          <Route path="/adminpanel" element={<PrivateRoute><AdminPanel /></PrivateRoute>} />
           <Route path="/email-verified" element={<EmailVerified />} />
           <Route path="/verify-certificate" element={<CertificateVerification />} />
 

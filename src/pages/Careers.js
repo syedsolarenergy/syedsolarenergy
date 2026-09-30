@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { supabase } from "../supabaseClient";
 import Footer from "../components/Footer";
 
 // Enhanced Card3D Component with responsive styling
@@ -41,6 +42,7 @@ export default function Careers() {
   });
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
   const [showOffer, setShowOffer] = useState(false);
   const [isOfferOpen, setIsOfferOpen] = useState(false);
   const [screenSize, setScreenSize] = useState({
@@ -75,17 +77,31 @@ export default function Careers() {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
-    
-    // Simulate API call - replace with actual Supabase call
-    setTimeout(() => {
+    setSubmitError("");
+
+    try {
+      const { error } = await supabase.from("careers").insert([{
+        name: form.name,
+        email: form.email,
+        phone: form.phone,
+        field: form.field,
+        message: form.message,
+      }]);
+
+      if (error) throw error;
+
       setSubmitted(true);
       setForm({ name: "", email: "", phone: "", field: "", message: "" });
       setTimeout(() => setSubmitted(false), 4500);
+    } catch (err) {
+      console.error("Career application failed:", err);
+      setSubmitError("Could not send your application. Please try again, or reach us on WhatsApp.");
+    } finally {
       setSubmitting(false);
-    }, 1000);
+    }
   };
 
   const closeOffer = () => {
@@ -647,6 +663,21 @@ export default function Careers() {
               fontSize: isMobile ? '14px' : '16px'
             }}>
               ✅ We have received your application. Thank you!
+            </div>
+          )}
+
+          {submitError && (
+            <div role="alert" style={{
+              marginTop: 18,
+              color: "#b3261e",
+              fontWeight: 600,
+              background: "#fdecea",
+              borderRadius: 8,
+              padding: "10px",
+              textAlign: 'center',
+              fontSize: isMobile ? '14px' : '16px'
+            }}>
+              {submitError}
             </div>
           )}
         </div>

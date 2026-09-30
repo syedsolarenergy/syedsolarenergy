@@ -1,13 +1,18 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
+import { rpc } from "../supabaseClient";
 import logo from "../assets/logo.png";
 
 export default function Navbar() {
   const isLoggedIn = !!localStorage.getItem("loggedInUser");
   const location = useLocation();
-  const logout = () => {
+  const logout = async () => {
+    try { await rpc("app_logout"); } catch { /* sign out regardless */ }
+    localStorage.removeItem("sessionToken");
     localStorage.removeItem("loggedInUser");
-    localStorage.removeItem("authToken");
+    localStorage.removeItem("userRole");
+    localStorage.removeItem("userPermissions");
+    localStorage.removeItem("loggedIn");
     window.location.href = "/";
   };
 

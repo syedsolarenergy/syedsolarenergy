@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
-import { supabase } from "../supabaseClient";
+import { rpc } from "../supabaseClient";
 import syedSolarLogo from "../assets/logo.png";
 // Password hashing utility
 const hashPassword = async (password) => {
@@ -10,10 +10,6 @@ const hashPassword = async (password) => {
   return Array.from(new Uint8Array(hash))
     .map(b => b.toString(16).padStart(2, '0'))
     .join('');
-};
-// Generate secure session token
-const generateSessionToken = () => {
-  return crypto.randomUUID() + '-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
 };
 // Toast notification component
 const Toast = ({ message, type, onClose }) => (
@@ -84,44 +80,6 @@ function Login() {
       }
     };
   }, []);
-  // Log activity helper
-  const logActivity = async (userId, action, details = null) => {
-    try {
-      await supabase.from('admin_activity_log').insert({
-        user_id: userId,
-        action,
-        resource: 'authentication',
-        details,
-        ip_address: '127.0.0.1',
-        user_agent: navigator.userAgent
-      });
-    } catch (error) {
-      console.error('Failed to log activity:', error);
-    }
-  };
-  // Create session in database
-  const createSession = async (userId) => {
-    try {
-      const sessionToken = generateSessionToken();
-      const expiresAt = new Date();
-      expiresAt.setHours(expiresAt.getHours() + 24); // 24 hours expiry
-      const { error } = await supabase
-        .from('admin_sessions')
-        .insert({
-          user_id: userId,
-          session_token: sessionToken,
-          ip_address: '127.0.0.1',
-          user_agent: navigator.userAgent,
-          expires_at: expiresAt.toISOString(),
-          is_active: true
-        });
-      if (error) throw error;
-      return sessionToken;
-    } catch (error) {
-      console.error('Error creating session:', error);
-      throw error;
-    }
-  };
   // Handle login
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -134,91 +92,48 @@ function Login() {
     setError("");
     setIsLoading(true);
     try {
-      // Hash the password
       const passwordHash = await hashPassword(password);
-      // Find user in Supabase
-      const { data: users, error: fetchError } = await supabase
-        .from('admin_users')
-        .select(`
-          id, username, email, role, is_active, password,
-          admin_permissions (*)
-        `)
-        .eq('username', username.trim().toLowerCase())
-        .eq('is_active', true)
-        .limit(1);
-      if (fetchError) throw fetchError;
-      const user = users?.[0];
-      if (user && user.password === passwordHash) {
-        try {
-          // Create session
-          const sessionToken = await createSession(user.id);
-          // Update last login
-          await supabase
-            .from('admin_users')
-            .update({ last_login: new Date().toISOString() })
-            .eq('id', user.id);
-          // Log successful login
-          await logActivity(user.id, 'LOGIN', {
-            username: user.username,
-            role: user.role
-          });
-          // Store session data
-          localStorage.setItem("loggedIn", "true");
-          localStorage.setItem("loggedInUser", user.username);
-          localStorage.setItem("userRole", user.role || "user");
-          localStorage.setItem("sessionToken", sessionToken);
-          localStorage.setItem("loginTime", new Date().toISOString());
-          
-          // Handle remember me functionality
-          if (rememberMe) {
-            localStorage.setItem("rememberedUsername", user.username);
-          } else {
-            localStorage.removeItem("rememberedUsername");
-          }
-          showToast("Login successful! Welcome back.", 'success');
-          // Show sidebar and hide navbar after successful login
-          setTimeout(() => {
-            const sidebar = document.querySelector('.sidebar, [class*="sidebar"]');
-            const navbar = document.querySelector('.navbar, .nav, [class*="nav"]');
-            
-            if (sidebar) sidebar.style.display = 'block';
-            if (navbar) navbar.style.display = 'none';
-          }, 100);
-          // Navigate to dashboard or intended page
-          setTimeout(() => {
-            if (from.startsWith('http')) {
-              window.location.href = from;
-            } else {
-              navigate(from, { replace: true });
-            }
-          }, 1000);
-        } catch (sessionError) {
-          console.error('Session creation error:', sessionError);
-          setError("❌ لاگ ان نہیں ہو سکا | Login failed. Please try again.");
-          
-          await logActivity(user.id, 'LOGIN_FAILED', {
-            username: user.username,
-            reason: 'session_creation_error',
-            error: sessionError.message
-          });
+
+      // The password check happens inside the database. The stored hash
+      // is never sent to the browser, and a failed attempt is logged
+      // server-side before the result comes back.
+      const result = await rpc('app_login', {
+        p_username: username.trim().toLowerCase(),
+        p_password_hash: passwordHash,
+        p_user_agent: navigator.userAgent,
+      });
+
+      if (result?.ok) {
+        const { user, session_token: sessionToken, permissions } = result;
+
+        localStorage.setItem("loggedIn", "true");
+        localStorage.setItem("loggedInUser", user.username);
+        localStorage.setItem("userRole", user.role || "user");
+        localStorage.setItem("sessionToken", sessionToken);
+        localStorage.setItem("loginTime", new Date().toISOString());
+        localStorage.setItem("userPermissions", JSON.stringify(permissions || {}));
+
+        if (rememberMe) {
+          localStorage.setItem("rememberedUsername", user.username);
+        } else {
+          localStorage.removeItem("rememberedUsername");
         }
+
+        showToast("Login successful! Welcome back.", 'success');
+
+        setTimeout(() => {
+          if (from.startsWith('http')) {
+            window.location.href = from;
+          } else {
+            navigate(from, { replace: true });
+          }
+        }, 600);
       } else {
         setError("❌ غلط صارف نام یا پاس ورڈ | Invalid username or password");
-        
-        await logActivity(user?.id || null, 'LOGIN_FAILED', {
-          username: username.trim().toLowerCase(),
-          reason: user ? 'invalid_password' : 'user_not_found'
-        });
       }
     } catch (error) {
       console.error('Login error:', error);
       setError("❌ لاگ ان نہیں ہو سکا | Login failed. Please try again.");
-      
-      await logActivity(null, 'LOGIN_FAILED', {
-        username: username.trim().toLowerCase(),
-        reason: 'system_error',
-        error: error.message
-      });
     } finally {
       setIsLoading(false);
     }
