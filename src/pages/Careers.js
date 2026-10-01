@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
-import Footer from "../components/Footer";
 
 // Enhanced Card3D Component with responsive styling
 const Card3D = ({ children, className = "", style = {} }) => (
@@ -542,8 +541,6 @@ export default function Careers() {
         </div>
       </Card3D>
 
-      {/* Footer */}
-      <Footer />
 
       <style>
         {`

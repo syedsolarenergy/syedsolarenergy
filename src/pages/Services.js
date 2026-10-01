@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import Footer from "../components/Footer";
 import { FiSettings, FiBatteryCharging, FiSun, FiRefreshCw, FiShoppingBag, FiTool } from "react-icons/fi";
 import { supabase } from "../supabaseClient";
 
@@ -953,8 +952,6 @@ export default function Services() {
         </div>
       </section>
 
-      {/* Enhanced Footer */}
-      <Footer />
 
       {/* Enhanced CSS Animations and Responsive Design */}
       <style>

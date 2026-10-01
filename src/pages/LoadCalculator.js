@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
 import logo from "../assets/logo.png";
-import Footer from "../components/Footer";
 
 const acOptions = [
   { value: 0, label: "Select" },
@@ -432,7 +431,6 @@ export default function LoadCalculator() {
         </div>
       )}
 
-      <Footer />
 
       <style>
         {`

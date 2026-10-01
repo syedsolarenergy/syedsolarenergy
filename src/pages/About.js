@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import logo from "../assets/logo.png";
 import aqibImg from "../assets/aqib.png";
 import zubairImg from "../assets/zubair.png";
-import Footer from "../components/Footer";
 import "../styles/Responsive.css";
 
 // Enhanced CSS Variables for Universal Screen Support
@@ -1036,8 +1035,6 @@ export default function About() {
         </div>
       </section>
 
-      {/* Use imported Footer component */}
-      <Footer />
 
       {/* Enhanced CSS Animations and Responsive Design */}
       <style>

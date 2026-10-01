@@ -1,7 +1,6 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import logo from "../assets/logo.png";
-import Footer from "../components/Footer";
 import { supabase } from "../supabaseClient";
 
 export default function Quotation() {
@@ -1549,7 +1548,6 @@ JazakAllah! 🤝`
             </li>
           </ul>
         </div>
-        {/* Footer */}
         <div style={{
           textAlign: 'center',
           padding: '20px',
@@ -2116,7 +2114,6 @@ JazakAllah! 🤝`
           )}
         </div>
       </div>
-      <Footer />
     </main>
   );
 }

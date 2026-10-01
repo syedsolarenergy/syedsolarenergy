@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { supabase } from "../supabaseClient";
-import Footer from "../components/Footer";
 import logo from "../assets/logo.png";
 import "../styles/Responsive.css";
 
@@ -174,8 +173,6 @@ export default function Contact() {
         </form>
       </div>
 
-      {/* Footer */}
-      <Footer />
     </section>
   );
 }

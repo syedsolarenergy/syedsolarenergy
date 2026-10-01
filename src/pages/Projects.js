@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import Footer from "../components/Footer";
 import logo from "../assets/logo.png";
 
 // Enhanced CSS Variables for Universal Screen Support
@@ -888,8 +887,6 @@ export default function Projects() {
 
       </section>
 
-      {/* Enhanced Footer */}
-      <Footer />
 
       {/* Enhanced CSS Animations and Responsive Design */}
       <style>

@@ -1,6 +1,4 @@
 import React, { useEffect, useState, useCallback } from "react";
-import Footer from "../components/Footer";
-import WhatsAppButton from "../components/WhatsAppButton";
 import Slider from "react-slick";
 import { supabase } from "../supabaseClient";
 import "slick-carousel/slick/slick.css";
@@ -1285,10 +1283,7 @@ export default function Home() {
           </section>
         )}
 
-        {/* Use imported Footer component */}
-        <Footer />
 
-        <WhatsAppButton />
 
         {/* Enhanced animations and styles */}
         <style>

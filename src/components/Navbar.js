@@ -17,6 +17,7 @@ const LINKS = [
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
+  const [stuck, setStuck] = useState(false);
   const location = useLocation();
   const panelRef = useRef(null);
   const toggleRef = useRef(null);
@@ -54,6 +55,14 @@ export default function Navbar() {
     };
   }, [open]);
 
+  // Strengthen the header's edge once content scrolls beneath it.
+  useEffect(() => {
+    const onScroll = () => setStuck(window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   const logout = async () => {
     try { await rpc("app_logout"); } catch { /* sign out regardless */ }
     ["sessionToken", "loggedInUser", "userRole", "userPermissions", "loggedIn"]
@@ -68,7 +77,7 @@ export default function Navbar() {
       {/* Seasonal themes reveal this band; the everyday theme hides it. */}
       <div className="theme-ribbon">Syed Solar Energy — wishing you a blessed season</div>
 
-      <header className="site-header">
+      <header className={"site-header" + (stuck ? " is-stuck" : "")}>
         <div className="site-header__inner container">
           <Link to="/" className="brand" aria-label="Syed Solar Energy — home">
             <img src={logo} alt="" className="brand__mark" width="36" height="36" />
