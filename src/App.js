@@ -101,7 +101,8 @@ function AppContent() {
       }}>
         {/* Navbar on public pages only (not on auth pages or software pages when logged in) */}
         {!hideNavbar && <Navbar />}
-        
+
+        <main id="main">
         <Routes>
           {/* Public Website Pages */}
           <Route path="/" element={<Home />} />
@@ -209,6 +210,7 @@ function AppContent() {
             </div>
           } />
         </Routes>
+        </main>
       </div>
     </div>
   );
