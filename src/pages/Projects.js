@@ -460,157 +460,6 @@ const ProjectCard = ({ project, index }) => {
   );
 };
 
-// Enhanced Offer Popup Component
-const OfferPopup = ({ showOffer, isOfferOpen, onClose, onClaim }) => {
-  if (!showOffer) return null;
-
-  return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      background: 'rgba(0, 0, 0, 0.5)',
-      backdropFilter: 'blur(8px)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 1000,
-      padding: 'var(--padding-base)',
-      opacity: isOfferOpen ? 1 : 0,
-      transition: 'opacity 0.5s ease-out'
-    }}>
-      <div style={{
-        background: 'linear-gradient(135deg, #FF6B35, #F7931E)',
-        padding: 'var(--card-padding)',
-        borderRadius: 'var(--border-radius)',
-        boxShadow: '0 20px 60px rgba(255, 107, 53, 0.4)',
-        maxWidth: 'min(500px, 90vw)',
-        width: '100%',
-        position: 'relative',
-        transform: isOfferOpen ? 'scale(1)' : 'scale(0.8)',
-        transition: 'transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
-        color: 'white',
-        textAlign: 'center'
-      }}>
-        {/* Close button */}
-        <button
-          onClick={onClose}
-          style={{
-            position: 'absolute',
-            top: 'clamp(10px, 2vw, 15px)',
-            right: 'clamp(10px, 2vw, 15px)',
-            background: 'rgba(255,255,255,0.2)',
-            border: 'none',
-            color: 'white',
-            width: 'clamp(28px, 5vw, 32px)',
-            height: 'clamp(28px, 5vw, 32px)',
-            borderRadius: '50%',
-            cursor: 'pointer',
-            fontSize: 'clamp(16px, 3vw, 18px)',
-            transition: 'all 0.3s ease',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-          onMouseEnter={(e) => {
-            if (window.innerWidth > 768) {
-              e.target.style.background = 'rgba(255,255,255,0.3)';
-              e.target.style.transform = 'rotate(90deg)';
-            }
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.background = 'rgba(255,255,255,0.2)';
-            e.target.style.transform = 'rotate(0)';
-          }}
-        >
-          ×
-        </button>
-
-        {/* Celebration icon */}
-        <div style={{
-          fontSize: 'clamp(32px, 8vw, 48px)',
-          marginBottom: 'clamp(16px, 3vw, 20px)',
-          animation: 'tada 1s infinite'
-        }}>
-          🎊
-        </div>
-
-        {/* Offer content */}
-        <h3 style={{
-          margin: '0 0 clamp(12px, 2.5vw, 15px) 0',
-          fontSize: 'clamp(20px, 5vw, 28px)',
-          fontWeight: 'bold',
-          textShadow: '2px 2px 4px rgba(0,0,0,0.1)'
-        }}>
-          Special Offer!
-        </h3>
-
-        <p style={{
-          fontSize: 'var(--text-base)',
-          lineHeight: 1.6,
-          margin: '0 0 clamp(20px, 4vw, 25px) 0'
-        }}>
-          Install any solar system and get an amazing
-        </p>
-
-        <div style={{
-          fontSize: 'clamp(20px, 5vw, 24px)',
-          fontWeight: 'bold',
-          margin: 'clamp(8px, 2vw, 10px) 0',
-          padding: 'clamp(8px, 2vw, 10px)',
-          background: 'rgba(255,255,255,0.15)',
-          borderRadius: 'clamp(8px, 2vw, 10px)',
-          animation: 'pulse 2s infinite',
-          backdropFilter: 'blur(10px)'
-        }}>
-          Rs. 7,000 Cashback
-        </div>
-
-        <p style={{
-          fontSize: 'var(--text-base)',
-          margin: '0 0 clamp(20px, 4vw, 25px) 0'
-        }}>
-          within 7 days of installation! 🌟
-        </p>
-
-        {/* CTA button */}
-        <button
-          onClick={onClaim}
-          style={{
-            background: 'white',
-            color: '#FF6B35',
-            border: 'none',
-            padding: 'clamp(12px, 2.5vw, 15px) clamp(24px, 5vw, 30px)',
-            borderRadius: 'clamp(24px, 5vw, 30px)',
-            fontWeight: 'bold',
-            cursor: 'pointer',
-            fontSize: 'var(--text-base)',
-            transition: 'all 0.3s ease',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-            textTransform: 'uppercase',
-            letterSpacing: '0.5px',
-            width: '100%',
-            maxWidth: 'min(300px, 90vw)'
-          }}
-          onMouseEnter={(e) => {
-            if (window.innerWidth > 768) {
-              e.target.style.transform = 'translateY(-2px) scale(1.02)';
-              e.target.style.boxShadow = '0 6px 16px rgba(0,0,0,0.15)';
-            }
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.transform = 'translateY(0) scale(1)';
-            e.target.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
-          }}
-        >
-          🎯 Claim Now on WhatsApp
-        </button>
-      </div>
-    </div>
-  );
-};
 
 const projects = [
   {
@@ -713,8 +562,6 @@ const projectDetails = {
 };
 
 export default function Projects() {
-  const [showOffer, setShowOffer] = useState(false);
-  const [isOfferOpen, setIsOfferOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -731,27 +578,14 @@ export default function Projects() {
     const element = document.getElementById('projects-container');
     if (element) observer.observe(element);
 
-    // Show popup after 3 seconds
-    const offerTimer = setTimeout(() => {
-      setShowOffer(true);
-      setTimeout(() => setIsOfferOpen(true), 100);
-    }, 3000);
-
     return () => {
       observer.disconnect();
-      clearTimeout(offerTimer);
     };
   }, []);
 
   const handleClaimClick = () => {
     const message = encodeURIComponent("Hi! I'm interested in the Rs. 7,000 cashback offer for solar installation.");
     window.open(`https://wa.me/923075596695?text=${message}`, '_blank');
-    closeOffer();
-  };
-
-  const closeOffer = () => {
-    setIsOfferOpen(false);
-    setTimeout(() => setShowOffer(false), 500);
   };
 
   return (
@@ -1052,13 +886,6 @@ export default function Projects() {
           </Card3D>
         </div>
 
-        {/* Enhanced Offer Popup */}
-        <OfferPopup 
-          showOffer={showOffer}
-          isOfferOpen={isOfferOpen}
-          onClose={closeOffer}
-          onClaim={handleClaimClick}
-        />
       </section>
 
       {/* Enhanced Footer */}

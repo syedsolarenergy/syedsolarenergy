@@ -10,211 +10,48 @@ const acOptions = [
   { value: 2, label: "2 Ton" },
 ];
 
-// Popup Component
-const SystemSuggestionPopup = ({ totalLoad, onClose }) => {
+// Result panel shown after the visitor presses Calculate.
+//
+// This was a full-screen modal over the page. It is the answer the
+// visitor asked for, so it now appears inline beneath the form instead of
+// covering it — nothing to dismiss before reading the result.
+const SystemSuggestion = ({ totalLoad }) => {
   const suggestedSystem = Math.ceil(totalLoad / 1000) + 1;
-  
-  const handleClaimClick = () => {
-    const message = encodeURIComponent(
-      `Hi Syed Solar! I just calculated my load (${totalLoad} Watts) and I want to claim the Rs. 5,000 discount for installing a ${suggestedSystem}kW system.`
-    );
-    window.open(`https://wa.me/923075596695?text=${message}`, '_blank');
-  };
 
-  const handleQuoteClick = () => {
-    const message = encodeURIComponent(
-      `Hi Syed Solar! I calculated my load (${totalLoad} Watts) and need a quote for a ${suggestedSystem}kW solar system.`
-    );
-    window.open(`https://syedsolarenergy.com/quotation`,);
-  };
+  const waLink = (text) =>
+    `https://wa.me/923075596695?text=${encodeURIComponent(text)}`;
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      background: 'rgba(0, 0, 0, 0.7)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 1000,
-      animation: 'fadeIn 0.5s ease-out'
-    }}>
-      <div style={{
-        background: 'linear-gradient(135deg, #fff6ec, #ffffff)',
-        borderRadius: '20px',
-        padding: 'clamp(20px, 4vw, 40px)',
-        maxWidth: 'min(500px, 90vw)',
-        width: '90%',
-        textAlign: 'center',
-        position: 'relative',
-        boxShadow: '0 20px 60px rgba(255, 152, 0, 0.4)',
-        animation: 'scaleIn 0.5s ease-out'
-      }}>
-        <button
-          onClick={onClose}
-          style={{
-            position: 'absolute',
-            top: 'clamp(10px, 2vw, 15px)',
-            right: 'clamp(10px, 2vw, 15px)',
-            background: 'rgba(255, 107, 53, 0.1)',
-            border: 'none',
-            borderRadius: '50%',
-            width: 'clamp(30px, 4vw, 35px)',
-            height: 'clamp(30px, 4vw, 35px)',
-            fontSize: 'clamp(16px, 2vw, 18px)',
-            cursor: 'pointer',
-            color: '#FF6B35',
-            fontWeight: 'bold',
-            transition: 'all 0.3s ease'
-          }}
-          onMouseEnter={(e) => {
-            e.target.style.background = 'rgba(255, 107, 53, 0.2)';
-            e.target.style.transform = 'rotate(90deg)';
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.background = 'rgba(255, 107, 53, 0.1)';
-            e.target.style.transform = 'rotate(0)';
-          }}
+    <div className="card" style={{ marginTop: "var(--sp-6)" }}>
+      <span className="eyebrow">Your result</span>
+      <h3 style={{ marginBottom: "var(--sp-2)" }}>
+        A {suggestedSystem}kW system suits your load
+      </h3>
+      <p className="muted" style={{ marginBottom: "var(--sp-5)" }}>
+        Based on a measured load of {totalLoad.toLocaleString()} watts. We size
+        a little above your peak so the system copes on the hottest days.
+      </p>
+
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: "var(--sp-3)",
+        }}
+      >
+        <a
+          className="btn btn--primary"
+          href={waLink(
+            `Hi Syed Solar! I calculated my load (${totalLoad} Watts) and I want to claim the Rs. 5,000 discount for a ${suggestedSystem}kW system.`
+          )}
+          target="_blank"
+          rel="noopener noreferrer"
         >
-          ×
-        </button>
-
-        <div style={{
-          fontSize: 'clamp(36px, 6vw, 48px)',
-          marginBottom: 'clamp(15px, 2vw, 20px)',
-          animation: 'pulse 2s infinite'
-        }}>
-          ☀️
-        </div>
-        
-        <h2 style={{
-          margin: '0 0 clamp(10px, 1.5vw, 15px) 0',
-          fontSize: 'clamp(20px, 4vw, 28px)',
-          fontWeight: 'bold',
-          background: 'linear-gradient(45deg, #FF6B35, #F7931E)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          backgroundClip: 'text'
-        }}>
-          System Recommendation
-        </h2>
-        
-        <div style={{
-          background: 'rgba(255, 152, 0, 0.1)',
-          borderRadius: '15px',
-          padding: 'clamp(15px, 3vw, 20px)',
-          marginBottom: 'clamp(15px, 3vw, 25px)'
-        }}>
-          <p style={{ 
-            fontSize: 'clamp(14px, 2.5vw, 18px)', 
-            margin: '0 0 clamp(8px, 1.5vw, 15px) 0' 
-          }}>
-            Your calculated load: <span style={{ fontWeight: 'bold' }}>{totalLoad} Watts</span>
-          </p>
-          <p style={{ 
-            fontSize: 'clamp(16px, 3vw, 20px)', 
-            fontWeight: 'bold', 
-            margin: '0' 
-          }}>
-            We recommend: <span style={{ color: '#FF6B35' }}>{suggestedSystem}kW Solar System</span>
-          </p>
-        </div>
-
-        <div style={{
-          background: 'linear-gradient(135deg, #FF6B35, #F7931E)',
-          borderRadius: '15px',
-          padding: 'clamp(15px, 3vw, 20px)',
-          marginBottom: 'clamp(15px, 3vw, 25px)',
-          color: 'white'
-        }}>
-          <h3 style={{ 
-            fontSize: 'clamp(18px, 3.5vw, 22px)', 
-            margin: '0 0 clamp(8px, 1.5vw, 10px) 0',
-            textShadow: '1px 1px 2px rgba(0,0,0,0.3)'
-          }}>
-            Special Installation Offer!
-          </h3>
-          <p style={{ 
-            fontSize: 'clamp(14px, 2.5vw, 18px)', 
-            margin: '0',
-            textShadow: '1px 1px 2px rgba(0,0,0,0.2)'
-          }}>
-            Get <span style={{ fontWeight: 'bold', fontSize: 'clamp(18px, 3.5vw, 22px)' }}>Rs. 5,000 OFF</span> when you install today!
-          </p>
-        </div>
-
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 'clamp(10px, 2vw, 15px)',
-          justifyContent: 'center',
-          alignItems: 'center'
-        }}>
-          <button
-            onClick={handleClaimClick}
-            style={{
-              background: 'linear-gradient(135deg, #25D366, #128C7E)',
-              color: 'white',
-              border: 'none',
-              padding: 'clamp(12px, 2vw, 15px) clamp(20px, 3vw, 25px)',
-              borderRadius: '25px',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-              fontSize: 'clamp(14px, 2vw, 16px)',
-              transition: 'all 0.3s ease',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 'clamp(5px, 1vw, 8px)',
-              boxShadow: '0 5px 15px rgba(0,0,0,0.1)',
-              width: '100%',
-              maxWidth: '300px'
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.transform = 'translateY(-3px) scale(1.05)';
-              e.target.style.boxShadow = '0 8px 20px rgba(0,0,0,0.15)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.transform = 'translateY(0) scale(1)';
-              e.target.style.boxShadow = '0 5px 15px rgba(0,0,0,0.1)';
-            }}
-          >
-            <span>📱</span> Claim Offer on WhatsApp
-          </button>
-          
-          <button
-            onClick={handleQuoteClick}
-            style={{
-              background: 'linear-gradient(135deg, #FF6B35, #F7931E)',
-              color: 'white',
-              border: 'none',
-              padding: 'clamp(12px, 2vw, 15px) clamp(20px, 3vw, 25px)',
-              borderRadius: '25px',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-              fontSize: 'clamp(14px, 2vw, 16px)',
-              transition: 'all 0.3s ease',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 'clamp(5px, 1vw, 8px)',
-              boxShadow: '0 5px 15px rgba(0,0,0,0.1)',
-              width: '100%',
-              maxWidth: '300px'
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.transform = 'translateY(-3px) scale(1.05)';
-              e.target.style.boxShadow = '0 8px 20px rgba(0,0,0,0.15)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.transform = 'translateY(0) scale(1)';
-              e.target.style.boxShadow = '0 5px 15px rgba(0,0,0,0.1)';
-            }}
-          >
-            <span>📝</span> Get Detailed Quote
-          </button>
-        </div>
+          Claim Rs. 5,000 discount
+        </a>
+        <a className="btn btn--secondary" href="/quotation">
+          Get a full quotation
+        </a>
       </div>
     </div>
   );
@@ -244,7 +81,7 @@ export default function LoadCalculator() {
   });
 
   const [totalLoad, setTotalLoad] = useState(0);
-  const [showPopup, setShowPopup] = useState(false);
+  const [showResult, setShowResult] = useState(false);
   const formRef = useRef(null);
 
   // Power ratings (W)
@@ -312,7 +149,7 @@ export default function LoadCalculator() {
     e.preventDefault();
     const load = calculateLoad();
     setTotalLoad(load);
-    setShowPopup(true);
+    setShowResult(true);
   };
 
   useEffect(() => {
@@ -588,15 +425,13 @@ export default function LoadCalculator() {
           </div>
         )}
       </div>
-      
-      {/* Popup for system suggestion */}
-      {showPopup && (
-        <SystemSuggestionPopup 
-          totalLoad={totalLoad} 
-          onClose={() => setShowPopup(false)} 
-        />
+
+      {showResult && totalLoad > 0 && (
+        <div className="container" style={{ paddingBottom: "var(--sp-8)" }}>
+          <SystemSuggestion totalLoad={totalLoad} />
+        </div>
       )}
-      
+
       <Footer />
 
       <style>

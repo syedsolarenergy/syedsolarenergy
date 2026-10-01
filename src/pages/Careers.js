@@ -43,8 +43,6 @@ export default function Careers() {
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
-  const [showOffer, setShowOffer] = useState(false);
-  const [isOfferOpen, setIsOfferOpen] = useState(false);
   const [screenSize, setScreenSize] = useState({
     width: typeof window !== 'undefined' ? window.innerWidth : 1200,
     height: typeof window !== 'undefined' ? window.innerHeight : 800
@@ -60,15 +58,8 @@ export default function Careers() {
 
     window.addEventListener('resize', handleResize);
     
-    // Show affiliate popup after 3 seconds
-    const offerTimer = setTimeout(() => {
-      setShowOffer(true);
-      setTimeout(() => setIsOfferOpen(true), 100);
-    }, 3000);
-
     return () => {
       window.removeEventListener('resize', handleResize);
-      clearTimeout(offerTimer);
     };
   }, []);
 
@@ -104,11 +95,6 @@ export default function Careers() {
     }
   };
 
-  const closeOffer = () => {
-    setIsOfferOpen(false);
-    setTimeout(() => setShowOffer(false), 500);
-  };
-
   const handleAffiliateClick = () => {
     const message = encodeURIComponent("Hi! I'm interested in joining your affiliate program.");
     window.open(`https://wa.me/923075596695?text=${message}`, '_blank');
@@ -127,133 +113,6 @@ export default function Careers() {
       position: 'relative',
       overflowX: 'hidden'
     }}>
-      {/* Affiliate Program Pop-up */}
-      {showOffer && (
-        <div style={{
-          position: 'fixed',
-          right: isOfferOpen ? '50%' : '-100%',
-          top: '50%',
-          transform: isOfferOpen ? 'translate(50%, -50%)' : 'translateY(-50%)',
-          zIndex: 1000,
-          transition: 'all 0.5s ease-out',
-        }}>
-          <Card3D style={{
-            background: 'linear-gradient(135deg, #FF6B35, #F7931E)',
-            padding: isOfferOpen ? (isMobile ? '25px' : '40px') : '20px',
-            borderRadius: isMobile ? '15px' : '20px',
-            boxShadow: '0 10px 30px rgba(255, 107, 53, 0.3)',
-            width: isOfferOpen ? (isMobile ? '90vw' : isTablet ? '400px' : '500px') : '80px',
-            maxWidth: isMobile ? '350px' : 'none',
-            height: isOfferOpen ? 'auto' : (isMobile ? '80px' : '100px'),
-            cursor: 'pointer',
-            position: 'relative',
-            transition: 'all 0.4s ease-out'
-          }}>
-            {!isOfferOpen ? (
-              <div style={{ 
-                fontSize: isMobile ? '30px' : '50px', 
-                textAlign: 'center',
-                lineHeight: 1
-              }}>💰</div>
-            ) : (
-              <div style={{ color: 'white', textAlign: 'center' }}>
-                <button
-                  onClick={closeOffer}
-                  style={{
-                    position: 'absolute',
-                    top: '10px',
-                    right: '10px',
-                    background: 'rgba(255,255,255,0.2)',
-                    border: 'none',
-                    color: 'white',
-                    width: isMobile ? '25px' : '30px',
-                    height: isMobile ? '25px' : '30px',
-                    borderRadius: '50%',
-                    cursor: 'pointer',
-                    fontSize: isMobile ? '14px' : '18px',
-                    transition: 'all 0.3s ease'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.target.style.background = 'rgba(255,255,255,0.3)';
-                    e.target.style.transform = 'rotate(90deg)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.background = 'rgba(255,255,255,0.2)';
-                    e.target.style.transform = 'rotate(0)';
-                  }}
-                >
-                  ×
-                </button>
-                
-                <div style={{ 
-                  fontSize: isMobile ? '25px' : '40px', 
-                  marginBottom: isMobile ? '15px' : '20px' 
-                }}>
-                  💰
-                </div>
-                
-                <h3 style={{
-                  margin: '0 0 15px 0',
-                  fontSize: isMobile ? '18px' : isTablet ? '24px' : '28px',
-                  fontWeight: 'bold',
-                  textShadow: '2px 2px 4px rgba(0,0,0,0.1)'
-                }}>
-                  Join Our Affiliate Program!
-                </h3>
-                
-                <p style={{
-                  fontSize: isMobile ? '14px' : '18px',
-                  lineHeight: 1.6,
-                  margin: '0 0 20px 0',
-                  padding: '0 5px'
-                }}>
-                  Earn up to 
-                  <div style={{
-                    fontSize: isMobile ? '16px' : '22px',
-                    fontWeight: 'bold',
-                    margin: '8px 0',
-                    padding: '8px',
-                    background: 'rgba(255,255,255,0.1)',
-                    borderRadius: '8px',
-                    animation: 'pulse 2s infinite'
-                  }}>
-                    Rs 2 Lacs per month
-                  </div>
-                  Refer customers and earn Rs 10,000 per installation! 🌟
-                </p>
-                
-                <button
-                  onClick={handleAffiliateClick}
-                  style={{
-                    background: 'white',
-                    color: '#FF6B35',
-                    border: 'none',
-                    padding: isMobile ? '10px 20px' : '15px 30px',
-                    borderRadius: '30px',
-                    fontWeight: 'bold',
-                    cursor: 'pointer',
-                    fontSize: isMobile ? '14px' : '18px',
-                    transition: 'all 0.3s ease',
-                    boxShadow: '0 5px 15px rgba(0,0,0,0.1)'
-                  }}
-                  onMouseEnter={(e) => {
-                    if (window.innerWidth > 768) {
-                      e.target.style.transform = 'translateY(-3px) scale(1.05)';
-                      e.target.style.boxShadow = '0 8px 20px rgba(0,0,0,0.15)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.transform = 'translateY(0) scale(1)';
-                    e.target.style.boxShadow = '0 5px 15px rgba(0,0,0,0.1)';
-                  }}
-                >
-                  🤝 Join Program Now
-                </button>
-              </div>
-            )}
-          </Card3D>
-        </div>
-      )}
 
       {/* Header */}
       <Card3D style={{

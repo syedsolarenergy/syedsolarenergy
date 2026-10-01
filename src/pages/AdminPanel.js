@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { supabase, rpc, getSessionToken } from "../supabaseClient";
+import { useTheme, THEMES } from "../context/ThemeContext";
 
 const sha256Hex = async (text) => {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
@@ -11,6 +12,9 @@ export default function AdminPanel() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
+  const [savingTheme, setSavingTheme] = useState(false);
+  const [themeMessage, setThemeMessage] = useState(null);
+  const { theme, setTheme } = useTheme();
 
   // Already signed in elsewhere in the app? Don't ask twice.
   useEffect(() => {
@@ -132,6 +136,17 @@ export default function AdminPanel() {
     name: "", 
     amount: "" 
   });
+
+  const handleThemeChange = async (next) => {
+    setSavingTheme(true);
+    setThemeMessage(null);
+    const ok = await setTheme(next);
+    setThemeMessage(ok
+      ? { ok: true,  text: `Theme switched to "${THEMES.find(t => t.id === next)?.label}".` }
+      : { ok: false, text: 'Could not change the theme. Please sign in again and retry.' });
+    setSavingTheme(false);
+    setTimeout(() => setThemeMessage(null), 4000);
+  };
 
   // Authenticates against the database, like every other staff page.
   // The previous version compared against a password written directly in
@@ -1304,6 +1319,63 @@ export default function AdminPanel() {
           <p style={{ margin: 0, fontSize: '16px', opacity: 0.9 }}>
             Manage your solar products, pricing, and website content with real-time updates
           </p>
+        </div>
+
+        {/* Site Theme */}
+        <div style={{ marginBottom: '40px' }}>
+          <h2 style={{ margin: '0 0 8px 0', color: '#333', fontSize: '22px', fontWeight: 'bold' }}>
+            Site Theme
+          </h2>
+          <p style={{ margin: '0 0 16px 0', color: '#666', fontSize: '14px' }}>
+            Changes the colours across the whole public website straight away.
+            No deployment needed.
+          </p>
+
+          {themeMessage && (
+            <div style={{
+              marginBottom: '16px', padding: '10px 12px', borderRadius: '8px',
+              background: themeMessage.ok ? '#eaf7f0' : '#fdecea',
+              color: themeMessage.ok ? '#1b7f4b' : '#b3261e',
+              fontSize: '14px', fontWeight: 600
+            }}>
+              {themeMessage.text}
+            </div>
+          )}
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+            gap: '12px'
+          }}>
+            {THEMES.map(t => {
+              const active = theme === t.id;
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => handleThemeChange(t.id)}
+                  disabled={savingTheme}
+                  aria-pressed={active}
+                  style={{
+                    textAlign: 'left',
+                    padding: '14px 16px',
+                    borderRadius: '10px',
+                    cursor: savingTheme ? 'wait' : 'pointer',
+                    background: active ? '#fff4ed' : '#fff',
+                    border: active ? '2px solid #e8590c' : '1px solid #e3e6ea',
+                    transition: 'border-color .15s ease, background-color .15s ease'
+                  }}
+                >
+                  <div style={{
+                    fontWeight: 700, fontSize: '15px',
+                    color: active ? '#a93a05' : '#14161a', marginBottom: '2px'
+                  }}>
+                    {t.label}{active ? ' ✓' : ''}
+                  </div>
+                  <div style={{ fontSize: '13px', color: '#5c636e' }}>{t.note}</div>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Display Settings */}
